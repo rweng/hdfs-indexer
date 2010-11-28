@@ -22,13 +22,13 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
  */
 public class CSV extends Configured implements Tool {
 
-	public static class Map extends	Mapper<LongWritable, Text, Text, IntWritable> {
+	public static class Map extends	Mapper<LongWritable, ComparableArrayList<Text>, Text, IntWritable> {
 		private final static IntWritable one = new IntWritable(1);
 		private Text word = new Text();
 
-		public void map(LongWritable key, Text value, Context context)
+		public void map(LongWritable key, ComparableArrayList<Text> value, Context context)
 				throws IOException, InterruptedException {
-			String line = value.toString();
+			String line = value.get(0).toString();
 			StringTokenizer tokenizer = new StringTokenizer(line);
 			while (tokenizer.hasMoreTokens()) {
 				word.set(tokenizer.nextToken());
@@ -68,7 +68,7 @@ public class CSV extends Configured implements Tool {
 		job.setReducerClass(reduce);
 		
 		
-		job.setInputFormatClass(TextInputFormat.class);
+		job.setInputFormatClass(CSVFileInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 
 		FileInputFormat.addInputPath(job, new Path(input));
