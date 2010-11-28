@@ -2,50 +2,50 @@ package thesis;
 
 import java.io.IOException;
 import java.util.*;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.FileSystem;
-
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 /**
  * @author Robin Wenglewski <robin@wenglewski.de>
  */
 public class CSV extends Configured implements Tool {
 
-	public static class Map extends MapReduceBase implements
-			Mapper<LongWritable, Text, Text, IntWritable> {
+	public static class Map extends	Mapper<LongWritable, Text, Text, IntWritable> {
 		private final static IntWritable one = new IntWritable(1);
 		private Text word = new Text();
 
-		public void map(LongWritable key, Text value,
-				OutputCollector<Text, IntWritable> output, Reporter reporter)
-				throws IOException {
+		public void map(LongWritable key, Text value, Context context)
+				throws IOException, InterruptedException {
 			String line = value.toString();
 			StringTokenizer tokenizer = new StringTokenizer(line);
 			while (tokenizer.hasMoreTokens()) {
 				word.set(tokenizer.nextToken());
-				output.collect(word, one);
+				context.write(word, one);
 			}
 		}
 	}
 
-	public static class Reduce extends MapReduceBase implements
-			Reducer<Text, IntWritable, Text, IntWritable> {
+	public static class Reduce extends org.apache.hadoop.mapreduce.Reducer<Text, IntWritable, Text, IntWritable> {
 
-		public void reduce(Text key, Iterator<IntWritable> values,
-				OutputCollector<Text, IntWritable> output, Reporter reporter)
-				throws IOException {
+		public void reduce(Text key, Iterator<IntWritable> values, Context context)
+				throws IOException, InterruptedException {
 			int sum = 0;
 			while (values.hasNext()) {
 				sum += values.next().get();
 			}
-			output.collect(key, new IntWritable(sum));
+			context.write(key, new IntWritable(sum));
 		}
 	}
 
@@ -53,11 +53,11 @@ public class CSV extends Configured implements Tool {
 		System.out.println("Usage : .jar <input_file>");
 	}
 
-	private RunningJob runJob(String name, Class map, Class reduce,
+	private int runJob(String name, Class map, Class reduce,
 			String input, String output) throws Exception {
-		JobConf job = new JobConf(CSV.class);
-		job.setJobName(name);
-
+		Configuration conf = getConf();
+		Job job = new Job(conf, name);
+		
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(IntWritable.class);
 
@@ -66,14 +66,15 @@ public class CSV extends Configured implements Tool {
 
 		job.setMapperClass(map);
 		job.setReducerClass(reduce);
+		
+		
+		job.setInputFormatClass(TextInputFormat.class);
+		job.setOutputFormatClass(TextOutputFormat.class);
 
-		job.setInputFormat(TextInputFormat.class);
-		job.setOutputFormat(TextOutputFormat.class);
-
-		FileInputFormat.addInputPaths(job, input);
+		FileInputFormat.addInputPath(job, new Path(input));
 		FileOutputFormat.setOutputPath(job, new Path(output));
 
-		return JobClient.runJob(job);
+		return job.waitForCompletion(true) ? 0 : 1;
 	}
 
 	public int run(String[] args) throws Exception {
@@ -84,13 +85,7 @@ public class CSV extends Configured implements Tool {
 		}
 
 		String input = args[0];
-
-		RunningJob concatJob = runJob("CSV", Map.class, Reduce.class, input,
-				"/csv_output");
-		concatJob.waitForCompletion();
-
-		return 0;
-
+		return runJob("CSV", Map.class, Reduce.class, input,"/csv_output");
 	}
 
 	public static void main(String[] args) throws Exception {
