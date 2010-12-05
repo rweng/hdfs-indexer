@@ -81,7 +81,8 @@ public class CSV extends Configured implements Tool {
 			}
 			
 		}
-		
+
+		CSVRecordReader.setDelimiter(" ");
 		CSVRecordReader.setPredicate(new SelectOver25());
 		job.setInputFormatClass(CSVFileInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
