@@ -1,0 +1,3 @@
+The jar has a manifest that sets the main class to thesis.CSV, so run jar with:
+  hadoop fs -put test.csv /test.csv
+  hadoop jar build/jar/thesis.jar /test.csv
