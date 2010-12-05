@@ -14,10 +14,12 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 
-public class CSVFileInputFormat extends FileInputFormat<LongWritable, ComparableArrayList<Text>> {
+import edu.umd.cloud9.io.ArrayListWritableComparable;
+
+public class CSVFileInputFormat extends FileInputFormat<LongWritable, ArrayListWritableComparable<Text>> {
 
 	@Override
-	public RecordReader<LongWritable, ComparableArrayList<Text>> createRecordReader(
+	public RecordReader<LongWritable, ArrayListWritableComparable<Text>> createRecordReader(
 			InputSplit split, TaskAttemptContext context) throws IOException,
 			InterruptedException {
 		return new CSVRecordReader();

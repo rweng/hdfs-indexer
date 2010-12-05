@@ -1,9 +1,14 @@
 package thesis;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 
-public class ComparableArrayList<T extends Comparable<? super T>> extends ArrayList<T>
-		implements Comparable<ComparableArrayList<T>> {
+import org.apache.hadoop.io.WritableComparable;
+
+public class ComparableArrayList<T extends WritableComparable<? super T>> extends ArrayList<T>
+		implements WritableComparable<ComparableArrayList<T>> {
 	private static final long serialVersionUID = 1L;
 
 	@Override
@@ -17,5 +22,17 @@ public class ComparableArrayList<T extends Comparable<? super T>> extends ArrayL
 
 		}
 		return 0;
+	}
+
+	@Override
+	public void write(DataOutput out) throws IOException {
+		
+		
+	}
+
+	@Override
+	public void readFields(DataInput in) throws IOException {
+		// TODO Auto-generated method stub
+		
 	}
 }

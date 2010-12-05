@@ -17,16 +17,18 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
+import edu.umd.cloud9.io.ArrayListWritableComparable;
+
 /**
  * @author Robin Wenglewski <robin@wenglewski.de>
  */
 public class CSV extends Configured implements Tool {
 
-	public static class Map extends	Mapper<LongWritable, ComparableArrayList<Text>, Text, IntWritable> {
+	public static class Map extends	Mapper<LongWritable, ArrayListWritableComparable<Text>, Text, IntWritable> {
 		private final static IntWritable one = new IntWritable(1);
 		private Text word = new Text();
 
-		public void map(LongWritable key, ComparableArrayList<Text> value, Context context)
+		public void map(LongWritable key, ArrayListWritableComparable<Text> value, Context context)
 				throws IOException, InterruptedException {
 			String line = value.get(0).toString();
 			StringTokenizer tokenizer = new StringTokenizer(line);

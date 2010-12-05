@@ -19,8 +19,10 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 import org.apache.hadoop.util.LineReader;
 
+import edu.umd.cloud9.io.ArrayListWritableComparable;
+
 public class CSVRecordReader extends
-		RecordReader<LongWritable, ComparableArrayList<Text>> {
+		RecordReader<LongWritable, ArrayListWritableComparable<Text>> {
 	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
 
 	private CompressionCodecFactory compressionCodecs = null;
@@ -30,7 +32,7 @@ public class CSVRecordReader extends
 	private LineReader in;
 	private int maxLineLength;
 	private LongWritable key = null;
-	private ComparableArrayList<Text> value = null;
+	private ArrayListWritableComparable<Text> value = null;
 	private Text tmpInputLine = new Text();
 
 	@Override
@@ -76,15 +78,26 @@ public class CSVRecordReader extends
 	    }
 	    key.set(pos);
 	    if (value == null) {
-	      value = new ComparableArrayList<Text>();
+	      value = new ArrayListWritableComparable<Text>();
 	    }
+	    
 	    int newSize = 0;
+	    value.clear();
+	    
 	    while (pos < end) {
 	      newSize = in.readLine(tmpInputLine, maxLineLength,
-	                            Math.max((int)Math.min(Integer.MAX_VALUE, end-pos),
-	                                     maxLineLength));
+	                            Math.max( (int)Math.min(Integer.MAX_VALUE, end-pos),
+	                                     maxLineLength) );
 	      
-	      value.add(tmpInputLine);
+//	      LOG.info("adding to arraylist:" + tmpInputLine.toString());
+//	      value.add(tmpInputLine);
+	      
+	      for( String s : tmpInputLine.toString().split(" ")){
+	    	  LOG.info("adding to arraylist: " + s);
+	    	  value.add(new Text(s));
+	      }
+	      
+	      //value.add(tmpInputLine);
 	      if (newSize == 0) {
 	        break;
 	      }
@@ -112,7 +125,7 @@ public class CSVRecordReader extends
 	  }
 
 	  @Override
-	  public ComparableArrayList<Text> getCurrentValue() {
+	  public ArrayListWritableComparable<Text> getCurrentValue() {
 	    return value;
 	  }
 
