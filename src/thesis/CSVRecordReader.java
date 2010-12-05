@@ -34,6 +34,16 @@ public class CSVRecordReader extends
 	private LongWritable key = null;
 	private ArrayListWritableComparable<Text> value = null;
 	private Text tmpInputLine = new Text();
+	private static Selectable selectable;
+	private String delimiter = " ";
+	private String[] splits;
+	
+	public static void setPredicate(Selectable s) {
+		//TODO: would like to make .select static, too, but dunno how with interfaces.
+		selectable = s;
+	}
+	
+	public void setDelimiter(String d){ delimiter = d; }
 
 	@Override
 	public void initialize(InputSplit inputSplit, TaskAttemptContext context)
@@ -73,6 +83,7 @@ public class CSVRecordReader extends
 	}
 
 	public boolean nextKeyValue() throws IOException {
+		
 	    if (key == null) {
 	      key = new LongWritable();
 	    }
@@ -89,15 +100,10 @@ public class CSVRecordReader extends
 	                            Math.max( (int)Math.min(Integer.MAX_VALUE, end-pos),
 	                                     maxLineLength) );
 	      
-//	      LOG.info("adding to arraylist:" + tmpInputLine.toString());
-//	      value.add(tmpInputLine);
 	      
-	      for( String s : tmpInputLine.toString().split(" ")){
-	    	  LOG.info("adding to arraylist: " + s);
-	    	  value.add(new Text(s));
-	      }
-	      
-	      //value.add(tmpInputLine);
+	      this.splits = tmpInputLine.toString().split(delimiter);
+			
+			
 	      if (newSize == 0) {
 	        break;
 	      }
@@ -115,7 +121,16 @@ public class CSVRecordReader extends
 	      value = null;
 	      return false;
 	    } else {
-	      return true;
+	    	// if the predicate is matched, return, otherwise return nextKeyValue();
+	    	if (selectable.select(this.splits)) {
+				for (String s : this.splits) {
+					LOG.info("adding to arraylist: " + s);
+					value.add(new Text(s));
+				}
+				return true;
+			} else {
+				return nextKeyValue();
+			}
 	    }
 	  }
 

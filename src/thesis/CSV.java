@@ -69,7 +69,20 @@ public class CSV extends Configured implements Tool {
 		job.setMapperClass(map);
 		job.setReducerClass(reduce);
 		
+		class SelectOver25 implements Selectable{
+
+			@Override
+			public boolean select(String[] o) {
+				if(o.length >= 2){
+					return Integer.parseInt(o[1]) > 25 ? true : false;
+				}
+				
+				return false;
+			}
+			
+		}
 		
+		CSVRecordReader.setPredicate(new SelectOver25());
 		job.setInputFormatClass(CSVFileInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 
