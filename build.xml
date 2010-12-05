@@ -1,0 +1,44 @@
+<project name="Thesis Build Script" basedir="." default="jar">
+	<!-- Load properties (not used right now, but we might later) -->
+	<property file="build.properties"/>
+	
+	<!-- Set variables for build directories -->
+	<property name="build.dir" value="build"/>
+	<property name="src.dir" value="src"/>
+	
+	<!-- set variable for external lib directory 
+	(typically set up as external project within project) -->
+	<property name="lib.dir" value="lib"/>
+
+	<path id="classpath">
+		<fileset dir="${lib.dir}" includes="**/*.jar"/>
+	</path>
+
+	<target name="-init" depends="clean">
+		<echo>Creating temporary folders...</echo>
+		<mkdir dir="${build.dir}"/>
+	</target>
+
+	<target name="clean" description="Clean up">
+		<echo>Cleaning up...</echo>
+		<delete dir="${build.dir}"/>
+	</target>
+
+	<target name="compile">
+		<mkdir dir="build/classes" />
+		<javac srcdir="src" destdir="build/classes" >
+			<classpath>
+				<path refid="classpath" />
+			</classpath>
+		</javac>
+	</target>
+
+	<target name="jar" depends="compile">
+		<mkdir dir="build/jar"/>
+		<jar destfile="build/jar/thesis.jar" basedir="build/classes">
+			<manifest>
+				<attribute name="Main-Class" value="thesis.CSV"/>
+			</manifest>
+		</jar>
+	</target>
+</project>
