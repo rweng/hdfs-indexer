@@ -2,4 +2,6 @@
 .project
 .settings/
 build.properties
+build/
+.externalToolBuilders/
 bin/
