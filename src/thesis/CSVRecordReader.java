@@ -35,7 +35,7 @@ public class CSVRecordReader extends
 	private ArrayListWritableComparable<Text> value = null;
 	private Text tmpInputLine = new Text();
 	private static Selectable selectable;
-	private String delimiter = " ";
+	private static String delimiter = " ";
 	private String[] splits;
 	
 	public static void setPredicate(Selectable s) {
@@ -43,7 +43,7 @@ public class CSVRecordReader extends
 		selectable = s;
 	}
 	
-	public void setDelimiter(String d){ delimiter = d; }
+	public static void setDelimiter(String d){ delimiter = d; }
 
 	@Override
 	public void initialize(InputSplit inputSplit, TaskAttemptContext context)
