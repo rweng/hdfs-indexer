@@ -8,7 +8,7 @@ public abstract class Select {
 	}
 	
 	public boolean select(String[] a){
-		if( a.length < column )
+		if( a.length <= column )
 			return false;
 		
 		return select(a[column]);
