@@ -36,6 +36,7 @@ public class CSVRecordReader extends
 	private Text tmpInputLine = new Text();
 	private static Selectable selectable;
 	private static String delimiter = " ";
+	private static Index index;
 	private String[] splits;
 	
 	public static void setPredicate(Selectable s) {
@@ -44,6 +45,7 @@ public class CSVRecordReader extends
 	}
 	
 	public static void setDelimiter(String d){ delimiter = d; }
+	public static void setIndex(Index i){index = i;}
 
 	@Override
 	public void initialize(InputSplit inputSplit, TaskAttemptContext context)
@@ -101,6 +103,7 @@ public class CSVRecordReader extends
 	                                     maxLineLength) );
 	      
 	      
+	      
 	      this.splits = tmpInputLine.toString().split(delimiter);
 			
 			
@@ -121,6 +124,11 @@ public class CSVRecordReader extends
 	      value = null;
 	      return false;
 	    } else {
+	    	// put it in the B-Tree
+	    	if(index != null){
+	    		index.add(this.splits, pos - newSize);
+	    	}
+	    	
 	    	// if the predicate is matched, return, otherwise return nextKeyValue();
 	    	if (selectable.select(this.splits)) {
 				for (String s : this.splits) {
