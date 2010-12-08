@@ -1,6 +1,8 @@
 package com.freshbourne.thesis;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,6 +20,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 import org.apache.hadoop.util.LineReader;
+
+import com.freshbourne.thesis.Index.EntryIterator;
 
 import edu.umd.cloud9.io.ArrayListWritableComparable;
 
@@ -39,6 +43,7 @@ public class CSVRecordReader extends
 	private static String delimiter = " ";
 	private static Index index;
 	private String[] splits;
+	private EntryIterator iterator;
 	
 	public static void setPredicate(Select s) {
 		//TODO: would like to make .select static, too, but dunno how with interfaces.
@@ -46,7 +51,9 @@ public class CSVRecordReader extends
 	}
 	
 	public static void setDelimiter(String d){ delimiter = d; }
-	public static void setIndex(Index i){index = i;}
+	public static void setIndex(Index i){
+		index = i;
+	}
 
 	@Override
 	public void initialize(InputSplit inputSplit, TaskAttemptContext context)
@@ -97,6 +104,20 @@ public class CSVRecordReader extends
 	    
 	    int newSize = 0;
 	    value.clear();
+	    boolean fromIndex = false;
+	    
+	    // maybe we should move the iterator creation up to setIndex
+	    if(iterator != null || 
+	    		(index != null && index.getHighestOffset() >= pos && 
+	    				(iterator = index.getIterator()) != null)){
+	    	if(iterator.hasNext()){
+	    		pos = iterator.next().getValue();
+	    		fromIndex = true;
+	    	} else {
+	    		pos = iterator.getHighestOffset(); // this one is read double
+	    		iterator = null;
+	    	}
+	    }
 	    
 	    // we almost always break from this loop, it is only for making sure
 	    // that we are in maxLineLength
@@ -127,13 +148,13 @@ public class CSVRecordReader extends
 	      return false;
 	    }
 	    
-		// put it in the B-Tree
+		// put it in the Index, if already there it just returns
 		if (index != null) {
 			index.add(this.splits, pos - newSize);
 		}
 
 		// if the predicate is matched, return, otherwise return nextKeyValue();
-		if (selectable.select(this.splits)) {
+		if (fromIndex || selectable.select(this.splits)) {
 			for (String s : this.splits) {
 				LOG.info("adding to arraylist: " + s);
 				value.add(new Text(s));
