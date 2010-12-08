@@ -141,13 +141,14 @@ public class CSVRecordReader extends
 	               (pos - newSize));
 	    }
 	    
-	    // return false if we didnt read anything
-	    if (newSize == 0) {
-	      key = null;
-	      value = null;
-	      return false;
-	    }
-	    
+	    // return false if we didnt read anything, end of input
+		if (newSize == 0) {
+			index.save("/tmp/index");
+			key = null;
+			value = null;
+			return false;
+		}
+
 		// put it in the Index, if already there it just returns
 		if (index != null) {
 			index.add(this.splits, pos - newSize);

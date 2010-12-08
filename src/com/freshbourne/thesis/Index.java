@@ -1,5 +1,9 @@
 package com.freshbourne.thesis;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -9,7 +13,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 
-public class Index {
+public class Index implements Serializable {
+	private static final long serialVersionUID = 1L;
 	private TreeMap<String, Long> tree = new TreeMap<String, Long>();
 	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
 	
@@ -18,6 +23,19 @@ public class Index {
 	
 	public Index(int col){
 		COLUMN = col;
+	}
+	
+	public void save(String filename) {
+		FileOutputStream fos = null;
+		ObjectOutputStream out = null;
+		try {
+			fos = new FileOutputStream(filename);
+			out = new ObjectOutputStream(fos);
+			out.writeObject(this);
+			out.close();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
 	}
 	
 	public int getColumn(){return COLUMN;}
