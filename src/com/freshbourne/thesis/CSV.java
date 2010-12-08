@@ -71,24 +71,20 @@ public class CSV extends Configured implements Tool {
 		
 		
 		
-		class SelectOver25 extends Index implements Selectable{
-			
-			protected int COLUMN = 1;
-			
-			public boolean select(String[] o) {
-				if(o.length >= 2){
-					return Integer.parseInt(o[COLUMN]) > 25 ? true : false;
-				}
-				
-				return false;
+		class SelectOver25 extends Select{
+			public SelectOver25(){
+				super(1);
 			}
 			
+			public boolean select(String s) {
+				return Integer.parseInt(s) > 25 ? true : false;
+			}
 		}
 
 		SelectOver25 s = new SelectOver25();
 		CSVRecordReader.setDelimiter(" ");
 		CSVRecordReader.setPredicate(s);
-		CSVRecordReader.setIndex(s);
+		CSVRecordReader.setIndex(new Index(1));
 		
 		job.setInputFormatClass(CSVFileInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);

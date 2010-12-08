@@ -35,12 +35,12 @@ public class CSVRecordReader extends
 	private LongWritable key = null;
 	private ArrayListWritableComparable<Text> value = null;
 	private Text tmpInputLine = new Text();
-	private static Selectable selectable;
+	private static Select selectable;
 	private static String delimiter = " ";
 	private static Index index;
 	private String[] splits;
 	
-	public static void setPredicate(Selectable s) {
+	public static void setPredicate(Select s) {
 		//TODO: would like to make .select static, too, but dunno how with interfaces.
 		selectable = s;
 	}
