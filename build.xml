@@ -35,7 +35,7 @@
 
 	<target name="jar" depends="compile">
 		<mkdir dir="build/jar"/>
-		<jar destfile="build/jar/thesis.jar" basedir="src">
+		<jar destfile="build/jar/thesis.jar" basedir="build/classes">
 			<fileset dir="${src.dir}">
 				<include name="**" />
 			</fileset>
