@@ -12,8 +12,9 @@ public class IndexTest extends TestCase {
 	}
 	
 	public void testAdd(){
-		String[] a = new String[0];
+		String[] a = new String[1];
 		a[0] = "Alfred";
 		index.add(a, 0);
+		assertTrue(index.containsKey("Alfred"));
 	}
 }
