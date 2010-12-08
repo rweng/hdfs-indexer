@@ -14,7 +14,7 @@ public class Index {
 	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
 	
 	protected int COLUMN;
-	private long highestOffset = 0;
+	private long highestOffset = -1;
 	
 	public Index(int col){
 		COLUMN = col;
