@@ -42,6 +42,7 @@ public class CSVRecordReader extends
 	private static Select selectable;
 	private static String delimiter = " ";
 	private static Index index;
+	private static String indexSavePath;
 	private String[] splits;
 	private EntryIterator iterator;
 	
@@ -89,7 +90,18 @@ public class CSVRecordReader extends
 					(int) Math.min((long) Integer.MAX_VALUE, end - start));
 		}
 		this.pos = start;
-
+		
+		if(indexSavePath != null){
+			try{
+			index = Index.load(indexSavePath);
+			} catch (Exception e) {
+				LOG.info("Could not load index: " + e.getMessage());
+			}
+		}
+		
+		if(index != null){
+			iterator = index.getIterator();
+		}
 	}
 
 	public boolean nextKeyValue() throws IOException {
@@ -106,13 +118,11 @@ public class CSVRecordReader extends
 	    value.clear();
 	    boolean fromIndex = false;
 	    
-	    // maybe we should move the iterator creation up to setIndex
-	    if(iterator != null || 
-	    		(index != null && index.getHighestOffset() >= pos && 
-	    				(iterator = index.getIterator()) != null)){
+	    if(iterator != null){
 	    	if(iterator.hasNext()){
 	    		pos = iterator.next().getValue();
 	    		fromIndex = true;
+	    		LOG.info("Using index for pos" + pos);
 	    	} else {
 	    		pos = iterator.getHighestOffset(); // this one is read double
 	    		iterator = null;
@@ -143,7 +153,7 @@ public class CSVRecordReader extends
 	    
 	    // return false if we didnt read anything, end of input
 		if (newSize == 0) {
-			index.save("/tmp/index");
+			index.save(indexSavePath == null ? index.getSavePath() : indexSavePath);
 			key = null;
 			value = null;
 			return false;
@@ -193,4 +203,8 @@ public class CSVRecordReader extends
 	      in.close(); 
 	    }
 	  }
+
+	public static void setIndexSavePath(String string) {
+		indexSavePath = string;
+	}
 }

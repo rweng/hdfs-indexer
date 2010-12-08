@@ -19,6 +19,7 @@ import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 public class Index extends TreeMap<String,Long> implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
+	private String savePath;
 	
 	protected int COLUMN;
 	private long highestOffset = -1;
@@ -30,7 +31,15 @@ public class Index extends TreeMap<String,Long> implements Serializable {
 	public static Index load(String path) throws IOException, ClassNotFoundException{
         FileInputStream in = new FileInputStream(path); 
         ObjectInputStream s = new ObjectInputStream(in); 
-        return (Index) s.readObject();
+        Index result = (Index) s.readObject();
+        LOG.info("INDEX LOADED: " + result.toString());
+        return result;
+	}
+	
+	public void save() throws FileNotFoundException{
+		if(savePath == null)
+			throw new FileNotFoundException("you must provide a savePath for this Index");
+		save(savePath);
 	}
 	
 	public void save(String filename) {
@@ -65,6 +74,14 @@ public class Index extends TreeMap<String,Long> implements Serializable {
 		return new EntryIterator(entrySet().iterator(), getHighestOffset());
 	}
 	
+	public void setSavePath(String savePath) {
+		this.savePath = savePath;
+	}
+
+	public String getSavePath() {
+		return savePath;
+	}
+
 	public class EntryIterator implements Iterator<Map.Entry<String, Long>>{
 		private Iterator<Map.Entry<String, Long>> i;
 		private Select select;
@@ -80,16 +97,22 @@ public class Index extends TreeMap<String,Long> implements Serializable {
 		public long getHighestOffset(){return highestOffset;}
 
 		public boolean hasNext() {
-			if(select == null)
-				return i.hasNext();
-			
+			if(select == null){
+				if(!i.hasNext())
+					return false;
+				
+				entry = i.next();
+				return true;
+			}
 			if(entry != null)
 				return true;
 			
 			while(i.hasNext()){
 				entry = i.next();
-				if(select.select(entry.getKey()))
+				if(select.select(entry.getKey())){
+					LOG.info("GOT THE KEY");
 					return true;
+				}
 			}
 			
 			entry = null;
@@ -99,6 +122,7 @@ public class Index extends TreeMap<String,Long> implements Serializable {
 		public void setSelect(Select s){select = s;}
 
 		public Entry<String, Long> next() {
+			LOG.info("value of entry: " + entry.getKey());
 			Entry<String,Long> e = entry;
 			entry = null;
 			return e;

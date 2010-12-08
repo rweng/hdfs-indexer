@@ -82,9 +82,11 @@ public class CSV extends Configured implements Tool {
 		}
 
 		SelectOver25 s = new SelectOver25();
+		Index i = new Index(1);
 		CSVRecordReader.setDelimiter(" ");
 		CSVRecordReader.setPredicate(s);
-		CSVRecordReader.setIndex(new Index(1));
+		CSVRecordReader.setIndex(i);
+		CSVRecordReader.setIndexSavePath("/tmp/c1Index");
 		
 		job.setInputFormatClass(CSVFileInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
