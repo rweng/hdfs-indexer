@@ -1,4 +1,4 @@
-package thesis;
+package com.freshbourne.thesis;
 
 import java.io.IOException;
 import java.util.*;
@@ -13,11 +13,11 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import edu.umd.cloud9.io.ArrayListWritableComparable;
+
 
 /**
  * @author Robin Wenglewski <robin@wenglewski.de>
@@ -75,7 +75,6 @@ public class CSV extends Configured implements Tool {
 			
 			protected int COLUMN = 1;
 			
-			@Override
 			public boolean select(String[] o) {
 				if(o.length >= 2){
 					return Integer.parseInt(o[COLUMN]) > 25 ? true : false;

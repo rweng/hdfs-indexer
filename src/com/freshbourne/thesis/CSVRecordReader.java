@@ -1,4 +1,4 @@
-package thesis;
+package com.freshbourne.thesis;
 
 import java.io.IOException;
 
@@ -20,6 +20,7 @@ import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 import org.apache.hadoop.util.LineReader;
 
 import edu.umd.cloud9.io.ArrayListWritableComparable;
+
 
 public class CSVRecordReader extends
 		RecordReader<LongWritable, ArrayListWritableComparable<Text>> {

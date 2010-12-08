@@ -1,4 +1,4 @@
-package thesis;
+package com.freshbourne.thesis;
  	
 import java.io.IOException;
 import java.util.*;
