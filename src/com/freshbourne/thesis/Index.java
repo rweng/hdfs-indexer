@@ -1,7 +1,10 @@
 package com.freshbourne.thesis;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Iterator;
@@ -22,6 +25,12 @@ public class Index extends TreeMap<String,Long> implements Serializable {
 	
 	public Index(int col){
 		COLUMN = col;
+	}
+	
+	public static Index load(String path) throws IOException, ClassNotFoundException{
+        FileInputStream in = new FileInputStream(path); 
+        ObjectInputStream s = new ObjectInputStream(in); 
+        return (Index) s.readObject();
 	}
 	
 	public void save(String filename) {
