@@ -20,6 +20,7 @@ public class Index extends TreeMap<String,Long> implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
 	private String savePath;
+	private Select select;
 	
 	protected int COLUMN;
 	private long highestOffset = -1;
@@ -71,7 +72,9 @@ public class Index extends TreeMap<String,Long> implements Serializable {
 	public long getHighestOffset(){return highestOffset;}
 	
 	public EntryIterator getIterator(){
-		return new EntryIterator(entrySet().iterator(), getHighestOffset());
+		EntryIterator ei = new EntryIterator(entrySet().iterator(), getHighestOffset());
+		ei.setSelect(select);
+		return ei;
 	}
 	
 	public void setSavePath(String savePath) {
@@ -80,6 +83,10 @@ public class Index extends TreeMap<String,Long> implements Serializable {
 
 	public String getSavePath() {
 		return savePath;
+	}
+	
+	public void setSelect(Select s){
+		select = s;
 	}
 
 	public class EntryIterator implements Iterator<Map.Entry<String, Long>>{

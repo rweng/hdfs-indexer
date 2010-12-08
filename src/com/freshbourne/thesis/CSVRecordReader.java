@@ -101,6 +101,8 @@ public class CSVRecordReader extends
 		
 		if(index != null){
 			iterator = index.getIterator();
+			if(selectable != null)
+				iterator.setSelect(selectable);
 		}
 	}
 
