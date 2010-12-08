@@ -40,7 +40,7 @@
 				<include name="**" />
 			</fileset>
 			<manifest>
-				<attribute name="Main-Class" value="thesis.CSV"/>
+				<attribute name="Main-Class" value="com.freshbourne.thesis.CSV"/>
 			</manifest>
 		</jar>
 	</target>
