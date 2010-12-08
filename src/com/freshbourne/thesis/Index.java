@@ -13,9 +13,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 
-public class Index implements Serializable {
+public class Index extends TreeMap<String,Long> implements Serializable {
 	private static final long serialVersionUID = 1L;
-	private TreeMap<String, Long> tree = new TreeMap<String, Long>();
 	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
 	
 	protected int COLUMN;
@@ -46,15 +45,15 @@ public class Index implements Serializable {
 		
 		if(splits.length > COLUMN){
 			highestOffset = offset;
-			tree.put(splits[COLUMN], offset);
+			put(splits[COLUMN], offset);
 		}
-		LOG.info(tree.toString());
+		LOG.info(toString());
 	}
 	
 	public long getHighestOffset(){return highestOffset;}
 	
 	public EntryIterator getIterator(){
-		return new EntryIterator(tree.entrySet().iterator(), getHighestOffset());
+		return new EntryIterator(entrySet().iterator(), getHighestOffset());
 	}
 	
 	public class EntryIterator implements Iterator<Map.Entry<String, Long>>{
