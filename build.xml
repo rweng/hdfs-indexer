@@ -1,11 +1,11 @@
 <project name="Thesis Build Script" basedir="." default="jar">
 	<!-- Load properties (not used right now, but we might later) -->
 	<property file="build.properties"/>
-	
+
 	<!-- Set variables for build directories -->
 	<property name="build.dir" value="build"/>
 	<property name="src.dir" value="src"/>
-	
+
 	<!-- set variable for external lib directory 
 	(typically set up as external project within project) -->
 	<property name="lib.dir" value="lib"/>
@@ -26,7 +26,7 @@
 
 	<target name="compile">
 		<mkdir dir="build/classes" />
-		<javac srcdir="src" destdir="build/classes" >
+		<javac srcdir="src" destdir="build/classes" debug="on" >
 			<classpath>
 				<path refid="classpath" />
 			</classpath>
@@ -35,10 +35,15 @@
 
 	<target name="jar" depends="compile">
 		<mkdir dir="build/jar"/>
-		<jar destfile="build/jar/thesis.jar" basedir="build/classes">
+		<jar destfile="build/jar/thesis.jar" basedir="src">
+			<fileset dir="${src.dir}">
+				<include name="**" />
+			</fileset>
 			<manifest>
 				<attribute name="Main-Class" value="thesis.CSV"/>
 			</manifest>
 		</jar>
 	</target>
+	
+	<target name="main" depends="jar" />
 </project>
