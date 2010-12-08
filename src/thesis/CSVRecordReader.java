@@ -97,6 +97,8 @@ public class CSVRecordReader extends
 	    int newSize = 0;
 	    value.clear();
 	    
+	    // we almost always break from this loop, it is only for making sure
+	    // that we are in maxLineLength
 	    while (pos < end) {
 	      newSize = in.readLine(tmpInputLine, maxLineLength,
 	                            Math.max( (int)Math.min(Integer.MAX_VALUE, end-pos),
