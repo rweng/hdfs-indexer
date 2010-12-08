@@ -119,28 +119,29 @@ public class CSVRecordReader extends
 	               (pos - newSize));
 	    }
 	    
-	    // return false if we didnt read anything, otherwise set value and return true
+	    // return false if we didnt read anything
 	    if (newSize == 0) {
 	      key = null;
 	      value = null;
 	      return false;
-	    } else {
-	    	// put it in the B-Tree
-	    	if(index != null){
-	    		index.add(this.splits, pos - newSize);
-	    	}
-	    	
-	    	// if the predicate is matched, return, otherwise return nextKeyValue();
-	    	if (selectable.select(this.splits)) {
-				for (String s : this.splits) {
-					LOG.info("adding to arraylist: " + s);
-					value.add(new Text(s));
-				}
-				return true;
-			} else {
-				return nextKeyValue();
-			}
 	    }
+	    
+		// put it in the B-Tree
+		if (index != null) {
+			index.add(this.splits, pos - newSize);
+		}
+
+		// if the predicate is matched, return, otherwise return nextKeyValue();
+		if (selectable.select(this.splits)) {
+			for (String s : this.splits) {
+				LOG.info("adding to arraylist: " + s);
+				value.add(new Text(s));
+			}
+			return true;
+		} else {
+			return nextKeyValue();
+		}
+	    
 	  }
 
 	  @Override
