@@ -107,11 +107,8 @@ public class CSVRecordReader extends
 	      this.splits = tmpInputLine.toString().split(delimiter);
 			
 			
-	      if (newSize == 0) {
-	        break;
-	      }
 	      pos += newSize;
-	      if (newSize < maxLineLength) {
+	      if (newSize == 0 || newSize < maxLineLength) {
 	        break;
 	      }
 
