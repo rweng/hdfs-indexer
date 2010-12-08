@@ -118,6 +118,8 @@ public class CSVRecordReader extends
 	      LOG.info("Skipped line of size " + newSize + " at pos " + 
 	               (pos - newSize));
 	    }
+	    
+	    // return false if we didnt read anything, otherwise set value and return true
 	    if (newSize == 0) {
 	      key = null;
 	      value = null;
