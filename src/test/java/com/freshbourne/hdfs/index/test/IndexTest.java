@@ -1,8 +1,9 @@
-package com.freshbourne.thesis.test;
+package com.freshbourne.hdfs.index.test;
 
 import java.io.IOException;
 
-import com.freshbourne.thesis.Index;
+import com.freshbourne.hdfs.index.Index;
+
 
 import junit.framework.TestCase;
 

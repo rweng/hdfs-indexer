@@ -1,4 +1,4 @@
-package com.freshbourne.thesis;
+package com.freshbourne.hdfs.index;
 
 import java.io.IOException;
 import java.util.*;
