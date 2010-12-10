@@ -33,6 +33,8 @@ public class CSV extends Configured implements Tool {
 
 		public void map(LongWritable key, ArrayListWritableComparable<Text> value, Context context)
 				throws IOException, InterruptedException {
+			if(value.size() < 2)
+				return;
 			String line = value.get(0).toString();
 			StringTokenizer tokenizer = new StringTokenizer(line);
 			while (tokenizer.hasMoreTokens()) {

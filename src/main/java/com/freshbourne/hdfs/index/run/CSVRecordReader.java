@@ -1,8 +1,6 @@
 package com.freshbourne.hdfs.index.run;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,7 +16,6 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 import org.apache.hadoop.util.LineReader;
 
 import com.freshbourne.hdfs.index.Index;
@@ -30,7 +27,7 @@ import edu.umd.cloud9.io.ArrayListWritableComparable;
 
 public class CSVRecordReader extends
 		RecordReader<LongWritable, ArrayListWritableComparable<Text>> {
-	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
+	private static final Log LOG = LogFactory.getLog(CSVRecordReader.class);
 
 	private CompressionCodecFactory compressionCodecs = null;
 	private long start;
@@ -50,7 +47,10 @@ public class CSVRecordReader extends
 	
 	public static void setPredicate(Select s) {
 		//TODO: would like to make .select static, too, but dunno how with interfaces.
-		selectable = s;
+		CSVRecordReader.selectable = s;
+		LOG.info("selectable set");
+		if(selectable == null)
+			LOG.info("bug null!!");
 	}
 	
 	public static void setDelimiter(String d){ delimiter = d; }
@@ -61,6 +61,8 @@ public class CSVRecordReader extends
 	@Override
 	public void initialize(InputSplit inputSplit, TaskAttemptContext context)
 			throws IOException, InterruptedException {
+		
+		LOG.info("new RecordReader");
 		FileSplit split = (FileSplit) inputSplit;
 		Configuration job = context.getConfiguration();
 		this.maxLineLength = job.getInt("mapred.csvrecordreader.maxlinelength",
@@ -109,7 +111,10 @@ public class CSVRecordReader extends
 	}
 
 	public boolean nextKeyValue() throws IOException {
+		if(LOG == null)
+			throw new IOException("LOG IS NULL");
 		
+		LOG.info("in nextKeyValue");
 	    if (key == null) {
 	      key = new LongWritable();
 	    }
@@ -145,6 +150,7 @@ public class CSVRecordReader extends
 	      
 	      
 	      this.splits = tmpInputLine.toString().split(delimiter);
+	      LOG.info("Splitsize: " + splits.length);
 			
 			
 	      pos += newSize;
@@ -159,7 +165,10 @@ public class CSVRecordReader extends
 	    
 	    // return false if we didnt read anything, end of input
 		if (newSize == 0) {
-			index.save(indexSavePath == null ? index.getSavePath() : indexSavePath);
+			if (indexSavePath != null)
+				index.save(indexSavePath);
+			else if (index != null && index.getSavePath() != null)
+				index.save(index.getSavePath());
 			key = null;
 			value = null;
 			return false;
@@ -169,9 +178,17 @@ public class CSVRecordReader extends
 		if (index != null) {
 			index.add(this.splits, pos - newSize);
 		}
+		
+		if(selectable == null)
+			LOG.info("selectable is null");
+		//TODO: selectable is null even if set above.
+		
+		if(this.splits == null)
+			LOG.info("splits are null");
 
 		// if the predicate is matched, return, otherwise return nextKeyValue();
-		if (fromIndex || selectable.select(this.splits)) {
+		if (fromIndex || selectable == null ||
+				selectable.select(this.splits)) {
 			for (String s : this.splits) {
 				LOG.info("adding to arraylist: " + s);
 				value.add(new Text(s));
