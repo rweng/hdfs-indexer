@@ -1,6 +1,7 @@
 package com.freshbourne.hdfs.index.run;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ import edu.umd.cloud9.io.ArrayListWritableComparable;
 
 
 public class CSVRecordReader extends
-		RecordReader<LongWritable, ArrayListWritableComparable<Text>> {
+		RecordReader<LongWritable, ArrayList<String>> {
 	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
 
 	private CompressionCodecFactory compressionCodecs = null;
@@ -39,7 +40,7 @@ public class CSVRecordReader extends
 	private LineReader in;
 	private int maxLineLength;
 	private LongWritable key = null;
-	private ArrayListWritableComparable<Text> value = null;
+	private ArrayList<String> value = null;
 	private Text tmpInputLine = new Text();
 	private static Select selectable;
 	private static String delimiter = " ";
@@ -115,7 +116,7 @@ public class CSVRecordReader extends
 	    }
 	    key.set(pos);
 	    if (value == null) {
-	      value = new ArrayListWritableComparable<Text>();
+	      value = new ArrayList<String>();
 	    }
 	    
 	    int newSize = 0;
@@ -174,7 +175,7 @@ public class CSVRecordReader extends
 		if (fromIndex || selectable.select(this.splits)) {
 			for (String s : this.splits) {
 				LOG.info("adding to arraylist: " + s);
-				value.add(new Text(s));
+				value.add(s);
 			}
 			return true;
 		} else {
@@ -189,7 +190,7 @@ public class CSVRecordReader extends
 	  }
 
 	  @Override
-	  public ArrayListWritableComparable<Text> getCurrentValue() {
+	  public ArrayList<String> getCurrentValue() {
 	    return value;
 	  }
 

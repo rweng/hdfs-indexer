@@ -27,17 +27,17 @@ import edu.umd.cloud9.io.ArrayListWritableComparable;
  */
 public class CSV extends Configured implements Tool {
 
-	public static class Map extends	Mapper<LongWritable, ArrayListWritableComparable<Text>, Text, IntWritable> {
+	public static class Map extends	Mapper<LongWritable, ArrayList<String>, Text, IntWritable> {
 		private final static IntWritable one = new IntWritable(1);
 		private Text word = new Text();
 
-		public void map(LongWritable key, ArrayListWritableComparable<Text> value, Context context)
+		public void map(LongWritable key, ArrayList<String> value, Context context)
 				throws IOException, InterruptedException {
-			String line = value.get(0).toString();
+			String line = value.get(0);
 			StringTokenizer tokenizer = new StringTokenizer(line);
 			while (tokenizer.hasMoreTokens()) {
 				word.set(tokenizer.nextToken());
-				one.set(Integer.parseInt(value.get(1).toString()));
+				one.set(Integer.parseInt(value.get(1)));
 				context.write(word, one);
 			}
 		}

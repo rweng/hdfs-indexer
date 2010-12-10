@@ -1,6 +1,7 @@
 package com.freshbourne.hdfs.index.run;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -17,10 +18,10 @@ import edu.umd.cloud9.io.ArrayListWritableComparable;
 
 
 
-public class CSVFileInputFormat extends FileInputFormat<LongWritable, ArrayListWritableComparable<Text>> {
+public class CSVFileInputFormat extends FileInputFormat<LongWritable, ArrayList<String>> {
 
 	@Override
-	public RecordReader<LongWritable, ArrayListWritableComparable<Text>> createRecordReader(
+	public RecordReader<LongWritable, ArrayList<String>> createRecordReader(
 			InputSplit split, TaskAttemptContext context) throws IOException,
 			InterruptedException {
 		return new CSVRecordReader();
