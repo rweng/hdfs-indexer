@@ -24,7 +24,7 @@ Put the test-file in hadoop
   hadoop fs -put test.csv /test.csv
   
 Now you can run it with
-  hadoop jar build/lib/*.jar de.wenglewski.robin.thesis.CSV /test.csv
+  hadoop jar build/lib/*.jar com.freshbourne.hdfs.index.CSV /test.csv
   
 = Test
 Run all unit-tests
