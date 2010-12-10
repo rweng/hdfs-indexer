@@ -12,6 +12,6 @@ dependencies {
 	compile "commons-logging:commons-logging-api:1.0.4@jar"
 }
 
-task getTpch << {
-	println "hello"
+task installTpch << {
+	"script/install_tpch.sh".execute().text
 }
