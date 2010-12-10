@@ -28,4 +28,4 @@ Now you can run it with
   
 = Test
 Run all unit-tests
-  grundle test
+  gradle test
