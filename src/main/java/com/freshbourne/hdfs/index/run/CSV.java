@@ -1,4 +1,4 @@
-package com.freshbourne.hdfs.index;
+package com.freshbourne.hdfs.index.run;
 
 import java.io.IOException;
 import java.util.*;
@@ -15,6 +15,9 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+import com.freshbourne.hdfs.index.Index;
+import com.freshbourne.hdfs.index.Select;
 
 import edu.umd.cloud9.io.ArrayListWritableComparable;
 

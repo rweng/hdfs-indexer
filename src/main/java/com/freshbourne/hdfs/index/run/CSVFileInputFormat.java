@@ -1,4 +1,4 @@
-package com.freshbourne.hdfs.index;
+package com.freshbourne.hdfs.index.run;
 
 import java.io.IOException;
 
