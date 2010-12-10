@@ -16,3 +16,20 @@ task installTpch << {
 	"script/install_tpch.sh".execute().text
 }
 installTpch.description = 'Downloads and installs tpch on linux x86. Requires curl and gcc'
+
+
+// run a command with direct process output
+def run(command) {
+	def process = command.execute()
+	process.consumeProcessOutput(System.out, System.err)
+	process.waitForOrKill(0)
+	return process // use to get exit code et cetera
+}
+
+task runJar << {
+	run("hadoop fs -rmr /csv_output")
+	if(run("hadoop jar build/libs/hdfs-indexer.jar com.freshbourne.hdfs.index.run.CSV /test.csv").exitValue() != 0)
+		throw new RuntimeException("indexer failed");
+	
+}
+runJar.description = 'trys to run the jar in Hadoop'

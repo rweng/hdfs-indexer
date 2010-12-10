@@ -37,6 +37,7 @@ public class CSV extends Configured implements Tool {
 			StringTokenizer tokenizer = new StringTokenizer(line);
 			while (tokenizer.hasMoreTokens()) {
 				word.set(tokenizer.nextToken());
+				one.set(Integer.parseInt(value.get(1).toString()));
 				context.write(word, one);
 			}
 		}
