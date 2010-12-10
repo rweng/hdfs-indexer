@@ -21,3 +21,7 @@ Put the test-file in hadoop
   
 Now you can run it with
   hadoop jar build/lib/*.jar de.wenglewski.robin.thesis.CSV /test.csv
+  
+= Test
+Run all unit-tests
+  grundle test
