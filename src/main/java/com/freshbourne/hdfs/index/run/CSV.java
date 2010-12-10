@@ -63,6 +63,7 @@ public class CSV extends Configured implements Tool {
 			String input, String output) throws Exception {
 		Configuration conf = getConf();
 		Job job = new Job(conf, name);
+		job.setJarByClass(CSV.class);
 		
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(IntWritable.class);

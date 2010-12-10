@@ -26,9 +26,15 @@ def run(command) {
 	return process // use to get exit code et cetera
 }
 
-task runJar << {
+jar {
+	manifest {
+		attributes("Main-Class": "com.freshbourne.hdfs.index.run.CSV")
+	}
+}
+
+task runJar(dependsOn:jar) << {
 	run("hadoop fs -rmr /csv_output")
-	if(run("hadoop jar build/libs/hdfs-indexer.jar com.freshbourne.hdfs.index.run.CSV /test.csv").exitValue() != 0)
+	if(run("hadoop jar build/libs/hdfs-indexer.jar /test.csv").exitValue() != 0)
 		throw new RuntimeException("indexer failed");
 	
 }
