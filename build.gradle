@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: 'eclipse'
 
 repositories {
     mavenCentral()
@@ -9,4 +10,8 @@ dependencies {
 	compile "junit:junit:4.8.2@jar"
 	compile "commons-logging:commons-logging:1.0.4@jar"
 	compile "commons-logging:commons-logging-api:1.0.4@jar"
+}
+
+task getTpch << {
+	println "hello"
 }
