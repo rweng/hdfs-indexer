@@ -6,3 +6,5 @@ build/
 .externalToolBuilders/
 bin/
 target/
+.gradle/
+lib/
