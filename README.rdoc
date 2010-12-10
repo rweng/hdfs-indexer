@@ -1,3 +1,9 @@
+The build system of the thesis is gradle: http://http://gradle.org
+
+For highlighting the .gradle build file, install the groovy Eclipse plugin(http://groovy.codehaus.org/Eclipse+Plugin).
+The update-url is http://dist.springsource.org/release/GRECLIPSE/e3.6/
+Then add .gradle with Groovy Editor to Preferences => General => Editors => File Associations
+
 The jar has a manifest that sets the main class to thesis.CSV, so run jar with:
   hadoop fs -put test.csv /test.csv
   hadoop jar build/jar/thesis.jar /test.csv
