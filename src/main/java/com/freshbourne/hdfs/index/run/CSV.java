@@ -17,12 +17,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-import com.freshbourne.hdfs.index.Index;
-import com.freshbourne.hdfs.index.Select;
-
-import edu.umd.cloud9.io.ArrayListWritableComparable;
-
-
 /**
  * @author Robin Wenglewski <robin@wenglewski.de>
  */
@@ -63,7 +57,7 @@ public class CSV extends Configured implements Tool {
 		System.out.println("Usage : .jar <input_file>");
 	}
 
-	private int runJob(String name, Class map, Class reduce,
+	private int runJob(String name, Class<? extends Map> map, Class<? extends Reduce> reduce,
 			String input, String output) throws Exception {
 
 		// configuration
