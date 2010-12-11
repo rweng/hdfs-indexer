@@ -15,9 +15,9 @@ import java.util.TreeMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public abstract class Index extends TreeMap<String,Long> implements Serializable {
+public abstract class TreeMapIndex extends TreeMap<String,Long> implements Serializable {
 	private static final long serialVersionUID = 1L;
-	protected static final Log LOG = LogFactory.getLog(Index.class);
+	protected static final Log LOG = LogFactory.getLog(TreeMapIndex.class);
 	
 	// not static final, so that it can be inherited and overwritten by a configuration
 	private String savePath = "/tmp/RENAME_INDEX";
@@ -25,12 +25,12 @@ public abstract class Index extends TreeMap<String,Long> implements Serializable
 	
 	protected long highestOffset = -1;
 	
-	public Index(){super();}
+	public TreeMapIndex(){super();}
 	
-	public static Index load(String path) throws IOException, ClassNotFoundException{
+	public static TreeMapIndex load(String path) throws IOException, ClassNotFoundException{
         FileInputStream in = new FileInputStream(path); 
         ObjectInputStream s = new ObjectInputStream(in); 
-        Index result = (Index) s.readObject();
+        TreeMapIndex result = (TreeMapIndex) s.readObject();
         LOG.info("INDEX LOADED: " + result.toString());
         return result;
 	}

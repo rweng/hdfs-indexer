@@ -3,14 +3,14 @@ package com.freshbourne.hdfs.index.test;
 import java.io.IOException;
 
 import com.freshbourne.hdfs.index.ColumnIndex;
-import com.freshbourne.hdfs.index.Index;
+import com.freshbourne.hdfs.index.TreeMapIndex;
 import com.freshbourne.hdfs.index.run.Col1Index;
 
 
 import junit.framework.TestCase;
 
 public class IndexTest extends TestCase {
-	private Index index;
+	private TreeMapIndex index;
 	
 	public void setUp(){
 		index = new ColumnIndex(1);
@@ -30,7 +30,7 @@ public class IndexTest extends TestCase {
 	public void testSave() throws IOException, ClassNotFoundException{
 		String path = "/tmp/test_index"; 
 		index.save(path);
-		Index loadedIndex = Index.load(path);
+		TreeMapIndex loadedIndex = TreeMapIndex.load(path);
 		assertTrue(loadedIndex.containsKey("Blug"));
 		assertEquals(index, loadedIndex);
 		assertEquals(index.getHighestOffset(), loadedIndex.getHighestOffset());

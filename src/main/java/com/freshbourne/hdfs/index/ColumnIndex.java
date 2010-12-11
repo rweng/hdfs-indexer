@@ -1,6 +1,6 @@
 package com.freshbourne.hdfs.index;
 
-public class ColumnIndex extends Index {
+public class ColumnIndex extends TreeMapIndex {
 
 	private static final long serialVersionUID = 1L;
 	
