@@ -14,11 +14,10 @@ import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 
 public abstract class Index extends TreeMap<String,Long> implements Serializable {
 	private static final long serialVersionUID = 1L;
-	protected static final Log LOG = LogFactory.getLog(LineRecordReader.class);
+	protected static final Log LOG = LogFactory.getLog(Index.class);
 	
 	// not static final, so that it can be inherited and overwritten by a configuration
 	private String savePath = "/tmp/RENAME_INDEX";
@@ -83,15 +82,16 @@ public abstract class Index extends TreeMap<String,Long> implements Serializable
 		private Iterator<Map.Entry<String, Long>> i;
 		private Select select;
 		private Entry<String,Long> entry;
-		private long highOffset = 0;
+		
+		private final long highOffset;
 		
 		public EntryIterator(Iterator<Map.Entry<String, Long>> i, long offset){
 			super();
 			this.i = i;
-			highestOffset = offset;
+			this.highOffset = offset;
 		}
 		
-		public long getHighestOffset(){return highestOffset;}
+		public long getHighestOffset(){return highOffset;}
 
 		public boolean hasNext() {
 			if(select == null){
