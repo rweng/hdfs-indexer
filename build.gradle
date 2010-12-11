@@ -24,7 +24,7 @@ jar {
 //************* OWN TASKS ********************
 
 task installTpch << {
-	"script/install_tpch.sh".execute().text
+	"scripts/install_tpch.sh".execute().text
 }
 installTpch.description = 'Downloads and installs tpch on linux x86. Requires curl and gcc'
 
