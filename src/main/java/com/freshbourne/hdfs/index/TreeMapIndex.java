@@ -15,7 +15,7 @@ import java.util.TreeMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public abstract class TreeMapIndex extends TreeMap<String,Long> implements Serializable {
+public abstract class TreeMapIndex extends TreeMap<String,Long> implements Serializable, Index {
 	private static final long serialVersionUID = 1L;
 	protected static final Log LOG = LogFactory.getLog(TreeMapIndex.class);
 	
@@ -27,11 +27,16 @@ public abstract class TreeMapIndex extends TreeMap<String,Long> implements Seria
 	
 	public TreeMapIndex(){super();}
 	
-	public static TreeMapIndex load(String path) throws IOException, ClassNotFoundException{
+	public TreeMapIndex load(String path) {
+		TreeMapIndex result = null;
+		try{
         FileInputStream in = new FileInputStream(path); 
         ObjectInputStream s = new ObjectInputStream(in); 
-        TreeMapIndex result = (TreeMapIndex) s.readObject();
+        result = (TreeMapIndex) s.readObject();
         LOG.info("INDEX LOADED: " + result.toString());
+		} catch(Exception e){
+			LOG.warn("Could not load the index: " + e.getMessage());
+		}
         return result;
 	}
 	

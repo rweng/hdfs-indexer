@@ -19,6 +19,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.LineReader;
 
+import com.freshbourne.hdfs.index.Index;
 import com.freshbourne.hdfs.index.TreeMapIndex;
 import com.freshbourne.hdfs.index.TreeMapIndex.EntryIterator;
 import com.freshbourne.hdfs.index.Select;
@@ -38,7 +39,7 @@ public class CSVRecordReader extends
 	private Text tmpInputLine = new Text();
 	private static Select selectable;
 	private static String delimiter = " ";
-	private static TreeMapIndex index;
+	private static Index index;
 	private String[] splits;
 	private EntryIterator iterator;
 	private Configuration conf;
@@ -52,7 +53,7 @@ public class CSVRecordReader extends
 	}
 	
 	public static void setDelimiter(String d){ delimiter = d; }
-	public static void setIndex(TreeMapIndex i){
+	public static void setIndex(Index i){
 		index = i;
 	}
 
@@ -99,7 +100,7 @@ public class CSVRecordReader extends
 		Class<?> c = conf.getClass("Index", null);
 		if(c != null){
 			try{
-				index = (TreeMapIndex)(c.getConstructor().newInstance());
+				index = (Index)(c.getConstructor().newInstance());
 			} catch (Exception e) {
 				throw new InterruptedException("could not create index");
 			}
@@ -107,20 +108,21 @@ public class CSVRecordReader extends
 		}
 		
 		
+		if(index != null){
+			iterator = (EntryIterator) index.getIterator();
+			if(selectable != null)
+				iterator.setSelect(selectable);
+		}
+		
 		String savePath = conf.get("indexSavePath");
 		if (savePath != null) {
 			try {
-				index = TreeMapIndex.load(savePath);
+				index = index.load(savePath);
 			} catch (Exception e) {
 				LOG.info("Could not load index: " + e.getMessage());
 			}
 		}
 		
-		if(index != null){
-			iterator = index.getIterator();
-			if(selectable != null)
-				iterator.setSelect(selectable);
-		}
 		
 		
 	}
