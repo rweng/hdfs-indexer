@@ -2,8 +2,7 @@ package com.freshbourne.hdfs.index.run;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -24,9 +23,6 @@ import com.freshbourne.hdfs.index.Index;
 import com.freshbourne.hdfs.index.Index.EntryIterator;
 import com.freshbourne.hdfs.index.Select;
 
-import edu.umd.cloud9.io.ArrayListWritableComparable;
-
-
 public class CSVRecordReader extends
 		RecordReader<LongWritable, ArrayList<String>> {
 	private static final Log LOG = LogFactory.getLog(CSVRecordReader.class);
@@ -43,7 +39,6 @@ public class CSVRecordReader extends
 	private static Select selectable;
 	private static String delimiter = " ";
 	private static Index index;
-	private static String indexSavePath;
 	private String[] splits;
 	private EntryIterator iterator;
 	private Configuration conf;
@@ -64,8 +59,8 @@ public class CSVRecordReader extends
 	@Override
 	public void initialize(InputSplit inputSplit, TaskAttemptContext context)
 			throws IOException, InterruptedException {
+		LOG.info("in RecordReader.initialize()");
 		
-		LOG.info("new RecordReader");
 		FileSplit split = (FileSplit) inputSplit;
 		Configuration job = context.getConfiguration();
 		this.maxLineLength = job.getInt("mapred.csvrecordreader.maxlinelength",
@@ -98,14 +93,13 @@ public class CSVRecordReader extends
 		}
 		this.pos = start;
 		
-		
 		conf = context.getConfiguration();
 		
 		// try to load the index
-		Class c = conf.getClass("Index", null);
+		Class<?> c = conf.getClass("Index", null);
 		if(c != null){
 			try{
-			index = (Index)(c.getConstructor().newInstance());
+				index = (Index)(c.getConstructor().newInstance());
 			} catch (Exception e) {
 				throw new InterruptedException("could not create index");
 			}
@@ -132,10 +126,7 @@ public class CSVRecordReader extends
 	}
 
 	public boolean nextKeyValue() throws IOException {
-		if(LOG == null)
-			throw new IOException("LOG IS NULL");
-		
-		LOG.info("in nextKeyValue");
+		LOG.info("in Recorder.nextKeyValue()");
 	    if (key == null) {
 	      key = new LongWritable();
 	    }
@@ -247,8 +238,4 @@ public class CSVRecordReader extends
 	      in.close(); 
 	    }
 	  }
-
-	public static void setIndexSavePath(String string) {
-		indexSavePath = string;
-	}
 }
