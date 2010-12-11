@@ -1,0 +1,28 @@
+package com.freshbourne.hdfs.index;
+
+public class ColumnIndex extends Index {
+
+	private static final long serialVersionUID = 1L;
+	
+	private int column;
+	public int getColumn(){return column;}
+	public void setColumn(int c){column = c;}
+	
+	public ColumnIndex(int c){
+		super();
+		column = c;
+	}
+	
+	public ColumnIndex(){super();}
+	
+	public void add(String[] splits, long offset){
+		if(offset <= highestOffset)
+			return;
+		
+		if(splits.length > column){
+			highestOffset = offset;
+			put(splits[column], offset);
+		}
+		LOG.info(toString());
+	}
+}

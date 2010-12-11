@@ -12,11 +12,36 @@ dependencies {
 	compile "commons-logging:commons-logging-api:1.0.4@jar"
 }
 
+//************* java plugin configuration ********************
+sourceCompatibility = 1.6
+version = '0.01'
+jar {
+	manifest {
+		attributes("Main-Class": "com.freshbourne.hdfs.index.run.CSV")
+	}
+}
+
+//************* OWN TASKS ********************
+
 task installTpch << {
 	"script/install_tpch.sh".execute().text
 }
 installTpch.description = 'Downloads and installs tpch on linux x86. Requires curl and gcc'
 
+
+task runJar(dependsOn:jar) << {
+	run("hadoop fs -rmr /csv_output")
+	run("hadoop fs -put test.csv /test.csv")
+	if(run("hadoop jar build/libs/hdfs-indexer-0.01.jar /test.csv").exitValue() != 0)
+		throw new RuntimeException("indexer failed");
+	
+	println "*** RESULTS: ***"
+	run("hadoop fs -cat /csv_output/*")
+}
+runJar.description = 'trys to run the jar in Hadoop'
+
+
+//************* HELPER METHODS ********************
 
 // run a command with direct process output
 def run(command) {
@@ -25,11 +50,3 @@ def run(command) {
 	process.waitForOrKill(0)
 	return process // use to get exit code et cetera
 }
-
-task runJar << {
-	run("hadoop fs -rmr /csv_output")
-	if(run("hadoop jar build/libs/hdfs-indexer.jar com.freshbourne.hdfs.index.run.CSV /test.csv").exitValue() != 0)
-		throw new RuntimeException("indexer failed");
-	
-}
-runJar.description = 'trys to run the jar in Hadoop'

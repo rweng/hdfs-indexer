@@ -2,7 +2,9 @@ package com.freshbourne.hdfs.index.test;
 
 import java.io.IOException;
 
+import com.freshbourne.hdfs.index.ColumnIndex;
 import com.freshbourne.hdfs.index.Index;
+import com.freshbourne.hdfs.index.run.Col1Index;
 
 
 import junit.framework.TestCase;
@@ -11,7 +13,7 @@ public class IndexTest extends TestCase {
 	private Index index;
 	
 	public void setUp(){
-		index = new Index(0);
+		index = new ColumnIndex(1);
 		String[] a = new String[1];
 		a[0] = "Blug";
 		index.add(a, 0);
@@ -26,11 +28,15 @@ public class IndexTest extends TestCase {
 	}
 	
 	public void testSave() throws IOException, ClassNotFoundException{
-		String path = "/tmp/testindex"; 
+		String path = "/tmp/test_index"; 
 		index.save(path);
 		Index loadedIndex = Index.load(path);
 		assertTrue(loadedIndex.containsKey("Blug"));
 		assertEquals(index, loadedIndex);
 		assertEquals(index.getHighestOffset(), loadedIndex.getHighestOffset());
+	}
+	
+	public void testInheritance(){
+		assertEquals(1, (new Col1Index()).getColumn());
 	}
 }

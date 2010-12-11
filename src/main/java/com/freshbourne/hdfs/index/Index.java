@@ -16,18 +16,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 
-public class Index extends TreeMap<String,Long> implements Serializable {
+public abstract class Index extends TreeMap<String,Long> implements Serializable {
 	private static final long serialVersionUID = 1L;
-	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
-	private String savePath;
-	private Select select;
+	protected static final Log LOG = LogFactory.getLog(LineRecordReader.class);
 	
-	protected int COLUMN;
-	private long highestOffset = -1;
+	// not static final, so that it can be inherited and overwritten by a configuration
+	private String savePath = "/tmp/RENAME_INDEX";
+	protected Select select;
 	
-	public Index(int col){
-		COLUMN = col;
-	}
+	protected long highestOffset = -1;
+	
+	public Index(){super();}
 	
 	public static Index load(String path) throws IOException, ClassNotFoundException{
         FileInputStream in = new FileInputStream(path); 
@@ -56,19 +55,10 @@ public class Index extends TreeMap<String,Long> implements Serializable {
 		}
 	}
 	
-	public int getColumn(){return COLUMN;}
+
 	
-	public void add(String[] splits, long offset){
-		if(offset <= highestOffset)
-			return;
-		
-		if(splits.length > COLUMN){
-			highestOffset = offset;
-			put(splits[COLUMN], offset);
-		}
-		LOG.info(toString());
-	}
 	
+	public abstract void add(String[] splits, long offset);
 	public long getHighestOffset(){return highestOffset;}
 	
 	public EntryIterator getIterator(){
