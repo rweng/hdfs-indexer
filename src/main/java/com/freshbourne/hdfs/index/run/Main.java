@@ -17,10 +17,12 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
+import com.freshbourne.hdfs.index.IndexedInputFormat;
+
 /**
  * @author Robin Wenglewski <robin@wenglewski.de>
  */
-public class CSV extends Configured implements Tool {
+public class Main extends Configured implements Tool {
 
 	public static class Map extends	Mapper<LongWritable, ArrayList<String>, Text, IntWritable> {
 		private final static IntWritable one = new IntWritable(1);
@@ -67,7 +69,7 @@ public class CSV extends Configured implements Tool {
 		setConf(conf);
 		
 		Job job = new Job(conf, name);
-		job.setJarByClass(CSV.class);
+		job.setJarByClass(Main.class);
 		
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(IntWritable.class);
@@ -79,7 +81,7 @@ public class CSV extends Configured implements Tool {
 		job.setMapperClass(map);
 		job.setReducerClass(reduce);
 		
-		job.setInputFormatClass(CSVFileInputFormat.class);
+		job.setInputFormatClass(IndexedInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 
 		FileInputFormat.addInputPath(job, new Path(input));
@@ -100,7 +102,7 @@ public class CSV extends Configured implements Tool {
 	}
 
 	public static void main(String[] args) throws Exception {
-		int ret = ToolRunner.run(new CSV(), args);
+		int ret = ToolRunner.run(new Main(), args);
 		System.exit(ret);
 	}
 }

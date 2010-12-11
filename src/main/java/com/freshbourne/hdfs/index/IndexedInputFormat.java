@@ -1,4 +1,4 @@
-package com.freshbourne.hdfs.index.run;
+package com.freshbourne.hdfs.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,13 +14,13 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 
-public class CSVFileInputFormat extends FileInputFormat<LongWritable, ArrayList<String>> {
+public class IndexedInputFormat extends FileInputFormat<LongWritable, ArrayList<String>> {
 
 	@Override
 	public RecordReader<LongWritable, ArrayList<String>> createRecordReader(
 			InputSplit split, TaskAttemptContext context) throws IOException,
 			InterruptedException {
-		return new CSVRecordReader();
+		return new IndexedRecordReader();
 	}
 	
 	@Override

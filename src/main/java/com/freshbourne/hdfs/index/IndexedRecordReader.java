@@ -1,4 +1,4 @@
-package com.freshbourne.hdfs.index.run;
+package com.freshbourne.hdfs.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,14 +19,12 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.LineReader;
 
-import com.freshbourne.hdfs.index.Index;
-import com.freshbourne.hdfs.index.TreeMapIndex;
 import com.freshbourne.hdfs.index.TreeMapIndex.EntryIterator;
-import com.freshbourne.hdfs.index.Select;
 
-public class CSVRecordReader extends
+
+public class IndexedRecordReader extends
 		RecordReader<LongWritable, ArrayList<String>> {
-	private static final Log LOG = LogFactory.getLog(CSVRecordReader.class);
+	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 
 	private CompressionCodecFactory compressionCodecs = null;
 	private long start;
@@ -46,7 +44,7 @@ public class CSVRecordReader extends
 	
 	public static void setPredicate(Select s) {
 		//TODO: would like to make .select static, too, but dunno how with interfaces.
-		CSVRecordReader.selectable = s;
+		IndexedRecordReader.selectable = s;
 		LOG.info("selectable set");
 		if(selectable == null)
 			LOG.info("bug null!!");
