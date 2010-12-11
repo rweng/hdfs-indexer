@@ -30,7 +30,7 @@ public class IndexTest extends TestCase {
 	public void testSave() throws IOException, ClassNotFoundException{
 		String path = "/tmp/test_index"; 
 		index.save(path);
-		TreeMapIndex loadedIndex = TreeMapIndex.load(path);
+		TreeMapIndex loadedIndex = index.load(path);
 		assertTrue(loadedIndex.containsKey("Blug"));
 		assertEquals(index, loadedIndex);
 		assertEquals(index.getHighestOffset(), loadedIndex.getHighestOffset());
