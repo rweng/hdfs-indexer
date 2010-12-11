@@ -1,6 +1,7 @@
 package com.freshbourne.hdfs.index.run;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 
 import org.apache.hadoop.conf.Configuration;
@@ -63,7 +64,12 @@ public class CSV extends Configured implements Tool {
 
 	private int runJob(String name, Class map, Class reduce,
 			String input, String output) throws Exception {
+
+		// configuration
 		Configuration conf = getConf();
+		conf.setClass("Index", Index.class, Serializable.class);
+		setConf(conf);
+		
 		Job job = new Job(conf, name);
 		job.setJarByClass(CSV.class);
 		
@@ -73,35 +79,16 @@ public class CSV extends Configured implements Tool {
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
 
+		
 		job.setMapperClass(map);
 		job.setReducerClass(reduce);
-		
-		
-		
-		class SelectOver25 extends Select{
-			public SelectOver25(){
-				super(1);
-			}
-			
-			public boolean select(String s) {
-				return Integer.parseInt(s) > 25 ? true : false;
-			}
-		}
-
-		SelectOver25 s = new SelectOver25();
-		Index i = new Index(1);
-		
-		CSVRecordReader.setDelimiter(" ");
-		CSVRecordReader.setPredicate(s);
-		CSVRecordReader.setIndex(i);
-		CSVRecordReader.setIndexSavePath("/tmp/c1Index");
 		
 		job.setInputFormatClass(CSVFileInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 
 		FileInputFormat.addInputPath(job, new Path(input));
 		FileOutputFormat.setOutputPath(job, new Path(output));
-
+		
 		return job.waitForCompletion(true) ? 0 : 1;
 	}
 

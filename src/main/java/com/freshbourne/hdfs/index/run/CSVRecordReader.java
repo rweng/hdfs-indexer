@@ -108,6 +108,16 @@ public class CSVRecordReader extends
 			if(selectable != null)
 				iterator.setSelect(selectable);
 		}
+		
+		Class c = context.getConfiguration().getClass("Index", null);
+		if(c != null){
+			try{
+			index = (Index)(c.getConstructor(Integer.TYPE).newInstance(1));
+			} catch (Exception e) {
+				throw new InterruptedException("could not create index");
+			}
+			LOG.info("Index set!");
+		}
 	}
 
 	public boolean nextKeyValue() throws IOException {
