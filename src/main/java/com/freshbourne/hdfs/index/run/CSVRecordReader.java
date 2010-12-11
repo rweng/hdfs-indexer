@@ -44,6 +44,7 @@ public class CSVRecordReader extends
 	private static String indexSavePath;
 	private String[] splits;
 	private EntryIterator iterator;
+	private Configuration conf;
 	
 	public static void setPredicate(Select s) {
 		//TODO: would like to make .select static, too, but dunno how with interfaces.
@@ -95,9 +96,25 @@ public class CSVRecordReader extends
 		}
 		this.pos = start;
 		
-		if(indexSavePath != null){
+		
+		conf = context.getConfiguration();
+		
+		// try to load the index
+		Class c = conf.getClass("Index", null);
+		if(c != null){
 			try{
-			index = Index.load(indexSavePath);
+			index = (Index)(c.getConstructor().newInstance());
+			} catch (Exception e) {
+				throw new InterruptedException("could not create index");
+			}
+			LOG.info("Index set!");
+		}
+		
+		
+		String savePath = conf.get("indexSavePath");
+		if (savePath != null) {
+			try {
+				index = Index.load(savePath);
 			} catch (Exception e) {
 				LOG.info("Could not load index: " + e.getMessage());
 			}
@@ -109,15 +126,7 @@ public class CSVRecordReader extends
 				iterator.setSelect(selectable);
 		}
 		
-		Class c = context.getConfiguration().getClass("Index", null);
-		if(c != null){
-			try{
-			index = (Index)(c.getConstructor().newInstance());
-			} catch (Exception e) {
-				throw new InterruptedException("could not create index");
-			}
-			LOG.info("Index set!");
-		}
+		
 	}
 
 	public boolean nextKeyValue() throws IOException {
@@ -175,10 +184,10 @@ public class CSVRecordReader extends
 	    
 	    // return false if we didnt read anything, end of input
 		if (newSize == 0) {
-			if (indexSavePath != null)
-				index.save(indexSavePath);
-			else if (index != null && index.getSavePath() != null)
-				index.save(index.getSavePath());
+			String sp = conf.get("indexSavePath");
+			if (index != null && sp != null)
+				index.save(sp);
+			
 			key = null;
 			value = null;
 			return false;
