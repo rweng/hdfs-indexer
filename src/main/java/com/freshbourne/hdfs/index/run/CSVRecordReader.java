@@ -112,7 +112,7 @@ public class CSVRecordReader extends
 		Class c = context.getConfiguration().getClass("Index", null);
 		if(c != null){
 			try{
-			index = (Index)(c.getConstructor(Integer.TYPE).newInstance(1));
+			index = (Index)(c.getConstructor().newInstance());
 			} catch (Exception e) {
 				throw new InterruptedException("could not create index");
 			}

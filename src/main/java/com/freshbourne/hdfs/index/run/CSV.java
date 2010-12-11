@@ -67,7 +67,7 @@ public class CSV extends Configured implements Tool {
 
 		// configuration
 		Configuration conf = getConf();
-		conf.setClass("Index", Index.class, Serializable.class);
+		conf.setClass("Index", Col1Index.class, Serializable.class);
 		setConf(conf);
 		
 		Job job = new Job(conf, name);
