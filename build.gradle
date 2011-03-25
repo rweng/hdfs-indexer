@@ -16,6 +16,7 @@ dependencies {
 	
 	// index dependencies
 	compile "com.google.code.guice:guice:2.0.1@jar"
+	compile "aopalliance:aopalliance:1.0@jar"
 	
 }
 

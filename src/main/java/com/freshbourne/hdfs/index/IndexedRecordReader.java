@@ -100,7 +100,7 @@ public class IndexedRecordReader extends
 			try{
 				index = (Index)(c.getConstructor().newInstance());
 			} catch (Exception e) {
-				throw new InterruptedException("could not create index");
+				throw new RuntimeException(e);
 			}
 			LOG.info("Index set!");
 		}
@@ -119,10 +119,7 @@ public class IndexedRecordReader extends
 			} catch (Exception e) {
 				LOG.info("Could not load index: " + e.getMessage());
 			}
-		}
-		
-		
-		
+		}		
 	}
 
 	public boolean nextKeyValue() throws IOException {

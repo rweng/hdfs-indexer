@@ -20,16 +20,19 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 
-public class CSVIndex implements Index, Serializable {
+public abstract class CSVIndex implements Index, Serializable {
 	
 	private static final long serialVersionUID = 1L;
-	private BTree<Integer, String> index;
+	private BTree<String, Integer> index;
 	protected static final Log LOG = LogFactory.getLog(CSVIndex.class);
 	
 	
 	public CSVIndex() {
+		LOG.info("creating injector");
 		Injector i = Guice.createInjector(new BTreeModule("/tmp/ind"));
-		index = i.getInstance(Key.get(new TypeLiteral<BTree<Integer,String>>(){}));
+		LOG.info("getting index");
+		index = i.getInstance(Key.get(new TypeLiteral<BTree<String,Integer>>(){}));
+		LOG.info("index created");
 	}
 	
 	
@@ -57,8 +60,7 @@ public class CSVIndex implements Index, Serializable {
 	 */
 	@Override
 	public void save(String path) {
-		// TODO Auto-generated method stub
-		
+		index.sync();
 	}
 
 	/* (non-Javadoc)
@@ -66,7 +68,10 @@ public class CSVIndex implements Index, Serializable {
 	 */
 	@Override
 	public void add(String[] splits, long offset) {
-		LOG.info("adding splits");
+		index.add(splits[getColumn()], (int) offset);
 	}
+	
+	
+	public abstract int getColumn();
 
 }
