@@ -10,12 +10,22 @@ dependencies {
 	compile "junit:junit:4.8.2@jar"
 	compile "commons-logging:commons-logging:1.0.4@jar"
 	compile "commons-logging:commons-logging-api:1.0.4@jar"
+	
+	// a multimap project is required to exist beside this project
+	compile fileTree(dir: '../multimap/build/libs', includes: ['*.jar'])
+	
+	// index dependencies
+	compile "com.google.code.guice:guice:2.0.1@jar"
+	
 }
 
 //************* java plugin configuration ********************
 sourceCompatibility = 1.6
 version = '0.01'
 jar {
+	// include all dependency jars in this jars lib/ folder
+	from configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }
+	
 	manifest {
 		attributes("Main-Class": "com.freshbourne.hdfs.index.run.Main")
 	}

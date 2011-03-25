@@ -17,6 +17,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
+import com.freshbourne.hdfs.index.CSVIndex;
 import com.freshbourne.hdfs.index.IndexedInputFormat;
 
 /**
