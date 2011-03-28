@@ -27,6 +27,7 @@ public abstract class TreeMapIndex extends TreeMap<String,Long> implements Seria
 	
 	public TreeMapIndex(){super();}
 	
+	@Override
 	public TreeMapIndex load(String path) {
 		TreeMapIndex result = null;
 		try{
@@ -46,6 +47,7 @@ public abstract class TreeMapIndex extends TreeMap<String,Long> implements Seria
 		save(savePath);
 	}
 	
+	@Override
 	public void save(String filename) {
 		FileOutputStream fos = null;
 		ObjectOutputStream out = null;
@@ -62,9 +64,11 @@ public abstract class TreeMapIndex extends TreeMap<String,Long> implements Seria
 
 	
 	
+	@Override
 	public abstract void add(String[] splits, long offset);
 	public long getHighestOffset(){return highestOffset;}
 	
+	@Override
 	public EntryIterator getIterator(){
 		EntryIterator ei = new EntryIterator(entrySet().iterator(), getHighestOffset());
 		ei.setSelect(select);
@@ -98,6 +102,7 @@ public abstract class TreeMapIndex extends TreeMap<String,Long> implements Seria
 		
 		public long getHighestOffset(){return highOffset;}
 
+		@Override
 		public boolean hasNext() {
 			if(select == null){
 				if(!i.hasNext())
@@ -123,6 +128,7 @@ public abstract class TreeMapIndex extends TreeMap<String,Long> implements Seria
 		
 		public void setSelect(Select s){select = s;}
 
+		@Override
 		public Entry<String, Long> next() {
 			LOG.info("value of entry: " + entry.getKey());
 			Entry<String,Long> e = entry;
@@ -130,6 +136,7 @@ public abstract class TreeMapIndex extends TreeMap<String,Long> implements Seria
 			return e;
 		}
 
+		@Override
 		public void remove() {
 			//TODO: bug here, since we moved iterator
 			i.remove();

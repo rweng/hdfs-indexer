@@ -88,7 +88,7 @@ public class IndexedRecordReader extends
 		}
 		if (skipFirstLine) { // skip first line and re-establish "start".
 			start += in.readLine(new Text(), 0,
-					(int) Math.min((long) Integer.MAX_VALUE, end - start));
+					(int) Math.min(Integer.MAX_VALUE, end - start));
 		}
 		this.pos = start;
 		
@@ -122,6 +122,7 @@ public class IndexedRecordReader extends
 		}		
 	}
 
+	@Override
 	public boolean nextKeyValue() throws IOException {
 		LOG.info("in Recorder.nextKeyValue()");
 	    if (key == null) {
@@ -222,7 +223,8 @@ public class IndexedRecordReader extends
 	  /**
 	   * Get the progress within the split
 	   */
-	  public float getProgress() {
+	  @Override
+	public float getProgress() {
 	    if (start == end) {
 	      return 0.0f;
 	    } else {
@@ -230,7 +232,8 @@ public class IndexedRecordReader extends
 	    }
 	  }
 	  
-	  public synchronized void close() throws IOException {
+	  @Override
+	public synchronized void close() throws IOException {
 	    if (in != null) {
 	      in.close(); 
 	    }

@@ -17,7 +17,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-import com.freshbourne.hdfs.index.CSVIndex;
 import com.freshbourne.hdfs.index.IndexedInputFormat;
 
 /**
@@ -29,6 +28,7 @@ public class Main extends Configured implements Tool {
 		private final static IntWritable one = new IntWritable(1);
 		private Text word = new Text();
 
+		@Override
 		public void map(LongWritable key, ArrayList<String> value, Context context)
 				throws IOException, InterruptedException {
 			if(value.size() < 2)
@@ -91,6 +91,7 @@ public class Main extends Configured implements Tool {
 		return job.waitForCompletion(true) ? 0 : 1;
 	}
 
+	@Override
 	public int run(String[] args) throws Exception {
 
 		if (args.length < 1) {
