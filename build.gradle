@@ -41,13 +41,8 @@ installTpch.description = 'Downloads and installs tpch on linux x86. Requires cu
 
 
 task runJar(dependsOn:jar) << {
-	run("hadoop fs -rmr /csv_output")
-	run("hadoop fs -put test.csv /test.csv")
-	if(run("hadoop jar build/libs/hdfs-indexer-0.01.jar /test.csv").exitValue() != 0)
-		throw new RuntimeException("indexer failed");
+	run("scripts/runJar.sh")
 	
-	println "*** RESULTS: ***"
-	run("hadoop fs -cat /csv_output/*")
 }
 runJar.description = 'trys to run the jar in Hadoop'
 

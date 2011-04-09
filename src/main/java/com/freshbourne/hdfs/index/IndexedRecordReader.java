@@ -37,7 +37,7 @@ public class IndexedRecordReader extends
 	private ArrayList<String> value = null;
 	private Text tmpInputLine = new Text();
 	private static Select selectable;
-	private static String delimiter = " ";
+	private static String delimiter = " \t";
 	private static Index<String> index;
 	private String[] splits;
 	private EntryIterator iterator;
