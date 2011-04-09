@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -62,7 +63,6 @@ public class Main extends Configured implements Tool {
 
 	private int runJob(String name, Class<? extends Map> map, Class<? extends Reduce> reduce,
 			String input, String output) throws Exception {
-
 		// configuration
 		Configuration conf = getConf();
 		conf.setClass("Index", Col1Index.class, Serializable.class);

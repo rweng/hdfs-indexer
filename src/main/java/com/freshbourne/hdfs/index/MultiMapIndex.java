@@ -19,7 +19,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 
-public class MultiMapIndex implements Index {
+public class MultiMapIndex implements Index<Long> {
 
 	private BTree<String, String> index;
 	private Log logger;
@@ -30,14 +30,6 @@ public class MultiMapIndex implements Index {
 		index = i.getInstance(Key.get(new TypeLiteral<BTree<String,String>>(){}));
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#load(java.lang.String)
-	 */
-	@Override
-	public Index load(String path) {
-		index.load();
-		return this;
-	}
 
 	/* (non-Javadoc)
 	 * @see com.freshbourne.hdfs.index.Index#getIterator()
@@ -61,7 +53,7 @@ public class MultiMapIndex implements Index {
 	 * @see com.freshbourne.hdfs.index.Index#add(java.lang.String[], long)
 	 */
 	@Override
-	public void add(String[] splits, long offset) {
+	public void add(String[] splits, Long offset) {
 		// TODO Auto-generated method stub
 		
 	}

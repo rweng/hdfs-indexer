@@ -15,7 +15,7 @@ import java.util.TreeMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public abstract class TreeMapIndex extends TreeMap<String,Long> implements Serializable, Index {
+public abstract class TreeMapIndex extends TreeMap<String,Long> implements Serializable, Index<Long> {
 	private static final long serialVersionUID = 1L;
 	protected static final Log LOG = LogFactory.getLog(TreeMapIndex.class);
 	
@@ -25,9 +25,8 @@ public abstract class TreeMapIndex extends TreeMap<String,Long> implements Seria
 	
 	protected long highestOffset = -1;
 	
-	public TreeMapIndex(){super();}
+	public TreeMapIndex(){super();load(savePath);}
 	
-	@Override
 	public TreeMapIndex load(String path) {
 		TreeMapIndex result = null;
 		try{
@@ -65,7 +64,7 @@ public abstract class TreeMapIndex extends TreeMap<String,Long> implements Seria
 	
 	
 	@Override
-	public abstract void add(String[] splits, long offset);
+	public abstract void add(String[] splits, Long offset);
 	public long getHighestOffset(){return highestOffset;}
 	
 	@Override

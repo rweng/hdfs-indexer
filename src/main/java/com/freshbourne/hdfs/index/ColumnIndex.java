@@ -16,7 +16,7 @@ public class ColumnIndex extends TreeMapIndex {
 	public ColumnIndex(){super();}
 	
 	@Override
-	public void add(String[] splits, long offset){
+	public void add(String[] splits, Long offset){
 		if(offset <= highestOffset)
 			return;
 		

@@ -14,36 +14,30 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.freshbourne.multimap.btree.BTree;
-import com.freshbourne.multimap.btree.BTreeModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
 
-public abstract class CSVIndex implements Index, Serializable {
+public abstract class CSVIndex<V> implements Index<V>, Serializable {
 	
 	private static final long serialVersionUID = 1L;
-	private BTree<String, Integer> index;
+	private BTree<String, V> index;
 	protected static final Log LOG = LogFactory.getLog(CSVIndex.class);
 	
 	
-	public CSVIndex() {
-		LOG.info("creating injector");
-		Injector i = Guice.createInjector(new BTreeModule("/tmp/ind"));
-		LOG.info("getting index");
-		index = i.getInstance(Key.get(new TypeLiteral<BTree<String,Integer>>(){}));
+	public abstract BTree<String, V> createIndex(String path);
+	public CSVIndex(String path) {
+		LOG.info("creating injector and index");
+		index = createIndex(path);
+		
+		boolean loaded = false;
+		try{
+			index.load();
+			loaded = true;
+		} catch (Exception ignored) {
+		} 
+		
+		if(!loaded)
+			index.initialize();
+		
 		LOG.info("index created");
-	}
-	
-	
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#load(java.lang.String)
-	 */
-	@Override
-	public Index load(String path) {
-		index.load();
-		LOG.info("index loaded");
-		return this;
 	}
 
 	/* (non-Javadoc)
@@ -51,8 +45,7 @@ public abstract class CSVIndex implements Index, Serializable {
 	 */
 	@Override
 	public Iterator<?> getIterator() {
-		// TODO Auto-generated method stub
-		return null;
+		return index.getIterator();
 	}
 
 	/* (non-Javadoc)
@@ -60,15 +53,20 @@ public abstract class CSVIndex implements Index, Serializable {
 	 */
 	@Override
 	public void save(String path) {
+		LOG.debug("saving index");
 		index.sync();
+		LOG.debug("index saved");
 	}
 
 	/* (non-Javadoc)
 	 * @see com.freshbourne.hdfs.index.Index#add(java.lang.String[], long)
 	 */
 	@Override
-	public void add(String[] splits, long offset) {
-		index.add(splits[getColumn()], (int) offset);
+	public void add(String[] splits, V value) {
+		if(splits.length > getColumn()){
+			index.add(splits[getColumn()], value);
+			LOG.debug(splits[getColumn()] + " with value: " + value + " added to index");
+		}
 	}
 	
 	

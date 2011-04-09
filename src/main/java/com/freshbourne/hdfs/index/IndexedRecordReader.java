@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.impl.Log4JCategoryLog;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -37,21 +38,13 @@ public class IndexedRecordReader extends
 	private Text tmpInputLine = new Text();
 	private static Select selectable;
 	private static String delimiter = " ";
-	private static Index index;
+	private static Index<String> index;
 	private String[] splits;
 	private EntryIterator iterator;
 	private Configuration conf;
 	
-	public static void setPredicate(Select s) {
-		//TODO: would like to make .select static, too, but dunno how with interfaces.
-		IndexedRecordReader.selectable = s;
-		LOG.info("selectable set");
-		if(selectable == null)
-			LOG.info("bug null!!");
-	}
-	
 	public static void setDelimiter(String d){ delimiter = d; }
-	public static void setIndex(Index i){
+	public static void setIndex(Index<String> i){
 		index = i;
 	}
 
@@ -95,31 +88,30 @@ public class IndexedRecordReader extends
 		conf = context.getConfiguration();
 		
 		// try to load the index
-		Class<?> c = conf.getClass("Index", null);
-		if(c != null){
-			try{
-				index = (Index)(c.getConstructor().newInstance());
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-			LOG.info("Index set!");
-		}
-		
-		
-		if(index != null){
-			iterator = (EntryIterator) index.getIterator();
-			if(selectable != null)
-				iterator.setSelect(selectable);
-		}
-		
 		String savePath = conf.get("indexSavePath");
-		if (savePath != null) {
-			try {
-				index = index.load(savePath);
-			} catch (Exception e) {
-				LOG.info("Could not load index: " + e.getMessage());
-			}
-		}		
+		Class<?> c = conf.getClass("Index", null);
+		if (c == null)
+			throw new IllegalArgumentException(
+					"Index class must be set in config");
+
+		try {
+			Class argsTypes[] = new Class[1];
+			Object args[] = new Object[1];
+			argsTypes[0] = String.class;
+			args[0] = savePath;
+			
+			
+			index = (Index<String>) (c.getConstructor(argsTypes)
+					.newInstance(args));
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		LOG.info("Index set!");
+		
+		LOG.debug("delimiter: " + delimiter);
+
+		//TODO: get iterator for range
 	}
 
 	@Override
@@ -186,12 +178,8 @@ public class IndexedRecordReader extends
 
 		// put it in the Index, if already there it just returns
 		if (index != null) {
-			index.add(this.splits, pos - newSize);
+			index.add(this.splits, tmpInputLine.toString());
 		}
-		
-		if(selectable == null)
-			LOG.info("selectable is null");
-		//TODO: selectable is null even if set above.
 		
 		if(this.splits == null)
 			LOG.info("splits are null");
