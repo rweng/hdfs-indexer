@@ -7,6 +7,21 @@
  */
 package com.freshbourne.hdfs.index.run;
 
-public class Filter {
+import java.io.Serializable;
+
+/**
+ * This very basic kind of a filter supports only finding exact matches, although the BTree already supports range
+ * queries.
+ * 
+ * @author Robin Wenglewski <robin@wenglewski.de>
+ *
+ */
+public class Filter implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+	
+	public String getFilter(){
+		return "2006-03-17";
+	}
 	
 }

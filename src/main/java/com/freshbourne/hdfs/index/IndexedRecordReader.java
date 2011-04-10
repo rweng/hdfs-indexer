@@ -1,13 +1,12 @@
 package com.freshbourne.hdfs.index;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.impl.Log4JCategoryLog;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -21,9 +20,6 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.LineReader;
-
-import com.freshbourne.hdfs.index.TreeMapIndex.EntryIterator;
-
 
 public class IndexedRecordReader extends
 		RecordReader<LongWritable, ArrayList<String>> {
@@ -40,16 +36,16 @@ public class IndexedRecordReader extends
 	private Text tmpInputLine = new Text();
 	private static Select selectable;
 	private static String delimiter = " \t";
-	private static Index<String> index;
+	private static Index<String, String> index;
 	private String[] splits;
-	private EntryIterator iterator;
 	private Configuration conf;
 	
 	public static void setDelimiter(String d){ delimiter = d; }
-	public static void setIndex(Index<String> i){
+	public static void setIndex(Index<String, String> i){
 		index = i;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void initialize(InputSplit inputSplit, TaskAttemptContext context)
 			throws IOException, InterruptedException {
@@ -57,11 +53,6 @@ public class IndexedRecordReader extends
 		// lets assume its a file split
 		
 		LOG.info("in RecordReader.initialize()");
-		
-		LOG.debug( "Start in IRR: " + ((FileSplit)inputSplit).getStart());
-		
-		LOG.debug("TaskAttemptID: " + context.getTaskAttemptID());
-		LOG.debug("hashcode: " + inputSplit.hashCode());
 		
 		FileSplit split = (FileSplit) inputSplit;
 		Configuration job = context.getConfiguration();
@@ -97,8 +88,6 @@ public class IndexedRecordReader extends
 		
 		conf = context.getConfiguration();
 		
-		// try to load the index
-		String savePath = generateIndexPath(conf.get("indexSavePath"), inputSplit);
 		
 		Class<?> c = conf.getClass("Index", null);
 		if (c == null)
@@ -106,14 +95,13 @@ public class IndexedRecordReader extends
 					"Index class must be set in config");
 
 		try {
-			Class argsTypes[] = new Class[1];
-			Object args[] = new Object[1];
-			argsTypes[0] = String.class;
-			args[0] = savePath;
 			
+			index = (Index<String, String>) (c.getConstructor()
+					.newInstance());
 			
-			index = (Index<String>) (c.getConstructor(argsTypes)
-					.newInstance(args));
+			// try to load the index
+			String savePath = generateIndexPath(conf.get("indexSavePath"), inputSplit, index);
+			index.load(savePath);
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -121,8 +109,6 @@ public class IndexedRecordReader extends
 		LOG.info("Index set!");
 		
 		LOG.debug("delimiter: " + delimiter);
-
-		//TODO: get iterator for range
 	}
 
 	/**
@@ -130,7 +116,7 @@ public class IndexedRecordReader extends
 	 * @param inputSplit
 	 * @return
 	 */
-	private String generateIndexPath(String folder, InputSplit inputSplit) {
+	private String generateIndexPath(String folder, InputSplit inputSplit, Index index) {
 		FileSplit split;
 		try{
 			split = (FileSplit) inputSplit;	
@@ -150,7 +136,7 @@ public class IndexedRecordReader extends
 		LOG.debug("path: " + path);
 		String path2 = folderFile.getAbsolutePath() + path;
 		LOG.debug("path2: " + path2);
-		String path3 = path2 + "_" + split.getStart();
+		String path3 = path2 + "_" + index.getIdentifier() + "_" + split.getStart();
 		LOG.debug("FILE NAME: " + path3);
 		
 		(new File(path3).getParentFile()).mkdirs();
@@ -173,17 +159,21 @@ public class IndexedRecordReader extends
 	    value.clear();
 	    boolean fromIndex = false;
 	    
-	    if(iterator != null){
-	    	if(iterator.hasNext()){
-	    		pos = iterator.next().getValue();
-	    		fromIndex = true;
-	    		LOG.info("Using index for pos" + pos);
-	    	} else {
-	    		pos = iterator.getHighestOffset(); // this one is read double
-	    		iterator = null;
-	    	}
-	    }
+	    // Iterator<String> iterator = index.getIterator("2006-03-17", "2006-03-17");
 	    
+	    //iterator.hasNext()
+	    
+//	    if(iterator != null){
+//	    	if(iterator.hasNext()){
+//	    		pos = iterator.next().getValue();
+//	    		fromIndex = true;
+//	    		LOG.info("Using index for pos" + pos);
+//	    	} else {
+//	    		pos = iterator.getHighestOffset(); // this one is read double
+//	    		iterator = null;
+//	    	}
+//	    }
+//	    
 	    // we almost always break from this loop, it is only for making sure
 	    // that we are in maxLineLength
 	    while (pos < end) {
@@ -222,7 +212,7 @@ public class IndexedRecordReader extends
 
 		// put it in the Index, if already there it just returns
 		if (index != null) {
-			index.add(this.splits, tmpInputLine.toString());
+			index.add(splits, tmpInputLine.toString());
 		}
 		
 		if(this.splits == null)

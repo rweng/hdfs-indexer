@@ -66,6 +66,7 @@ public class Main extends Configured implements Tool {
 		// configuration
 		Configuration conf = getConf();
 		conf.setClass("Index", Col1Index.class, Serializable.class);
+		conf.setClass("Filter", Filter.class, Serializable.class);
 		conf.set("indexSavePath", "/tmp/index/");
 		setConf(conf);
 		
