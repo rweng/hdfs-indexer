@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -34,12 +33,13 @@ public class Main extends Configured implements Tool {
 				throws IOException, InterruptedException {
 			if(value.size() < 2)
 				return;
+			
 			String line = value.get(0);
 			
 			StringTokenizer tokenizer = new StringTokenizer(line);
 			while (tokenizer.hasMoreTokens()) {
 				word.set(tokenizer.nextToken());
-				one.set(Integer.parseInt(value.get(1)));
+				one.set(1);
 				context.write(word, one);
 			}
 		}
@@ -66,7 +66,7 @@ public class Main extends Configured implements Tool {
 		// configuration
 		Configuration conf = getConf();
 		conf.setClass("Index", Col1Index.class, Serializable.class);
-		conf.set("indexSavePath", "/tmp/c1Index");
+		conf.set("indexSavePath", "/tmp/index/");
 		setConf(conf);
 		
 		Job job = new Job(conf, name);

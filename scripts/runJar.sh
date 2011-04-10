@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 SAMPLE_FILE="build/sampleFile"
+SAMPLE_FILE_HDFS="/test/sampleFile"
 
 # make sure we are in the right directory for the relative paths in the rest of the script to work
 if [ ! -f build.gradle ];then
@@ -15,11 +16,11 @@ fi
 
 # run the indexer 
 hadoop fs -rmr /csv_output
-hadoop fs -put $SAMPLE_FILE /sampleFile
-hadoop jar build/libs/hdfs-indexer-0.01.jar /sampleFile
+hadoop fs -put $SAMPLE_FILE "$SAMPLE_FILE_HDFS"
+hadoop jar build/libs/hdfs-indexer-0.01.jar "$SAMPLE_FILE_HDFS"
 
 # make sure indexer was successfull
-if [ "$!" -ne "0" ];then
+if [ $? -ne 0 ];then
 	echo "hdfs-indexer failed!"
 	exit
 fi

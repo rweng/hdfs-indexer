@@ -1,5 +1,7 @@
 package com.freshbourne.hdfs.index;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -51,7 +53,15 @@ public class IndexedRecordReader extends
 	@Override
 	public void initialize(InputSplit inputSplit, TaskAttemptContext context)
 			throws IOException, InterruptedException {
+		
+		// lets assume its a file split
+		
 		LOG.info("in RecordReader.initialize()");
+		
+		LOG.debug( "Start in IRR: " + ((FileSplit)inputSplit).getStart());
+		
+		LOG.debug("TaskAttemptID: " + context.getTaskAttemptID());
+		LOG.debug("hashcode: " + inputSplit.hashCode());
 		
 		FileSplit split = (FileSplit) inputSplit;
 		Configuration job = context.getConfiguration();
@@ -88,7 +98,8 @@ public class IndexedRecordReader extends
 		conf = context.getConfiguration();
 		
 		// try to load the index
-		String savePath = conf.get("indexSavePath");
+		String savePath = generateIndexPath(conf.get("indexSavePath"), inputSplit);
+		
 		Class<?> c = conf.getClass("Index", null);
 		if (c == null)
 			throw new IllegalArgumentException(
@@ -114,6 +125,39 @@ public class IndexedRecordReader extends
 		//TODO: get iterator for range
 	}
 
+	/**
+	 * @param string
+	 * @param inputSplit
+	 * @return
+	 */
+	private String generateIndexPath(String folder, InputSplit inputSplit) {
+		FileSplit split;
+		try{
+			split = (FileSplit) inputSplit;	
+		} catch (Exception e) {
+			throw new IllegalArgumentException("InputSplit must be an instance of FileSplit");
+		}
+		
+		File folderFile = (new File(folder));
+		if(!(folderFile.isDirectory() || !folderFile.exists()))
+			throw new IllegalArgumentException("savePath must be a folder: " + folderFile.getAbsolutePath());
+		
+		if(!split.getPath().toString().startsWith("hdfs://")){
+			throw new IllegalArgumentException("The File for the Index must be in the hdfs");
+		}
+		
+		String path = split.getPath().toString().replaceFirst("hdfs://[^\\/]+", "");
+		LOG.debug("path: " + path);
+		String path2 = folderFile.getAbsolutePath() + path;
+		LOG.debug("path2: " + path2);
+		String path3 = path2 + "_" + split.getStart();
+		LOG.debug("FILE NAME: " + path3);
+		
+		(new File(path3).getParentFile()).mkdirs();
+		
+		// TODO Auto-generated method stub
+		return path3;
+	}
 	@Override
 	public boolean nextKeyValue() throws IOException {
 		LOG.info("in Recorder.nextKeyValue()");
