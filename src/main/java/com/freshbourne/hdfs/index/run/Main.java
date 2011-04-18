@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -18,6 +20,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import com.freshbourne.hdfs.index.IndexedInputFormat;
+import com.freshbourne.hdfs.index.IndexedRecordReader;
 
 /**
  * @author Robin Wenglewski <robin@wenglewski.de>
@@ -27,14 +30,17 @@ public class Main extends Configured implements Tool {
 	public static class Map extends	Mapper<LongWritable, ArrayList<String>, Text, IntWritable> {
 		private final static IntWritable one = new IntWritable(1);
 		private Text word = new Text();
+		private static final Log LOG = LogFactory.getLog(Map.class);
 
 		@Override
 		public void map(LongWritable key, ArrayList<String> value, Context context)
 				throws IOException, InterruptedException {
-			if(value.size() < 2)
+			LOG.debug("VALUE SIZE: " + value.size());
+			if(value.size() < 1)
 				return;
 			
-			String line = value.get(0);
+			String line = value.toString();
+			LOG.debug("Line: " + line);
 			
 			StringTokenizer tokenizer = new StringTokenizer(line);
 			while (tokenizer.hasMoreTokens()) {

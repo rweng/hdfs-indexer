@@ -50,7 +50,7 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 		index.sync();
 		LOG.debug("index saved");
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see com.freshbourne.hdfs.index.Index#add(java.lang.String[], long)
 	 */
