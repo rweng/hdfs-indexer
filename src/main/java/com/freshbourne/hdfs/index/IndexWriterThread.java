@@ -7,10 +7,13 @@
  */
 package com.freshbourne.hdfs.index;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.freshbourne.hdfs.index.IndexedRecordReader.Shared;
+import com.freshbourne.hdfs.index.IndexedRecordReader.SplitsValue;
 
 class IndexWriterThread extends Thread {
 	
@@ -25,21 +28,15 @@ class IndexWriterThread extends Thread {
 	public void run() {
 		
 		LOG.debug("Running thread");
-		
 		try {
-			synchronized (shared) {
-				shared.wait(1000 * 60 * 5); // wait 5 min	
+			SplitsValue sv = shared.getSplitsValueList().poll(1, TimeUnit.MINUTES);
+			while (!shared.isFinished() && sv != null) {
+				shared.getIndex().add(sv.getSplits(), sv.getValue());
+				sv = shared.getSplitsValueList().poll(1, TimeUnit.MINUTES);	
 			}
 		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
-		
-		LOG.debug("after sleep");
-		
-		int c = 0;
-		while(!shared.getSplitsList().isEmpty()){
-			LOG.debug("Writing from thread to index: " + ++c);
-			shared.getIndex().add(shared.getSplitsList().poll(), shared.getValueList().poll());
 		}
 
 		shared.save();

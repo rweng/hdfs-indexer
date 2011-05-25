@@ -5,7 +5,7 @@ SAMPLE_FILE_HDFS="/test/sampleFile"
 
 scripts/setupHdfs.sh
 
-hadoop jar build/libs/hdfs-indexer-0.01.jar "${SAMPLE_FILE_HDFS}Small"
+hadoop jar build/libs/hdfs-indexer-0.01.jar com.freshbourne.hdfs.index.run.Main "${SAMPLE_FILE_HDFS}Small"
 
 # make sure indexer was successfull
 if [ $? -ne 0 ];then

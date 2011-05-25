@@ -1,31 +1,36 @@
+/**
+ * Copyright (C) 2011 Robin Wenglewski <robin@wenglewski.de>
+ *
+ * This work is licensed under a Creative Commons Attribution-NonCommercial 3.0 Unported License:
+ * http://creativecommons.org/licenses/by-nc/3.0/
+ * For alternative conditions contact the author. 
+ */
 package com.freshbourne.hdfs.index.run;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
+import java.util.Iterator;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.util.Tool;
-import org.apache.hadoop.util.ToolRunner;
-
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 
 import com.freshbourne.hdfs.index.IndexedInputFormat;
-import com.freshbourne.hdfs.index.IndexedRecordReader;
 
-/**
- * @author Robin Wenglewski <robin@wenglewski.de>
- */
-public class Main extends Configured implements Tool {
+public class PerformanceMain extends Configured implements Tool {
 
 	public static class Map extends	Mapper<LongWritable, Text, Text, IntWritable> {
 		private final static IntWritable one = new IntWritable(1);
@@ -56,6 +61,8 @@ public class Main extends Configured implements Tool {
 		}
 	}
 
+	private boolean useIndex;
+	
 	private void printUsage() {
 		System.out.println("Usage : .jar <input_file>");
 	}
@@ -70,7 +77,7 @@ public class Main extends Configured implements Tool {
 		setConf(conf);
 		
 		Job job = new Job(conf, name);
-		job.setJarByClass(Main.class);
+		job.setJarByClass(PerformanceMain.class);
 		
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(IntWritable.class);
@@ -82,7 +89,7 @@ public class Main extends Configured implements Tool {
 		job.setMapperClass(map);
 		job.setReducerClass(reduce);
 		
-		job.setInputFormatClass(IndexedInputFormat.class);
+		job.setInputFormatClass(useIndex ? IndexedInputFormat.class : TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 
 		FileInputFormat.addInputPath(job, new Path(input));
@@ -94,17 +101,18 @@ public class Main extends Configured implements Tool {
 	@Override
 	public int run(String[] args) throws Exception {
 
-		if (args.length < 1) {
+		if (args.length < 3) {
 			printUsage();
-			return 1;
+			return 2;
 		}
 
 		String input = args[0];
+		useIndex = Boolean.parseBoolean(args[1]);
 		return runJob("CSV", Map.class, Reduce.class, input,"/csv_output");
 	}
 
 	public static void main(String[] args) throws Exception {
-		int ret = ToolRunner.run(new Main(), args);
+		int ret = ToolRunner.run(new PerformanceMain(), args);
 		System.exit(ret);
 	}
 }

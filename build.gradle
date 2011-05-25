@@ -31,7 +31,7 @@ jar {
 	from configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }
 	
 	manifest {
-		attributes("Main-Class": "com.freshbourne.hdfs.index.run.Main")
+		// attributes("Main-Class": "com.freshbourne.hdfs.index.run.Main")
 	}
 }
 
@@ -45,6 +45,10 @@ installTpch.description = 'Downloads and installs tpch on linux x86. Requires cu
 
 task runJar(dependsOn:jar) << {
 	run("scripts/runJar.sh")
+}
+
+task comparePerformance(dependsOn:jar) << {
+	run("scripts/comparePerformance.sh")
 }
 
 task setupHdfs << {

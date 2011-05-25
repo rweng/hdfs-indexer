@@ -241,7 +241,7 @@ public class IndexedRecordReader extends
 			LOG.debug("READING FROM INDEX");
 			String next = getNextFromIndex();
 			if (next != null) {
-				value.set(tmpInputLine);
+				value.set(next);
 				return true;
 			}
 		}
@@ -274,13 +274,8 @@ public class IndexedRecordReader extends
 			
 			key = null;
 			value = null;
-			if(shared != null) {
-				synchronized (shared) {
-					shared.notifyAll();
-				}
-			}else {
-				LOG.debug("shared is null!");
-			}
+			if(shared != null)
+				shared.setFinished(true);
 			return false;
 		}
 
@@ -432,28 +427,66 @@ public class IndexedRecordReader extends
 		}
 	}
 	
+	class SplitsValue{
+		private String[] splits;
+		private String value;
+		
+		SplitsValue(String[] splits, String value) {
+			this.splits = splits;
+			this.value = value;
+		}
+		
+		/**
+		 * @param value the value to set
+		 */
+		public void setValue(String value) {
+			this.value = value;
+		}
+		/**
+		 * @return the value
+		 */
+		public String getValue() {
+			return value;
+		}
+		/**
+		 * @param splits the splits to set
+		 */
+		public void setSplits(String[] splits) {
+			this.splits = splits;
+		}
+		/**
+		 * @return the splits
+		 */
+		public String[] getSplits() {
+			return splits;
+		}
+	}
+	
 	class Shared {
 		private Index<String, String> index;
 		private Properties properties;
 		
-		private LinkedBlockingQueue<String[]> splitsList = new LinkedBlockingQueue<String[]>();
-		private LinkedBlockingQueue<String> valueList = new LinkedBlockingQueue<String>();
+		private LinkedBlockingQueue<SplitsValue> splitsValueList = new LinkedBlockingQueue<SplitsValue>(1000);
 		private long offset = 0;
 		
-		private int counter = 0;
+		private boolean isFinished = false;
 		
-		public void add(String[] splits, String string, long offset) {
-			if(counter++ >= 50)
+		synchronized public void add(String[] splits, String string, long offset) {
+			if(isFinished())
 				return;
 			
 			LOG.debug("shared adding with offset: " + offset);
 			
-			splitsList.add(splits);
-			valueList.add(string);
-			this.offset = offset;
+			try{
+				getSplitsValueList().add(new SplitsValue(splits, string));
+				this.offset = offset;
+			} catch (IllegalStateException e) {
+				setFinished(true);
+			}
+			
 		}
 		
-		public void save(){
+		synchronized public void save(){
 			LOG.debug("saving index");
 			index.save();
 			LOG.debug("saving properties");
@@ -489,31 +522,24 @@ public class IndexedRecordReader extends
 		}
 
 		/**
-		 * @param splitsList the splitsList to set
+		 * @param isFinished the isFinished to set
 		 */
-		public void setSplitsList(LinkedBlockingQueue<String[]> splitsList) {
-			this.splitsList = splitsList;
+		public void setFinished(boolean isFinished) {
+			this.isFinished = isFinished;
 		}
 
 		/**
-		 * @return the splitsList
+		 * @return the isFinished
 		 */
-		public LinkedBlockingQueue<String[]> getSplitsList() {
-			return splitsList;
+		public boolean isFinished() {
+			return isFinished;
 		}
 
 		/**
-		 * @param valueList the valueList to set
+		 * @return the splitsValueList
 		 */
-		public void setValueList(LinkedBlockingQueue<String> valueList) {
-			this.valueList = valueList;
-		}
-
-		/**
-		 * @return the valueList
-		 */
-		public LinkedBlockingQueue<String> getValueList() {
-			return valueList;
+		public LinkedBlockingQueue<SplitsValue> getSplitsValueList() {
+			return splitsValueList;
 		}
 
 	}
