@@ -13,6 +13,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -23,13 +24,13 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 public class IndexedInputFormat extends
-		FileInputFormat<LongWritable, ArrayList<String>> {
+		FileInputFormat<LongWritable, Text> {
 	
 	private static final double SPLIT_SLOP = 1.1;   // 10% slop
 	private static Log LOG = LogFactory.getLog(IndexedInputFormat.class);
 
 	@Override
-	public RecordReader<LongWritable, ArrayList<String>> createRecordReader(
+	public RecordReader<LongWritable, Text> createRecordReader(
 			InputSplit split, TaskAttemptContext context) throws IOException,
 			InterruptedException {
 

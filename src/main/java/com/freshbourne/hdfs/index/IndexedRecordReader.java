@@ -1,11 +1,16 @@
 package com.freshbourne.hdfs.index;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Properties;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -23,10 +28,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.LineReader;
 
-import com.freshbourne.hdfs.index.IndexedRecordReader.Shared;
-
 public class IndexedRecordReader extends
-		RecordReader<LongWritable, ArrayList<String>> {
+		RecordReader<LongWritable, Text> {
 	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 
 	private CompressionCodecFactory compressionCodecs = null;
@@ -36,15 +39,25 @@ public class IndexedRecordReader extends
 	private LineReader in;
 	private int maxLineLength;
 	private LongWritable key = null;
-	private ArrayList<String> value = null;
+	private Text value = null;
 	private Text tmpInputLine = new Text();
-	private static Select selectable;
-	private static String delimiter = " \t";
+	private static String delimiter = "(\t| +)";
 	private static Index<String, String> index;
 	private String[] splits;
 	private Configuration conf;
-
+	private Properties properties;
+	private String fileName;
+	private String[] indexFiles;
+	private short indexFilesPointer = 0;
 	private Shared shared;
+	private boolean doneReadingFromIndex = false;
+	private String hdfsPath;
+	
+	private Iterator<String> indexIterator;
+
+	private String indexFolder;
+
+	private File propertiesFile;
 
 	public static void setDelimiter(String d) {
 		delimiter = d;
@@ -54,7 +67,6 @@ public class IndexedRecordReader extends
 		index = i;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void initialize(InputSplit inputSplit, TaskAttemptContext context)
 			throws IOException, InterruptedException {
@@ -95,41 +107,72 @@ public class IndexedRecordReader extends
 		}
 		this.pos = start;
 
+		// create the index
 		conf = context.getConfiguration();
+		hdfsPath = inputToFileSplit(inputSplit).getPath().toString();
+		
+		File dir = new File(generateIndexFolder(conf.get("indexSavePath")));
+		dir.mkdirs();
+		
+		indexFolder = dir.getAbsolutePath() + "/";
+		
+		// fill index Files array
+		if (dir.exists()) {
+			LOG.debug("dir exists: " + dir.getAbsolutePath());
+			FilenameFilter filter = new FilenameFilter() {
+				@Override
+				public boolean accept(File dir, String name) {
+					if (name.startsWith(fileName))
+						return true;
+					return false;
+				}
+			};
+			
+			// getting files in the right order
+			String[] tmpIndexFiles = dir.list(filter);
+			indexFiles = new String[tmpIndexFiles.length];
+			HashMap<Integer, String> map = new HashMap<Integer, String>();
+			for(String name : tmpIndexFiles){
+				map.put(Integer.parseInt(name.split("_")[2]), name);
+			}
+			
+			Integer[] keys = new Integer[map.keySet().size()];
+			map.keySet().toArray(keys);
+			java.util.Arrays.sort(keys);
+			for(int i = 0;i<keys.length;i++)
+				indexFiles[i] = map.get(keys[i]);
+			
+		} else {
+			LOG.debug("dir doesn't exist: " + dir.getAbsolutePath());
+			indexFiles = new String[0];
+		}
 
-		Class<?> c = conf.getClass("Index", null);
-		if (c == null)
-			throw new IllegalArgumentException(
-					"Index class must be set in config");
-
-		try {
-
-			index = (Index<String, String>) (c.getConstructor().newInstance());
-
-			// try to load the index
-			String savePath = generateIndexPath(conf.get("indexSavePath"),
-					inputSplit, index);
-			index.load(savePath);
-
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+		LOG.debug("indexFiles: ");
+		for (String s : indexFiles)
+			LOG.debug("indexFile: " + s);		
+		LOG.debug("delimiter: " + delimiter);
+		
+		// load the properties
+		properties = new Properties();
+		propertiesFile = new File(indexFolder + "properties");
+		if(propertiesFile.exists()){
+			try{
+				FileInputStream fis = new FileInputStream(propertiesFile);
+				properties.loadFromXML(fis);	
+			} catch (Exception e) {
+				LOG.debug("deleting properties file");
+				propertiesFile.delete();
+			}
 		}
 		
-		shared = new Shared(index);
-		IndexWriterThread thread = new IndexWriterThread(shared);
-		// thread.run();
-		LOG.info("Index set!");
-
-		LOG.debug("delimiter: " + delimiter);
+		if(properties == null){
+			throw new IllegalStateException("properties should not be null");
+		}
+		
+		
 	}
-
-	/**
-	 * @param string
-	 * @param inputSplit
-	 * @return
-	 */
-	private String generateIndexPath(String folder, InputSplit inputSplit,
-			Index index) {
+	
+	private static FileSplit inputToFileSplit(InputSplit inputSplit){
 		FileSplit split;
 		try {
 			split = (FileSplit) inputSplit;
@@ -137,29 +180,45 @@ public class IndexedRecordReader extends
 			throw new IllegalArgumentException(
 					"InputSplit must be an instance of FileSplit");
 		}
+		return split;
+	}
+	
+	private String generateIndexFolder(String folder){
+		String file = generateIndexPath(folder, "", "");
+		int index = file.lastIndexOf('/');
+		String result = file.substring(0, index);
+		LOG.debug("generated index folder: " + result);
+		return result;
+	}
 
+	/**
+	 * @param string
+	 * @param inputSplit
+	 * @return
+	 */
+	private String generateIndexPath(String folder, String startPos, String columnIdentifier) {
+		
 		File folderFile = (new File(folder));
 		if (!(folderFile.isDirectory() || !folderFile.exists()))
 			throw new IllegalArgumentException("savePath must be a folder: "
 					+ folderFile.getAbsolutePath());
 
-		if (!split.getPath().toString().startsWith("hdfs://")) {
+		if (!hdfsPath.startsWith("hdfs://")) {
 			throw new IllegalArgumentException(
 					"The File for the Index must be in the hdfs");
 		}
 
-		String path = split.getPath().toString()
-				.replaceFirst("hdfs://[^\\/]+", "");
+		String path = hdfsPath.replaceFirst("hdfs://[^\\/]+", "");
+		String[] splits = path.split("\\/");
+		fileName = splits[splits.length-1];
 		LOG.debug("path: " + path);
 		String path2 = folderFile.getAbsolutePath() + path;
-		LOG.debug("path2: " + path2);
-		String path3 = path2 + "_" + index.getIdentifier() + "_"
-				+ split.getStart();
+		
+		String path3 = path2 + "_" + columnIdentifier + "_"
+				+ startPos;
 		LOG.debug("FILE NAME: " + path3);
-
 		(new File(path3).getParentFile()).mkdirs();
 
-		// TODO Auto-generated method stub
 		return path3;
 	}
 
@@ -171,41 +230,29 @@ public class IndexedRecordReader extends
 		}
 		key.set(pos);
 		if (value == null) {
-			value = new ArrayList<String>();
+			value = new Text();
 		}
 
 		int newSize = 0;
 		value.clear();
-		boolean fromIndex = false;
-
-		//TODO: how to know where the index ended
 		
-		// Iterator<String> iterator = index.getIterator("2006-03-17",
-		// "2006-03-17");
-
-		// iterator.hasNext()
-
-		// if(iterator != null){
-		// if(iterator.hasNext()){
-		// pos = iterator.next().getValue();
-		// fromIndex = true;
-		// LOG.info("Using index for pos" + pos);
-		// } else {
-		// pos = iterator.getHighestOffset(); // this one is read double
-		// iterator = null;
-		// }
-		// }
-		//
-		// we almost always break from this loop, it is only for making sure
-		// that we are in maxLineLength
+		// get next value from index as long as we have
+		if(!doneReadingFromIndex){
+			LOG.debug("READING FROM INDEX");
+			String next = getNextFromIndex();
+			if (next != null) {
+				value.set(tmpInputLine);
+				return true;
+			}
+		}
 		
+		// we are here so we cant read furth from index
 		while (pos < end) {
-
 			newSize = in.readLine(tmpInputLine, maxLineLength,
 					Math.max((int) Math.min(Integer.MAX_VALUE, end - pos),
 							maxLineLength));
 
-			LOG.info("READING LINE: " + tmpInputLine);
+			LOG.info("READING LINE FROM HDFS: " + tmpInputLine);
 
 			this.splits = tmpInputLine.toString().split(delimiter);
 			LOG.info("Splitsize: " + splits.length);
@@ -222,34 +269,138 @@ public class IndexedRecordReader extends
 
 		// return false if we didnt read anything, end of input
 		if (newSize == 0) {
-			String sp = conf.get("indexSavePath");
-			if (index != null && sp != null)
-				index.save(null);
-
+			
+			LOG.debug("END OF INPUT");
+			
 			key = null;
 			value = null;
+			if(shared != null) {
+				synchronized (shared) {
+					shared.notifyAll();
+				}
+			}else {
+				LOG.debug("shared is null!");
+			}
 			return false;
 		}
 
 		// put it in the Index, if already there it just returns
-		if (index != null) {
-			index.add(splits, tmpInputLine.toString());
+		// lets create a write thread if we need
+		if(index == null){
+			createIndexAndThread(pos);
 		}
-
+		if(shared != null){
+			shared.add(splits, tmpInputLine.toString(), pos);
+		} else {
+			LOG.debug("SHARED == NULL");
+		}
+		
 		if (this.splits == null)
 			LOG.info("splits are null");
 
-		// if the predicate is matched, return, otherwise return nextKeyValue();
-		if (fromIndex || selectable == null || selectable.select(this.splits)) {
-			for (String s : this.splits) {
-				LOG.info("adding to arraylist: " + s);
-				value.add(s);
+		value.set(tmpInputLine);
+		
+		return true;
+	}
+
+	
+	private static boolean indexThreadCreationFailed = false;
+	@SuppressWarnings("unchecked")
+	private void createIndexAndThread(long pos) {
+		LOG.debug("createIndexAndThread()");
+		// make sure we dont try the same shit over and over again
+		if(indexThreadCreationFailed){
+			LOG.debug("return since index creation already failed");
+			return;
+		}
+		// get the class from the configuration
+		Class<?> c = conf.getClass("Index", null);
+		if (c == null)
+			throw new IllegalArgumentException(
+					"Index class must be set in config");
+
+		// lets try to create the index and the thread
+		try {
+			index = (Index<String, String>) (c.getConstructor().newInstance());
+			index.createIndex(generateIndexPath(conf.get("indexSavePath"), ""+pos, "" + index.getIdentifier()));
+			shared = new Shared(index, properties);
+			(new IndexWriterThread(shared)).start();
+			LOG.debug("--- index thread successfully created!");
+			
+		} catch (Exception e) {
+			indexThreadCreationFailed = true;
+			LOG.debug("--- index thread creation failed: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * also sets pos
+	 */
+	@SuppressWarnings("unchecked")
+	private String getNextFromIndex() {
+		LOG.debug("getNextFromIndex()");
+		if(doneReadingFromIndex)
+			return null;
+		
+		LOG.debug("not done");
+		
+		// return next if index and iterator are loaded
+		if(indexIterator != null && indexIterator.hasNext()){
+			LOG.debug("returning next from index");
+			return indexIterator.next();
+		}
+		
+		LOG.debug("didnt return next");
+		
+		// return null if there is no more index
+		if(indexFilesPointer >= indexFiles.length){
+			doneReadingFromIndex = true;
+			index = null;
+			indexIterator = null;
+			return null;
+		}
+		
+		LOG.debug("didnt return null, loading index");
+		
+		
+		// otherwise load index
+		Class<?> c = conf.getClass("Index", null);
+		if (c == null)
+			throw new IllegalArgumentException(
+					"Index class must be set in config");
+
+		try {
+
+			index = (Index<String, String>) (c.getConstructor().newInstance());
+
+			// try to load the index
+			indexFilesPointer++;
+			LOG.debug("loading offset");
+			if(!properties.containsKey(indexFiles[indexFilesPointer - 1])){
+				File f = new File(indexFolder + indexFiles[indexFilesPointer - 1]);
+				LOG.debug("deleting file: " + f.getAbsolutePath());
+				f.delete();
+				index = null;
+				indexIterator = null;
+				LOG.debug("no data of this index partial in the properties file: " + indexFiles[indexFilesPointer - 1]);
+				throw new IllegalStateException("no data of this index partial in the properties file");
 			}
-			return true;
-		} else {
-			return nextKeyValue();
+			
+			String offset = properties.getProperty(indexFiles[indexFilesPointer - 1]);
+			
+			LOG.debug("Loading index " + indexFolder + indexFiles[indexFilesPointer - 1]);
+			index.createIndex(indexFolder + indexFiles[indexFilesPointer - 1]);
+			indexIterator = index.getIterator();
+			
+			LOG.debug("Adjusting POS: from " + pos + " to " + offset);
+			pos = Long.parseLong(offset);
+		} catch (Exception e) {
+			LOG.debug("exception in loading index: " + e.getMessage());
+			index = null;
+			indexIterator = null;
 		}
 
+		return getNextFromIndex();
 	}
 
 	@Override
@@ -258,7 +409,7 @@ public class IndexedRecordReader extends
 	}
 
 	@Override
-	public ArrayList<String> getCurrentValue() {
+	public Text getCurrentValue() {
 		return value;
 	}
 
@@ -282,64 +433,88 @@ public class IndexedRecordReader extends
 	}
 	
 	class Shared {
-		private Index index;
-		private LinkedList<String[]> splitsList = new LinkedList<String[]>();
-		private LinkedList<String> valueList = new LinkedList<String>();
+		private Index<String, String> index;
+		private Properties properties;
 		
-		public void add(String[] splits, String string) {
-			if(getSplitsList().size() > 1000)
+		private LinkedBlockingQueue<String[]> splitsList = new LinkedBlockingQueue<String[]>();
+		private LinkedBlockingQueue<String> valueList = new LinkedBlockingQueue<String>();
+		private long offset = 0;
+		
+		private int counter = 0;
+		
+		public void add(String[] splits, String string, long offset) {
+			if(counter++ >= 50)
 				return;
 			
-			getSplitsList().add(splits);
-			getValueList().add(string);
+			LOG.debug("shared adding with offset: " + offset);
+			
+			splitsList.add(splits);
+			valueList.add(string);
+			this.offset = offset;
 		}
 		
-		public void save(){};
+		public void save(){
+			LOG.debug("saving index");
+			index.save();
+			LOG.debug("saving properties");
+			String[] indexPathSplit = index.getPath().split("/"); 
+			String indexPath = indexPathSplit[indexPathSplit.length - 1 ];
+			properties.setProperty(indexPath, "" + offset);
+			try {
+				properties.storeToXML(new FileOutputStream(propertiesFile), "comment");
+			} catch (Exception e) {
+				LOG.debug("Storing properties failed: " + e.toString());
+				e.printStackTrace();
+			}
+			LOG.debug("properties saved");
+		};
 
-		Shared(Index index){
+		Shared(Index<String, String> index, Properties p){
 			this.setIndex(index);
+			this.properties = p;
 		}
 
 		/**
 		 * @param index the index to set
 		 */
-		public void setIndex(Index index) {
+		public void setIndex(Index<String, String> index) {
 			this.index = index;
 		}
 
 		/**
 		 * @return the index
 		 */
-		public Index getIndex() {
+		public Index<String, String> getIndex() {
 			return index;
 		}
 
 		/**
 		 * @param splitsList the splitsList to set
 		 */
-		public void setSplitsList(LinkedList<String[]> splitsList) {
+		public void setSplitsList(LinkedBlockingQueue<String[]> splitsList) {
 			this.splitsList = splitsList;
 		}
 
 		/**
 		 * @return the splitsList
 		 */
-		public LinkedList<String[]> getSplitsList() {
+		public LinkedBlockingQueue<String[]> getSplitsList() {
 			return splitsList;
 		}
 
 		/**
 		 * @param valueList the valueList to set
 		 */
-		public void setValueList(LinkedList<String> valueList) {
+		public void setValueList(LinkedBlockingQueue<String> valueList) {
 			this.valueList = valueList;
 		}
 
 		/**
 		 * @return the valueList
 		 */
-		public LinkedList<String> getValueList() {
+		public LinkedBlockingQueue<String> getValueList() {
 			return valueList;
 		}
+
 	}
 }

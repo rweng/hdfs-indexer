@@ -27,27 +27,27 @@ import com.freshbourne.hdfs.index.IndexedRecordReader;
  */
 public class Main extends Configured implements Tool {
 
-	public static class Map extends	Mapper<LongWritable, ArrayList<String>, Text, IntWritable> {
+	public static class Map extends	Mapper<LongWritable, Text, Text, IntWritable> {
 		private final static IntWritable one = new IntWritable(1);
 		private Text word = new Text();
 		private static final Log LOG = LogFactory.getLog(Map.class);
 
 		@Override
-		public void map(LongWritable key, ArrayList<String> value, Context context)
+		public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
-			LOG.debug("VALUE SIZE: " + value.size());
-			if(value.size() < 1)
-				return;
-			
 			String line = value.toString();
 			LOG.debug("Line: " + line);
+			String[] splits = line.split("(\t| +)");
+			one.set(1);
+			if(splits.length >= 3)
+				context.write(new Text(splits[2]), one);
 			
-			StringTokenizer tokenizer = new StringTokenizer(line);
-			while (tokenizer.hasMoreTokens()) {
-				word.set(tokenizer.nextToken());
-				one.set(1);
-				context.write(word, one);
-			}
+//			StringTokenizer tokenizer = new StringTokenizer(line);
+//			while (tokenizer.hasMoreTokens()) {
+//				word.set(tokenizer.nextToken());
+//				one.set(1);
+//				context.write(word, one);
+//			}
 		}
 	}
 

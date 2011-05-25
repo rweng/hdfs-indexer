@@ -3,6 +3,9 @@ apply plugin: 'eclipse'
 
 repositories {
     mavenCentral()
+	mavenRepo urls: "http://guice-maven.googlecode.com/svn/trunk"
+	mavenRepo urls: "http://repository.codehaus.org"
+	
 }
 
 dependencies {
@@ -42,7 +45,10 @@ installTpch.description = 'Downloads and installs tpch on linux x86. Requires cu
 
 task runJar(dependsOn:jar) << {
 	run("scripts/runJar.sh")
-	
+}
+
+task setupHdfs << {
+	run("scripts/setupHdfs.sh")
 }
 runJar.description = 'trys to run the jar in Hadoop'
 

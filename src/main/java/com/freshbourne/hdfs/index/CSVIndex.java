@@ -18,11 +18,11 @@ import com.freshbourne.multimap.btree.BTree;
 public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	
 	private static final long serialVersionUID = 1L;
-	private BTree<K, V> index;
+	protected BTree<K, V> index;
 	protected static final Log LOG = LogFactory.getLog(CSVIndex.class);
 	
 	
-	public abstract BTree<K, V> createIndex(String path);
+	public abstract CSVIndex<K, V> createIndex(String path);
 
 	/* (non-Javadoc)
 	 * @see com.freshbourne.hdfs.index.Index#getIterator()
@@ -45,7 +45,7 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	 * @see com.freshbourne.hdfs.index.Index#save(java.lang.String)
 	 */
 	@Override
-	public void save(String path) {
+	public void save() {
 		LOG.debug("saving index");
 		index.sync();
 		LOG.debug("index saved");
@@ -59,16 +59,16 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 		index.add(key, value);
 	}
 	
-	
+	/**
+	 * @return position (-1) in the array to select
+	 */
 	public abstract int getColumn();
 	
 	/* (non-Javadoc)
 	 * @see com.freshbourne.hdfs.index.Index#load(java.lang.String)
 	 */
-	@Override
-	public void load(String path) {
+	public Index<K, V> loadOrInitialize() {
 		LOG.info("creating injector and index");
-		index = createIndex(path);
 		
 		boolean loaded = false;
 		try{
@@ -81,6 +81,7 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 			index.initialize();
 		
 		LOG.info("index created");
+		return this;
 	}
 	
 
@@ -90,6 +91,15 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	@Override
 	public String getIdentifier() {
 		return "" + getColumn();
+	}
+	
+
+	/* (non-Javadoc)
+	 * @see com.freshbourne.hdfs.index.Index#getPath()
+	 */
+	@Override
+	public String getPath() {
+		return index.getPath();
 	}
 
 }

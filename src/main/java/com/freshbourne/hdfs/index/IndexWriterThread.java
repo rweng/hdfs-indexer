@@ -7,14 +7,6 @@
  */
 package com.freshbourne.hdfs.index;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadMXBean;
-import java.util.ArrayList;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -22,11 +14,8 @@ import com.freshbourne.hdfs.index.IndexedRecordReader.Shared;
 
 class IndexWriterThread extends Thread {
 	
-	private ArrayList<Shared> sharedList = new ArrayList<Shared>();
-	private Shared shared;
-	private static String pidFile = "/tmp/indexWriter.pid";
-	private static IndexWriterThread INSTANCE;
 	private static final Log LOG = LogFactory.getLog(IndexWriterThread.class);
+	private Shared shared;
 
 	
 	/* (non-Javadoc)
@@ -34,22 +23,31 @@ class IndexWriterThread extends Thread {
 	 */
 	@Override
 	public void run() {
-		try {
-			Thread.sleep(1000 * 60 * 1);
-		} catch (InterruptedException e) {
-			new RuntimeException(e);
-		}
 		
+		LOG.debug("Running thread");
+		
+		try {
+			synchronized (shared) {
+				shared.wait(1000 * 60 * 5); // wait 5 min	
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} 
+		
+		LOG.debug("after sleep");
+		
+		int c = 0;
 		while(!shared.getSplitsList().isEmpty()){
+			LOG.debug("Writing from thread to index: " + ++c);
 			shared.getIndex().add(shared.getSplitsList().poll(), shared.getValueList().poll());
 		}
-		
-		// exit
+
+		shared.save();
+		LOG.debug("Ending Thread");
 	}
 	
 	public IndexWriterThread(Shared s) {
 		this.shared = s;
-		setDaemon(true);
 	}
 	
 }
