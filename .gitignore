@@ -9,3 +9,10 @@ bin/
 target/
 .gradle/
 lib/
+
+
+# IDEA Editor files
+*.iml
+*.idea
+*.ipr
+*.iws
