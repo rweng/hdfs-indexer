@@ -469,34 +469,11 @@ public class IndexedRecordReader extends
 		synchronized public void add(String[] splits, String string, long offset) {
 			if(isFinished())
 				return;
-			
-			LOG.debug("shared adding with offset: " + offset);
-			
-			try{
-				getSplitsValueList().add(new SplitsValue(splits, string));
-				this.offset = offset;
-			} catch (IllegalStateException e) {
-				setFinished(true);
-			}
-			
+
+			splitsValueList.add(new SplitsValue(splits, string));
+			this.offset = offset;
 		}
 		
-		synchronized public void save(){
-			LOG.debug("saving index");
-			index.save();
-			LOG.debug("saving properties");
-			String[] indexPathSplit = index.getPath().split("/"); 
-			String indexPath = indexPathSplit[indexPathSplit.length - 1 ];
-			properties.setProperty(indexPath, "" + offset);
-			try {
-				properties.storeToXML(new FileOutputStream(propertiesFile), "comment");
-			} catch (Exception e) {
-				LOG.debug("Storing properties failed: " + e.toString());
-				e.printStackTrace();
-			}
-			LOG.debug("properties saved");
-		};
-
 		Shared(Index<String, String> index, Properties p){
 			this.setIndex(index);
 			this.properties = p;
