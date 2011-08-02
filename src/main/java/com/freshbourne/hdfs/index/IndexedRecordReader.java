@@ -191,11 +191,6 @@ public class IndexedRecordReader extends
 		return result;
 	}
 
-	/**
-	 * @param string
-	 * @param inputSplit
-	 * @return
-	 */
 	private String generateIndexPath(String folder, String startPos, String columnIdentifier) {
 		
 		File folderFile = (new File(folder));
@@ -466,7 +461,7 @@ public class IndexedRecordReader extends
 		private Index<String, String> index;
 		private Properties properties;
 		
-		private LinkedBlockingQueue<SplitsValue> splitsValueList = new LinkedBlockingQueue<SplitsValue>(1000);
+		private ArrayList<SplitsValue> splitsValueList = new ArrayList<SplitsValue>(1000);
 		private long offset = 0;
 		
 		private boolean isFinished = false;
@@ -538,7 +533,7 @@ public class IndexedRecordReader extends
 		/**
 		 * @return the splitsValueList
 		 */
-		public LinkedBlockingQueue<SplitsValue> getSplitsValueList() {
+		public ArrayList<SplitsValue> getSplitsValueList() {
 			return splitsValueList;
 		}
 

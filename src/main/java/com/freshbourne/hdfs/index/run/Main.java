@@ -35,14 +35,6 @@ public class Main extends Configured implements Tool {
 		@Override
 		public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
-			/*
-			String line = value.toString();
-			LOG.debug("Line: " + line);
-			String[] splits = line.split("(\t| +)");
-			one.set(1);
-			if(splits.length >= 3)
-				 context.write(new Text(splits[2]), one);
-				 */
 		}
 	}
 
@@ -50,11 +42,6 @@ public class Main extends Configured implements Tool {
 
 		public void reduce(Text key, Iterator<IntWritable> values, Context context)
 				throws IOException, InterruptedException {
-			int sum = 0;
-			while (values.hasNext()) {
-				sum += values.next().get();
-			}
-			context.write(key, new IntWritable(sum));
 		}
 	}
 
@@ -65,6 +52,7 @@ public class Main extends Configured implements Tool {
 	private int runJob(String name, Class<? extends Map> map, Class<? extends Reduce> reduce,
 			String input, String output) throws Exception {
 		// configuration
+
 		Configuration conf = getConf();
 		conf.setClass("Index", Col1Index.class, Serializable.class);
 		conf.setClass("Filter", Filter.class, Serializable.class);
