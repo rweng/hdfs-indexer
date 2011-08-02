@@ -14,7 +14,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.freshbourne.hdfs.index.IndexedRecordReader.Shared;
-import com.freshbourne.hdfs.index.IndexedRecordReader.SplitsValue;
+import com.freshbourne.hdfs.index.IndexedRecordReader.KeyValue;
 
 
 /**
@@ -35,13 +35,13 @@ class IndexWriterThread extends Thread {
 		
 		LOG.debug("Running thread");
 
-		shared.getSplitsValueList();
+		shared.getKeyValueList();
 		
 		try {
-			SplitsValue sv = shared.getSplitsValueList().poll(1, TimeUnit.MINUTES);
+			KeyValue sv = shared.getKeyValueList().poll(1, TimeUnit.MINUTES);
 			while (!shared.isFinished() && sv != null) {
 				shared.getIndex().add(sv.getSplits(), sv.getValue());
-				sv = shared.getSplitsValueList().poll(1, TimeUnit.MINUTES);	
+				sv = shared.getKeyValueList().poll(1, TimeUnit.MINUTES);
 			}
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block

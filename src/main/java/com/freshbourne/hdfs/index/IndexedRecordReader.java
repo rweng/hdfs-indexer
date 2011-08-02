@@ -2,15 +2,12 @@ package com.freshbourne.hdfs.index;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -422,12 +419,12 @@ public class IndexedRecordReader extends
 		}
 	}
 	
-	class SplitsValue{
-		private String[] splits;
+	class KeyValue {
+		private String key;
 		private String value;
 		
-		SplitsValue(String[] splits, String value) {
-			this.splits = splits;
+		KeyValue(String key, String value) {
+			this.key = key;
 			this.value = value;
 		}
 		
@@ -443,17 +440,13 @@ public class IndexedRecordReader extends
 		public String getValue() {
 			return value;
 		}
-		/**
-		 * @param splits the splits to set
-		 */
-		public void setSplits(String[] splits) {
-			this.splits = splits;
+
+		public String getKey() {
+			return key;
 		}
-		/**
-		 * @return the splits
-		 */
-		public String[] getSplits() {
-			return splits;
+
+		public void setKey(String key) {
+			this.key = key;
 		}
 	}
 	
@@ -461,16 +454,16 @@ public class IndexedRecordReader extends
 		private Index<String, String> index;
 		private Properties properties;
 		
-		private ArrayList<SplitsValue> splitsValueList = new ArrayList<SplitsValue>(1000);
+		private ArrayList<KeyValue> keyValueList = new ArrayList<KeyValue>(1000);
 		private long offset = 0;
 		
 		private boolean isFinished = false;
 		
-		synchronized public void add(String[] splits, String string, long offset) {
+		synchronized public void add(String key, String string, long offset) {
 			if(isFinished())
 				return;
 
-			splitsValueList.add(new SplitsValue(splits, string));
+			keyValueList.add(new KeyValue(key, string));
 			this.offset = offset;
 		}
 		
@@ -508,10 +501,10 @@ public class IndexedRecordReader extends
 		}
 
 		/**
-		 * @return the splitsValueList
+		 * @return the keyValueList
 		 */
-		public ArrayList<SplitsValue> getSplitsValueList() {
-			return splitsValueList;
+		public ArrayList<KeyValue> getKeyValueList() {
+			return keyValueList;
 		}
 
 	}
