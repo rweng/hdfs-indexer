@@ -40,17 +40,4 @@ public class Col1Index extends CSVIndex<String, String> implements Serializable 
 		return this;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#add(java.lang.String[], java.lang.Object)
-	 */
-	@Override
-	public void add(String[] splits, String value) {
-		if(splits.length <= getColumn()){
-			LOG.debug("splits length: " + splits.length + " but column we want: " + getColumn());
-			return;
-		
-		}
-		add(splits[getColumn()], value);
-	}
-	
 }
