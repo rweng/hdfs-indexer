@@ -92,14 +92,5 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	public String getIdentifier() {
 		return "" + getColumn();
 	}
-	
-
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#getPath()
-	 */
-	@Override
-	public String getPath() {
-		return index.getPath();
-	}
 
 }
