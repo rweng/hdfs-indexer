@@ -51,7 +51,8 @@ public class Main extends Configured implements Tool {
 
 	private int runJob(String name, Class<? extends Map> map, Class<? extends Reduce> reduce,
 			String input, String output) throws Exception {
-		// configuration
+
+		// configuration for indexing
 
 		Configuration conf = getConf();
 		conf.setClass("Index", Col1Index.class, Serializable.class);

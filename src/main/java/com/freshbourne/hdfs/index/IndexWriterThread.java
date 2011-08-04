@@ -13,9 +13,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.freshbourne.hdfs.index.IndexedRecordReader.Shared;
-import com.freshbourne.hdfs.index.IndexedRecordReader.KeyValue;
-
 
 /**
  * receives a shared object from the IndexRecordReader to handle everything, the IndexRecordReader doesn't want to do:
@@ -25,14 +22,14 @@ import com.freshbourne.hdfs.index.IndexedRecordReader.KeyValue;
 class IndexWriterThread extends Thread {
 	
 	private static final Log LOG = LogFactory.getLog(IndexWriterThread.class);
-	private Shared shared;
+	private ThreadShared shared;
 
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
 	public void run() {
-		
+		/*
 		LOG.debug("Running thread");
 
 		shared.getKeyValueList();
@@ -50,13 +47,15 @@ class IndexWriterThread extends Thread {
 
 		shared.save();
 		LOG.debug("Ending Thread");
+		*/
 	}
 	
-	public IndexWriterThread(Shared s) {
+	public IndexWriterThread(ThreadShared s) {
 		this.shared = s;
 	}
 
 	synchronized public void save(){
+		/*
 			LOG.debug("saving index");
 			index.save();
 			LOG.debug("saving properties");
@@ -70,7 +69,7 @@ class IndexWriterThread extends Thread {
 				e.printStackTrace();
 			}
 			LOG.debug("properties saved");
-		};
+			*/
+		}
 
-	
 }

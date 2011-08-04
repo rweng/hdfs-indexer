@@ -46,7 +46,7 @@ public class IndexedRecordReader extends
 	private String fileName;
 	private String[] indexFiles;
 	private short indexFilesPointer = 0;
-	private Shared shared;
+	private ThreadShared shared;
 	private boolean doneReadingFromIndex = false;
 	private String hdfsPath;
 	
@@ -244,10 +244,10 @@ public class IndexedRecordReader extends
 					Math.max((int) Math.min(Integer.MAX_VALUE, end - pos),
 							maxLineLength));
 
-			LOG.info("READING LINE FROM HDFS: " + tmpInputLine);
+			LOG.debug("READING LINE FROM HDFS: " + tmpInputLine);
 
 			this.splits = tmpInputLine.toString().split(delimiter);
-			LOG.info("Splitsize: " + splits.length);
+			LOG.debug("Splitsize: " + splits.length);
 
 			pos += newSize;
 			if (newSize == 0 || newSize < maxLineLength) {
@@ -277,7 +277,7 @@ public class IndexedRecordReader extends
 			createIndexAndThread(pos);
 		}
 		if(shared != null){
-			shared.add(splits, tmpInputLine.toString(), pos);
+			shared.add(splits[1], tmpInputLine.toString(), pos);
 		} else {
 			LOG.debug("SHARED == NULL");
 		}
@@ -310,7 +310,7 @@ public class IndexedRecordReader extends
 		try {
 			index = (Index<String, String>) (c.getConstructor().newInstance());
 			index.createIndex(generateIndexPath(conf.get("indexSavePath"), ""+pos, "" + index.getIdentifier()));
-			shared = new Shared(index, properties);
+			shared = new ThreadShared(index, properties);
 			(new IndexWriterThread(shared)).start();
 			LOG.debug("--- index thread successfully created!");
 			
@@ -417,95 +417,5 @@ public class IndexedRecordReader extends
 		if (in != null) {
 			in.close();
 		}
-	}
-	
-	class KeyValue {
-		private String key;
-		private String value;
-		
-		KeyValue(String key, String value) {
-			this.key = key;
-			this.value = value;
-		}
-		
-		/**
-		 * @param value the value to set
-		 */
-		public void setValue(String value) {
-			this.value = value;
-		}
-		/**
-		 * @return the value
-		 */
-		public String getValue() {
-			return value;
-		}
-
-		public String getKey() {
-			return key;
-		}
-
-		public void setKey(String key) {
-			this.key = key;
-		}
-	}
-	
-	class Shared {
-		private Index<String, String> index;
-		private Properties properties;
-		
-		private ArrayList<KeyValue> keyValueList = new ArrayList<KeyValue>(1000);
-		private long offset = 0;
-		
-		private boolean isFinished = false;
-		
-		synchronized public void add(String key, String string, long offset) {
-			if(isFinished())
-				return;
-
-			keyValueList.add(new KeyValue(key, string));
-			this.offset = offset;
-		}
-		
-		Shared(Index<String, String> index, Properties p){
-			this.setIndex(index);
-			this.properties = p;
-		}
-
-		/**
-		 * @param index the index to set
-		 */
-		public void setIndex(Index<String, String> index) {
-			this.index = index;
-		}
-
-		/**
-		 * @return the index
-		 */
-		public Index<String, String> getIndex() {
-			return index;
-		}
-
-		/**
-		 * @param isFinished the isFinished to set
-		 */
-		public void setFinished(boolean isFinished) {
-			this.isFinished = isFinished;
-		}
-
-		/**
-		 * @return the isFinished
-		 */
-		public boolean isFinished() {
-			return isFinished;
-		}
-
-		/**
-		 * @return the keyValueList
-		 */
-		public ArrayList<KeyValue> getKeyValueList() {
-			return keyValueList;
-		}
-
 	}
 }
