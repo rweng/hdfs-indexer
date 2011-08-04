@@ -17,15 +17,17 @@ public interface Index<K, V> {
 	public Iterator<V> getIterator(K start, K end);
 
 	/**
-	 *
+	 * closes the index after we are done writing to it
 	 */
-	public void save();
+	public void close();
+
+	/**
+	 * adds one key value entry to the index
+	 * @param key
+	 * @param value
+	 */
 	public void add(K key, V value);
-	public Index<K, V> createIndex(String path);
-	public String getPath();
-	public void add(String[] splits, V value);
-	// public Index<K,V> load(String path);
-	
+
 	/**
 	 * @return a string to place in the index file which identifies file and column
 	 */

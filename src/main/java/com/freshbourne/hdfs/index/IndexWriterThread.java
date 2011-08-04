@@ -45,7 +45,7 @@ class IndexWriterThread extends Thread {
 			e.printStackTrace();
 		}
 
-		shared.save();
+		shared.close();
 		LOG.debug("Ending Thread");
 		*/
 	}
@@ -57,7 +57,7 @@ class IndexWriterThread extends Thread {
 	synchronized public void save(){
 		/*
 			LOG.debug("saving index");
-			index.save();
+			index.close();
 			LOG.debug("saving properties");
 			String[] indexPathSplit = index.getPath().split("/");
 			String indexPath = indexPathSplit[indexPathSplit.length - 1 ];

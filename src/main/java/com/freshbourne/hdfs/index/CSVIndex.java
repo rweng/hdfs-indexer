@@ -42,10 +42,10 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#save(java.lang.String)
+	 * @see com.freshbourne.hdfs.index.Index#close(java.lang.String)
 	 */
 	@Override
-	public void save() {
+	public void close() {
 		LOG.debug("saving index");
 		index.sync();
 		LOG.debug("index saved");
