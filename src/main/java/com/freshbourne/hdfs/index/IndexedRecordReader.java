@@ -30,8 +30,34 @@ public class IndexedRecordReader extends
 		LineRecordReader {
 	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 
-	public boolean nextKeyValue() throws IOException {
-		return super.nextKeyValue();
+	private ThreadShared shared;
+	private RecordReaderIndexExtension indexExtension;
+	private boolean doneReadingFromIndex = false;
+
+	public void initialize(InputSplit genericSplit,
+						   TaskAttemptContext context) throws IOException {
+		this.initialize(genericSplit, context);
+		indexExtension = new RecordReaderIndexExtension(genericSplit, context);
+
+		// adjust position from where we start reading, based on the value in the index
+		// ...
 	}
 
+	public boolean nextKeyValue() throws IOException {
+		// get next value from index as long as we have
+          if(!doneReadingFromIndex){
+               LOG.debug("READING FROM INDEX");
+               String next = indexExtension.getNextFromIndex();
+               if (next != null) {
+                    value.set(next);
+                    return true;
+               }
+          }
+
+		pos = indexExtension.getPos();
+		boolean result = super.nextKeyValue();
+		// this.getCurrentKey();
+		// this.getCurrentValue();
+		return result;
+	}
 }

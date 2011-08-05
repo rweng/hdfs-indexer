@@ -32,4 +32,12 @@ public interface Index<K, V> {
 	 * @return a string to place in the index file which identifies file and column
 	 */
 	public String getIdentifier();
+
+	/**
+	 * Prepares the index for usage. This way, the constructor can be empty and doesn't throw any errors,
+	 * and this standardized method does the work.
+	 *
+	 * @param indexFile
+	 */
+	void initialize(String indexFile);
 }
