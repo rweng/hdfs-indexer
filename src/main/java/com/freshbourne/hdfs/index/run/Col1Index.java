@@ -33,11 +33,10 @@ public class Col1Index extends CSVIndex<String, String> implements Serializable 
 	 * @see com.freshbourne.hdfs.index.CSVIndex#createIndex()
 	 */
 	@Override
-	public CSVIndex<String, String> createIndex(String path) {
+	public void initialize(String path) {
 		Injector i = Guice.createInjector(new BTreeModule(path));
 		index = i.getInstance(Key.get(new TypeLiteral<BTree<String, String>>(){}));
 		this.loadOrInitialize();
-		return this;
 	}
 
 }

@@ -22,8 +22,6 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	protected static final Log LOG = LogFactory.getLog(CSVIndex.class);
 	
 	
-	public abstract CSVIndex<K, V> createIndex(String path);
-
 	/* (non-Javadoc)
 	 * @see com.freshbourne.hdfs.index.Index#getIterator()
 	 */

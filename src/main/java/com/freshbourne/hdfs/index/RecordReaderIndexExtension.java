@@ -26,6 +26,7 @@ public class RecordReaderIndexExtension {
 	private Properties properties;
 	private Configuration conf;
 	private long pos;
+	private String value;
 
 
 	public RecordReaderIndexExtension(InputSplit genericSplit,
@@ -157,8 +158,8 @@ public class RecordReaderIndexExtension {
 		return split;
 	}
 
-	public String getNextFromIndex() {
-		LOG.debug("getNextFromIndex()");
+	public String nextFromIndex() {
+		LOG.debug("nextFromIndex()");
           if(doneReadingFromIndex)
                return null;
          
@@ -167,7 +168,8 @@ public class RecordReaderIndexExtension {
           // return next if index and iterator are loaded
           if(indexIterator != null && indexIterator.hasNext()){
                LOG.debug("returning next from index");
-               return indexIterator.next();
+			   value = (indexIterator.next());
+               return value;
           }
 
 		// return null if there is no more index
@@ -211,10 +213,14 @@ public class RecordReaderIndexExtension {
                indexIterator = null;
           }
 
-          return getNextFromIndex();
+          return nextFromIndex();
 	}
 
 	public long getPos() {
 		return pos;
+	}
+
+	public String getCurrentValue() {
+		return value;
 	}
 }

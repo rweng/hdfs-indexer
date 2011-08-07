@@ -1,4 +1,5 @@
 .classpath
+out/
 tpch/
 .project
 .settings/
