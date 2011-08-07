@@ -2,11 +2,11 @@ package com.freshbourne.hdfs.index;
 
 import java.io.IOException;
 
+import com.freshbourne.hdfs.index.mapreduce.LineRecordReader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 
 public class IndexedRecordReader extends
 		LineRecordReader {
@@ -18,7 +18,7 @@ public class IndexedRecordReader extends
 
 	public void initialize(InputSplit genericSplit,
 						   TaskAttemptContext context) throws IOException {
-		this.initialize(genericSplit, context);
+		super.initialize(genericSplit, context);
 		indexExtension = new RecordReaderIndexExtension(genericSplit, context);
 	}
 
