@@ -12,14 +12,14 @@ public class IndexedRecordReader extends
 		LineRecordReader {
 	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 
-	private ThreadShared shared;
+	private SharedContainer sharedContainer;
 	private RecordReaderIndexExtension indexExtension;
 	private boolean doneReadingFromIndex = false;
 
 	public void initialize(InputSplit genericSplit,
 						   TaskAttemptContext context) throws IOException {
 		super.initialize(genericSplit, context);
-		indexExtension = new RecordReaderIndexExtension(genericSplit, context);
+		indexExtension = new RecordReaderIndexExtension(this, genericSplit, context);
 	}
 
 	public boolean nextKeyValue() throws IOException {
@@ -37,6 +37,11 @@ public class IndexedRecordReader extends
           }
 
 		boolean result = super.nextKeyValue();
+
+		indexExtension.nextKeyValue();
+
 		return result;
 	}
+
+	public long getPos(){return pos;}
 }

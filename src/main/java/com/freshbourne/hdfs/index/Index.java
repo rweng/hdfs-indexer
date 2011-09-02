@@ -1,5 +1,6 @@
 package com.freshbourne.hdfs.index;
 
+import java.util.Comparator;
 import java.util.Iterator;
 
 public interface Index<K, V> {
@@ -40,4 +41,31 @@ public interface Index<K, V> {
 	 * @param indexFile
 	 */
 	void initialize(String indexFile);
+
+
+	/**
+	 * transforms an entry of the hdfs file (which can be a line, a json path, ...) into a key
+	 * and value which can be fetched using getCurrentParsedKey() and getCurrentParsedValue();
+	 *
+	 * @param entry
+	 */
+	void parseEntry(String entry);
+
+	/**
+	 * utility method for parseEntry()
+	 */
+	String getCurrentParsedKey();
+
+
+	/**
+	 * utility method for parseEntry()
+	 */
+	String getCurrentParsedValue();
+
+	/**
+	 * returns a comparator for the keys
+	 *
+	 * @return comparator for keys
+	 */
+	Comparator<K> getKeyComparator();
 }

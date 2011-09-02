@@ -27,10 +27,14 @@ public class RecordReaderIndexExtension {
 	private Configuration conf;
 	private long pos;
 	private String value;
+	private SharedContainer container;
+	private IndexedRecordReader extendedReader;
 
 
-	public RecordReaderIndexExtension(InputSplit genericSplit,
+	public RecordReaderIndexExtension(IndexedRecordReader extended, InputSplit genericSplit,
 									  TaskAttemptContext context) {
+		this.extendedReader = extended;
+
 		// create the index
 		conf = context.getConfiguration();
 		hdfsPath = inputToFileSplit(genericSplit).getPath().toString();
@@ -42,6 +46,7 @@ public class RecordReaderIndexExtension {
 		fillIndexFilesArray(dir);
 		loadProperties();
 
+		container = new SharedContainer();
 
 		// otherwise load index
 		indexClassName = conf.getClass("Index", null);
@@ -222,5 +227,19 @@ public class RecordReaderIndexExtension {
 
 	public String getCurrentValue() {
 		return value;
+	}
+
+	public SharedContainer getSharedContainer() {
+		return container;
+	}
+
+	public void nextKeyValue() {
+		// determine key and value for container
+
+		index.parseEntry(extendedReader.getCurrentValue().toString());
+		container.add(index.getCurrentParsedKey(), index.getCurrentParsedValue(), extendedReader.getPos());
+		
+		if(container.isFinished())
+			(new IndexWriterThread(container)).run();
 	}
 }
