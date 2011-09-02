@@ -1,47 +1,35 @@
 package com.freshbourne.hdfs.index;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import java.util.ArrayList;
-import java.util.Properties;
+import java.util.List;
+import java.util.AbstractMap.SimpleEntry;
 
-public class SharedContainer {
-	private static final Log LOG = LogFactory.getLog(SharedContainer.class);
+public class SharedContainer<K, V> {
+	// private static final Log LOG = LogFactory.getLog(SharedContainer.class);
 	private Index<String, String> index;
-	private Properties properties;
+	// private Properties properties;
 
-	private ArrayList<KeyValue> keyValueList;
+	private List<SimpleEntry<K, V>> keyValueList;
 	private long offset = 0;
 
 	private boolean isFinished = false;
 	private int arraySize;
-
-	synchronized public void add(String line, long offset) {
-		if (isFinished())
-			return;
-
-		index.parseEntry(line);
-		this.add(index.getCurrentParsedKey(), index.getCurrentParsedValue(), offset);
-		if(keyValueList.size() >= arraySize)
-			setFinished(true);
-	}
 
 	SharedContainer() {
 		this(100000);
 	}
 
 	SharedContainer(int arraySize){
-		keyValueList = new ArrayList<KeyValue>(arraySize);
+		keyValueList = new ArrayList<SimpleEntry<K, V>>(arraySize);
 		this.arraySize = arraySize;
 	}
 
 
-	public void add(String currentParsedKey, String currentParsedValue, long pos) {
+	public void add(K currentParsedKey, V currentParsedValue, long pos) {
 		if(isFinished())
 			return;
 
-		KeyValue kv = new KeyValue(currentParsedKey, currentParsedValue);
+		SimpleEntry<K, V> kv = new SimpleEntry<K, V>(currentParsedKey, currentParsedValue);
 		keyValueList.add(kv);
 		this.offset = pos;
 	}
@@ -77,7 +65,7 @@ public class SharedContainer {
 	/**
 	 * @return the keyValueList
 	 */
-	public ArrayList<KeyValue> getKeyValueList() {
+	public List<SimpleEntry<K, V>> getKeyValueList() {
 		return keyValueList;
 	}
 

@@ -30,16 +30,15 @@ class IndexWriterThread extends Thread {
 	public void run() {
 		LOG.debug("Running thread");
 
-		sharedContainer.getKeyValueList();
 		sort();
-		sharedContainer.getIndex().bulkInsert(sharedContainer);
+		sharedContainer.getIndex().add(sharedContainer.getKeyValueList());
 		
 		LOG.debug("Ending Thread");
 	}
 
 	private void sort() {
 		Comparator<String> comparator = sharedContainer.getIndex().getKeyComparator();
-		java.util.Collections.sort(sharedContainer.getKeyValueList(), new KeyValueComparator(comparator));
+		java.util.Collections.sort(sharedContainer.getKeyValueList(), new SimpleEntryComparator(comparator));
 	}
 
 	public IndexWriterThread(SharedContainer s) {

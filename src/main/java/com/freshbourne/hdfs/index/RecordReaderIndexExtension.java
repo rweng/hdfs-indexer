@@ -3,6 +3,8 @@ package com.freshbourne.hdfs.index;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
@@ -27,7 +29,7 @@ public class RecordReaderIndexExtension {
 	private Configuration conf;
 	private long pos;
 	private String value;
-	private SharedContainer container;
+	private SharedContainer<String, String> container;
 	private IndexedRecordReader extendedReader;
 
 
@@ -46,7 +48,7 @@ public class RecordReaderIndexExtension {
 		fillIndexFilesArray(dir);
 		loadProperties();
 
-		container = new SharedContainer();
+		container = new SharedContainer<String, String>();
 
 		// otherwise load index
 		indexClassName = conf.getClass("Index", null);
@@ -233,10 +235,15 @@ public class RecordReaderIndexExtension {
 		return container;
 	}
 
-	public void nextKeyValue() {
-		// determine key and value for container
-
-		index.parseEntry(extendedReader.getCurrentValue().toString());
+	/**
+	 * adds a newly read key value to the index
+	 * 
+	 * @param currentKey
+	 * @param currentValue
+	 */
+	public void addKeyValue(LongWritable currentKey, Text currentValue) {
+		index.parseEntry(currentValue.toString());
+		
 		container.add(index.getCurrentParsedKey(), index.getCurrentParsedValue(), extendedReader.getPos());
 		
 		if(container.isFinished())

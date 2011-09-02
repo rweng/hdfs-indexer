@@ -1,7 +1,9 @@
 package com.freshbourne.hdfs.index;
 
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 public interface Index<K, V> {
 
@@ -28,6 +30,13 @@ public interface Index<K, V> {
 	 * @param value
 	 */
 	public void add(K key, V value);
+
+    /**
+     * Adds all elements of the keyValueList to the index. This can be done with a bulkInsert, or not.
+     * 
+     * @param keyValueList
+     */
+    public void add(List<SimpleEntry<K, V>> keyValueList);
 
 	/**
 	 * @return a string to place in the index file which identifies file and column
