@@ -10,6 +10,7 @@ bin/
 target/
 .gradle/
 lib/
+*.log
 
 
 # IDEA Editor files
