@@ -11,7 +11,7 @@ target/
 .gradle/
 lib/
 *.log
-
+.vagrant
 
 # IDEA Editor files
 *.iml
