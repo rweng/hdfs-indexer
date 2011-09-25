@@ -2,14 +2,16 @@
 # Cookbook Name:: hdfs-indexer
 # Recipe:: default
 #
-# Copyright 2011, YOUR_COMPANY_NAME
+# Copyright 2011, Robin Wenglewski
 #
 # All rights reserved - Do Not Redistribute
 #
 
-execute "apt-get update" do
-  command "apt-get update"
-  action :nothing
-  only_if { platform?("ubuntu", "debian") }
-end
+raise "this recipe is only tested on ubuntu" unless platform?("ubuntu")
 
+include_recipe "hadoop-alt"
+
+execute "aptitude update"
+package "git-core"
+
+# download my gist

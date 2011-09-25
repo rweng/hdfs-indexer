@@ -1,6 +1,3 @@
-[submodule "cookbooks/hadoop"]
-	path = cookbooks/hadoop
-	url = git://github.com/rweng/hadoop.git
 [submodule "cookbooks/java"]
 	path = cookbooks/java
 	url = git://github.com/rweng/java.git
