@@ -1,0 +1,9 @@
+[submodule "cookbooks/hadoop"]
+	path = cookbooks/hadoop
+	url = git://github.com/rweng/hadoop.git
+[submodule "cookbooks/java"]
+	path = cookbooks/java
+	url = git://github.com/rweng/java.git
+[submodule "cookbooks/apt"]
+	path = cookbooks/apt
+	url = git://github.com/cookbooks/apt.git
