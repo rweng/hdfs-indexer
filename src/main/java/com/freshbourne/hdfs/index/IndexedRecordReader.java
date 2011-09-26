@@ -38,8 +38,9 @@ public class IndexedRecordReader extends LineRecordReader {
 		}
 
 		boolean result = super.nextKeyValue();
-		
-		indexExtension.addKeyValue(this.getCurrentKey(), this.getCurrentValue());
+
+        if(result)
+		    indexExtension.addKeyValue(this.getCurrentKey(), this.getCurrentValue());
 
 		return result;
 	}

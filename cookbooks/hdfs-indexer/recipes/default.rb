@@ -12,3 +12,4 @@ include_recipe "apt"
 include_recipe "gradle"
 
 package "git-core"
+package "hue"
