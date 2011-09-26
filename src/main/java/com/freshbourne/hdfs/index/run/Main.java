@@ -35,6 +35,7 @@ public class Main extends Configured implements Tool {
 		@Override
 		public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
+			LOG.info("\ngot key:\t" + key.toString() + "\ngot value:\t" + value.toString());
 		}
 	}
 

@@ -1,0 +1,12 @@
+[submodule "cookbooks/java"]
+	path = cookbooks/java
+	url = git://github.com/rweng/java.git
+[submodule "cookbooks/apt"]
+	path = cookbooks/apt
+	url = git://github.com/cookbooks/apt.git
+[submodule "cookbooks/hadoop"]
+	path = cookbooks/hadoop
+	url = git://github.com/rweng/chef-hadoop-cookbook.git
+[submodule "cookbooks/gradle"]
+	path = cookbooks/gradle
+	url = git://github.com/rweng/chef-gradle-cookbook.git

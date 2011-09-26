@@ -1,6 +1,9 @@
 package com.freshbourne.hdfs.index;
 
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 public interface Index<K, V> {
 
@@ -17,17 +20,61 @@ public interface Index<K, V> {
 	public Iterator<V> getIterator(K start, K end);
 
 	/**
-	 *
+	 * closes the index after we are done writing to it
 	 */
-	public void save();
+	public void close();
+
+	/**
+	 * adds one key value entry to the index
+	 * @param key
+	 * @param value
+	 */
 	public void add(K key, V value);
-	public Index<K, V> createIndex(String path);
-	public String getPath();
-	public void add(String[] splits, V value);
-	// public Index<K,V> load(String path);
-	
+
+    /**
+     * Adds all elements of the keyValueList to the index. This can be done with a bulkInsert, or not.
+     * 
+     * @param keyValueList
+     */
+    public void add(List<SimpleEntry<K, V>> keyValueList);
+
 	/**
 	 * @return a string to place in the index file which identifies file and column
 	 */
 	public String getIdentifier();
+
+	/**
+	 * Prepares the index for usage. This way, the constructor can be empty and doesn't throw any errors,
+	 * and this standardized method does the work.
+	 *
+	 * @param indexFile
+	 */
+	void initialize(String indexFile);
+
+
+	/**
+	 * transforms an entry of the hdfs file (which can be a line, a json path, ...) into a key
+	 * and value which can be fetched using getCurrentParsedKey() and getCurrentParsedValue();
+	 *
+	 * @param entry
+	 */
+	void parseEntry(String entry);
+
+	/**
+	 * utility method for parseEntry()
+	 */
+	String getCurrentParsedKey();
+
+
+	/**
+	 * utility method for parseEntry()
+	 */
+	String getCurrentParsedValue();
+
+	/**
+	 * returns a comparator for the keys
+	 *
+	 * @return comparator for keys
+	 */
+	Comparator<K> getKeyComparator();
 }

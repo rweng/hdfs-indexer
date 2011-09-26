@@ -3,6 +3,8 @@
 * curl
 * hadoop (make sure you adjusted the maxFiles limit!!)
 
+
+
 = Build Manager
 The build manager of the thesis is gradle 0.9-rc3: http://http://gradle.org. To start using this project download and install it. Under mac, its just:
   brew install --HEAD gradle

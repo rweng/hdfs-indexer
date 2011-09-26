@@ -7,57 +7,48 @@
  */
 package com.freshbourne.hdfs.index;
 
-import java.io.FileOutputStream;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.util.Comparator;
+
 
 /**
- * receives a shared object from the IndexRecordReader to handle everything, the IndexRecordReader doesn't want to do:
+ * receives a sharedContainer object from the IndexRecordReader to handle everything, the IndexRecordReader doesn't want to do:
  * sorting the Array and writing the tree to disk.
  * 
  */
 class IndexWriterThread extends Thread {
 	
 	private static final Log LOG = LogFactory.getLog(IndexWriterThread.class);
-	private ThreadShared shared;
+	private SharedContainer sharedContainer;
 
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
 	public void run() {
-		/*
 		LOG.debug("Running thread");
 
-		shared.getKeyValueList();
+		sort();
+		sharedContainer.getIndex().add(sharedContainer.getKeyValueList());
 		
-		try {
-			KeyValue sv = shared.getKeyValueList().poll(1, TimeUnit.MINUTES);
-			while (!shared.isFinished() && sv != null) {
-				shared.getIndex().add(sv.getSplits(), sv.getValue());
-				sv = shared.getKeyValueList().poll(1, TimeUnit.MINUTES);
-			}
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		shared.save();
 		LOG.debug("Ending Thread");
-		*/
 	}
-	
-	public IndexWriterThread(ThreadShared s) {
-		this.shared = s;
+
+	private void sort() {
+		Comparator<String> comparator = sharedContainer.getIndex().getKeyComparator();
+		java.util.Collections.sort(sharedContainer.getKeyValueList(), new SimpleEntryComparator(comparator));
+	}
+
+	public IndexWriterThread(SharedContainer s) {
+		this.sharedContainer = s;
 	}
 
 	synchronized public void save(){
 		/*
 			LOG.debug("saving index");
-			index.save();
+			index.close();
 			LOG.debug("saving properties");
 			String[] indexPathSplit = index.getPath().split("/");
 			String indexPath = indexPathSplit[indexPathSplit.length - 1 ];

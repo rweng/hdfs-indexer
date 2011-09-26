@@ -1,4 +1,5 @@
 .classpath
+out/
 tpch/
 .project
 .settings/
@@ -9,7 +10,9 @@ bin/
 target/
 .gradle/
 lib/
-
+*.log
+.vagrant
+.DS_Store
 
 # IDEA Editor files
 *.iml

@@ -20,13 +20,15 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	private static final long serialVersionUID = 1L;
 	protected BTree<K, V> index;
 	protected static final Log LOG = LogFactory.getLog(CSVIndex.class);
-	
-	
-	public abstract CSVIndex<K, V> createIndex(String path);
+	private String parsedKey;
+	private String parsedValue;
+	private static String delimiter = "(\t| +)";
+
+
 
 	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#getIterator()
-	 */
+		 * @see com.freshbourne.hdfs.index.Index#getIterator()
+		 */
 	@Override
 	public Iterator<V> getIterator() {
 		return index.getIterator();
@@ -42,10 +44,10 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#save(java.lang.String)
+	 * @see com.freshbourne.hdfs.index.Index#close(java.lang.String)
 	 */
 	@Override
-	public void save() {
+	public void close() {
 		LOG.debug("saving index");
 		index.sync();
 		LOG.debug("index saved");
@@ -92,14 +94,18 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	public String getIdentifier() {
 		return "" + getColumn();
 	}
-	
 
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#getPath()
-	 */
 	@Override
-	public String getPath() {
-		return index.getPath();
+	public String getCurrentParsedKey(){return parsedKey;}
+	
+	@Override
+	public String getCurrentParsedValue(){return parsedValue;}
+
+	@Override
+	public void parseEntry(String entry){
+		String[] splits = entry.split(delimiter);
+		this.parsedKey = splits[getColumn()];
+		this.parsedValue = entry;
 	}
 
 }

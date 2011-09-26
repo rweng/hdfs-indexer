@@ -1,13 +1,14 @@
 package com.freshbourne.hdfs.index.run;
 
 import java.io.Serializable;
-import java.util.Iterator;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Comparator;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.freshbourne.hdfs.index.CSVIndex;
-import com.freshbourne.hdfs.index.IndexedRecordReader;
 import com.freshbourne.multimap.btree.BTree;
 import com.freshbourne.multimap.btree.BTreeModule;
 import com.google.inject.Guice;
@@ -25,7 +26,6 @@ public class Col1Index extends CSVIndex<String, String> implements Serializable 
 	 */
 	@Override
 	public int getColumn() {
-		// TODO Auto-generated method stub
 		return 2;
 	}
 
@@ -33,24 +33,21 @@ public class Col1Index extends CSVIndex<String, String> implements Serializable 
 	 * @see com.freshbourne.hdfs.index.CSVIndex#createIndex()
 	 */
 	@Override
-	public CSVIndex<String, String> createIndex(String path) {
+	public void initialize(String path) {
 		Injector i = Guice.createInjector(new BTreeModule(path));
 		index = i.getInstance(Key.get(new TypeLiteral<BTree<String, String>>(){}));
 		this.loadOrInitialize();
-		return this;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#add(java.lang.String[], java.lang.Object)
-	 */
+    @Override
+    public Comparator<String> getKeyComparator() {
+        return index.getKeyComparator();
+    }
+
 	@Override
-	public void add(String[] splits, String value) {
-		if(splits.length <= getColumn()){
-			LOG.debug("splits length: " + splits.length + " but column we want: " + getColumn());
-			return;
-		
-		}
-		add(splits[getColumn()], value);
+	public void add(List<SimpleEntry<String, String>> keyValueList) {
+		throw new RuntimeException("not implemented yet");
+		// index.bulkInitialize(arg0, arg1)
 	}
-	
+
 }
