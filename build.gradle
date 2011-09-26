@@ -4,69 +4,78 @@ apply plugin: 'idea'
 
 repositories {
     mavenCentral()
-	mavenRepo urls: "http://guice-maven.googlecode.com/svn/trunk"
-	mavenRepo urls: "http://repository.codehaus.org"
-	
+    mavenRepo urls: "http://guice-maven.googlecode.com/svn/trunk"
+    mavenRepo urls: "http://repository.codehaus.org"
+
 }
 
 dependencies {
-	compile "org.apache.hadoop:hadoop-core:0.20.2@jar"
-	compile "junit:junit:4.8.2@jar"
-	
-	compile "commons-logging:commons-logging:1.0.4@jar"
-	compile "commons-logging:commons-logging-api:1.0.4@jar"
-	
-	compile "log4j:log4j:1.2.16@jar"
-	
-	// a multimap project is required to exist beside this project
-	compile fileTree(dir: '../multimap/build/libs', includes: ['*.jar'])
-	
-	// index dependencies
-	compile "com.google.code.guice:guice:2.0.1@jar"
-	compile "aopalliance:aopalliance:1.0@jar"
-	
+    compile "org.apache.hadoop:hadoop-core:0.20.2@jar"
+    compile "junit:junit:4.8.2@jar"
+
+    compile "commons-logging:commons-logging:1.0.4@jar"
+    compile "commons-logging:commons-logging-api:1.0.4@jar"
+
+    compile "log4j:log4j:1.2.16@jar"
+    // http://dl.dropbox.com/u/456244/multimap-0.01.jar
+    // a multimap project is required to exist beside this project
+    //compile fileTree(dir: '../multimap/build/libs', includes: ['*.jar'])
+    //compile "http://dl.dropbox.com/u/456244/multimap-0.01.jar"
+    // compile files("http://dl.dropbox.com/u/456244/multimap-0.01.jar")
+    compile('multimap:multimap:0.0.1') {
+        artifact {
+            name = 'multimap'
+            extension = 'jar'
+            url = 'http://dl.dropbox.com/u/456244/multimap-0.01.jar'
+            type = "jar"
+        }
+    }
+
+    // index dependencies
+    compile "com.google.code.guice:guice:2.0.1@jar"
+    compile "aopalliance:aopalliance:1.0@jar"
+
 }
 
 //************* java plugin configuration ********************
 sourceCompatibility = 1.6
 version = '0.01'
 jar {
-	// include all dependency jars in this jars lib/ folder
-	from configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }
-	
-	manifest {
-		// attributes("Main-Class": "com.freshbourne.hdfs.index.run.Main")
-	}
+    // include all dependency jars in this jars lib/ folder
+    from configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }
+
+    manifest {
+        // attributes("Main-Class": "com.freshbourne.hdfs.index.run.Main")
+    }
 }
 
 //************* OWN TASKS ********************
 
 task installTpch << {
-	"scripts/install_tpch.sh".execute().text
+    "scripts/install_tpch.sh".execute().text
 }
 installTpch.description = 'Downloads and installs tpch on linux x86. Requires curl and gcc'
 
 
-task runJar(dependsOn:jar) << {
-	run("scripts/runJar.sh")
+task runJar(dependsOn: jar) << {
+    run("scripts/runJar.sh")
 }
 
-task comparePerformance(dependsOn:jar) << {
-	run("scripts/comparePerformance.sh")
+task comparePerformance(dependsOn: jar) << {
+    run("scripts/comparePerformance.sh")
 }
 
 task setupHdfs << {
-	run("scripts/setupHdfs.sh")
+    run("scripts/setupHdfs.sh")
 }
 runJar.description = 'trys to run the jar in Hadoop'
-
 
 //************* HELPER METHODS ********************
 
 // run a command with direct process output
 def run(command) {
-	def process = command.execute()
-	process.consumeProcessOutput(System.out, System.err)
-	process.waitForOrKill(0)
-	return process // use to get exit code et cetera
+    def process = command.execute()
+    process.consumeProcessOutput(System.out, System.err)
+    process.waitForOrKill(0)
+    return process // use to get exit code et cetera
 }

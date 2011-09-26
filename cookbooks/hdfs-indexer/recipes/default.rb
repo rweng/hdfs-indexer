@@ -12,5 +12,3 @@ include_recipe "apt"
 include_recipe "gradle"
 
 package "git-core"
-
-execute "cd /vagrant; gradle jar"
