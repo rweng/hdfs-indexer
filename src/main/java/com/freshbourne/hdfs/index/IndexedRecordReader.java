@@ -17,7 +17,6 @@ public class IndexedRecordReader extends LineRecordReader {
 
 	public void initialize(InputSplit genericSplit, TaskAttemptContext context)
 			throws IOException {
-		
 		super.initialize(genericSplit, context);
 		indexExtension = new RecordReaderIndexExtension(this, genericSplit,
 				context);

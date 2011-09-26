@@ -5,6 +5,14 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+
+/**
+ *
+ * This interface is the most abstract description of an index.
+ *
+ * @param <K>
+ * @param <V>
+ */
 public interface Index<K, V> {
 
 	/**
@@ -58,18 +66,7 @@ public interface Index<K, V> {
 	 *
 	 * @param entry
 	 */
-	void parseEntry(String entry);
-
-	/**
-	 * utility method for parseEntry()
-	 */
-	String getCurrentParsedKey();
-
-
-	/**
-	 * utility method for parseEntry()
-	 */
-	String getCurrentParsedValue();
+	SimpleEntry<K,V> parseEntry(String entry);
 
 	/**
 	 * returns a comparator for the keys

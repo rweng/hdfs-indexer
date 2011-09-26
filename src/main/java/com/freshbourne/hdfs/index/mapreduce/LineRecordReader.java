@@ -44,6 +44,7 @@ import org.apache.commons.logging.Log;
 public class LineRecordReader extends RecordReader<LongWritable, Text> {
   private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
 
+  @SuppressWarnings({"FieldCanBeLocal"})
   private CompressionCodecFactory compressionCodecs = null;
   private long start;
   protected long pos; // made protected !!!

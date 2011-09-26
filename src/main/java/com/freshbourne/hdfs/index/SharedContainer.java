@@ -1,12 +1,14 @@
 package com.freshbourne.hdfs.index;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.AbstractMap.SimpleEntry;
 
+
 public class SharedContainer<K, V> {
 	// private static final Log LOG = LogFactory.getLog(SharedContainer.class);
-	private Index<String, String> index;
+	private Index<K, V> index;
 	// private Properties properties;
 
 	private List<SimpleEntry<K, V>> keyValueList;
@@ -15,17 +17,18 @@ public class SharedContainer<K, V> {
 	private boolean isFinished = false;
 	private int arraySize;
 
-	SharedContainer() {
-		this(100000);
-	}
+    public SharedContainer(Index<K, V> index) {
+        keyValueList = new ArrayList<SimpleEntry<K, V>>(arraySize);
+        this.arraySize = 10000;
 
-	SharedContainer(int arraySize){
-		keyValueList = new ArrayList<SimpleEntry<K, V>>(arraySize);
-		this.arraySize = arraySize;
-	}
+        if(index == null)
+            throw new IllegalArgumentException("index is null");
+
+        this.index = index;
+    }
 
 
-	public void add(K currentParsedKey, V currentParsedValue, long pos) {
+    public void add(K currentParsedKey, V currentParsedValue, long pos) {
 		if(isFinished())
 			return;
 
@@ -35,16 +38,9 @@ public class SharedContainer<K, V> {
 	}
 
 	/**
-	 * @param index the index to set
-	 */
-	public void setIndex(Index<String, String> index) {
-		this.index = index;
-	}
-
-	/**
 	 * @return the index
 	 */
-	public Index<String, String> getIndex() {
+	public Index<K, V> getIndex() {
 		return index;
 	}
 
@@ -69,4 +65,8 @@ public class SharedContainer<K, V> {
 		return keyValueList;
 	}
 
+    public void add(String s, long pos) {
+        AbstractMap.SimpleEntry<K, V> keyValue = getIndex().parseEntry(s);
+        add(keyValue.getKey(), keyValue.getValue(), pos);
+    }
 }

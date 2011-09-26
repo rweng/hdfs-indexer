@@ -21,6 +21,7 @@ Vagrant::Config.run do |config|
   # computers to access the VM, whereas host only networking does not.
   config.vm.forward_port "namenode", 50070, 50070
   config.vm.forward_port "hue", 8088, 8088
+  config.vm.forward_port "task_tracker", 38095, 38095
 
   # Share an additional folder to the guest VM. The first argument is
   # an identifier, the second is the path on the guest to mount the

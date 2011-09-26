@@ -8,6 +8,7 @@
 package com.freshbourne.hdfs.index;
 
 import java.io.Serializable;
+import java.util.AbstractMap;
 import java.util.Iterator;
 
 import org.apache.commons.logging.Log;
@@ -22,7 +23,8 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	protected static final Log LOG = LogFactory.getLog(CSVIndex.class);
 	private String parsedKey;
 	private String parsedValue;
-	private static String delimiter = "(\t| +)";
+	@SuppressWarnings({"FieldCanBeLocal"})
+    private static String delimiter = "(\t| +)";
 
 
 
@@ -96,16 +98,11 @@ public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
 	}
 
 	@Override
-	public String getCurrentParsedKey(){return parsedKey;}
-	
-	@Override
-	public String getCurrentParsedValue(){return parsedValue;}
-
-	@Override
-	public void parseEntry(String entry){
+	public AbstractMap.SimpleEntry<K,V> parseEntry(String entry){
 		String[] splits = entry.split(delimiter);
-		this.parsedKey = splits[getColumn()];
-		this.parsedValue = entry;
+		String parsedKey = splits[getColumn()];
+		String parsedValue = entry;
+        return new AbstractMap.SimpleEntry<K, V>((K) parsedKey, (V) parsedValue);
 	}
 
 }

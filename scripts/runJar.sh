@@ -5,7 +5,9 @@ SAMPLE_FILE_HDFS="/test/sampleFile"
 
 scripts/setupHdfs.sh
 
-hadoop jar build/libs/hdfs-indexer-0.01.jar com.freshbourne.hdfs.index.run.Main "${SAMPLE_FILE_HDFS}Small"
+# used * instead of the concrete name to 1. be version independent and 2. so that also jars generated in the
+# vagrant env work (they are generated as vagrant.*.jar)
+hadoop jar build/libs/*.jar com.freshbourne.hdfs.index.run.Main "${SAMPLE_FILE_HDFS}Small"
 
 # make sure indexer was successfull
 if [ $? -ne 0 ];then
