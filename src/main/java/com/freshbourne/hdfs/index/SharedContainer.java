@@ -1,5 +1,10 @@
 package com.freshbourne.hdfs.index;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,8 +12,9 @@ import java.util.AbstractMap.SimpleEntry;
 
 
 public class SharedContainer<K, V> {
-	// private static final Log LOG = LogFactory.getLog(SharedContainer.class);
-	private Index<K, V> index;
+	private static final Logger LOG = Logger.getLogger(SharedContainer.class);
+
+    private Index<K, V> index;
 	// private Properties properties;
 
 	private List<SimpleEntry<K, V>> keyValueList;
@@ -35,6 +41,7 @@ public class SharedContainer<K, V> {
 		SimpleEntry<K, V> kv = new SimpleEntry<K, V>(currentParsedKey, currentParsedValue);
 		keyValueList.add(kv);
 		this.offset = pos;
+        LOG.debug("added value to shared container: " + currentParsedValue.toString());
 	}
 
 	/**
