@@ -9,6 +9,6 @@ depends %w-apt java hadoop-
 
 recipe "hdfs-indexer", "installs all deps for running the hdfs-indexer"
 
-%w{ debian ubuntu }.each do |os|
+%w{ ubuntu }.each do |os|
   supports os
 end

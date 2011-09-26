@@ -12,6 +12,7 @@ target/
 lib/
 *.log
 .vagrant
+.DS_Store
 
 # IDEA Editor files
 *.iml
