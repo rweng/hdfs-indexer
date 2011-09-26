@@ -5,7 +5,7 @@ task :setup do
   end
   
   puts "installling git submodules"
-  %x(git submodule init)
+  %x(git submodule init && git submodule update)
   
   puts "installing vagrant gem"
   %x(gem install vagrant)
