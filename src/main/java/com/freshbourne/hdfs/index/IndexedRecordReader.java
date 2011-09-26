@@ -40,6 +40,8 @@ public class IndexedRecordReader extends LineRecordReader {
 
         if(result)
 		    indexExtension.addKeyValue(this.getCurrentKey(), this.getCurrentValue());
+        else
+            indexExtension.getSharedContainer().setFinished();
 
 		return result;
 	}

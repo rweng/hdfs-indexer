@@ -7,8 +7,8 @@
  */
 package com.freshbourne.hdfs.index;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import java.util.Comparator;
 
@@ -20,7 +20,7 @@ import java.util.Comparator;
  */
 class IndexWriterThread extends Thread {
 	
-	private static final Log LOG = LogFactory.getLog(IndexWriterThread.class);
+	private static final Logger LOG = Logger.getLogger(IndexWriterThread.class);
 	private SharedContainer sharedContainer;
 
 	/* (non-Javadoc)
@@ -28,6 +28,7 @@ class IndexWriterThread extends Thread {
 	 */
 	@Override
 	public void run() {
+        LOG.setLevel(Level.DEBUG);
 		LOG.debug("Running thread");
 
 		sort();

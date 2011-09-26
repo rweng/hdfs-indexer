@@ -257,6 +257,10 @@ public class RecordReaderIndexExtension {
         return value;
     }
 
+    /**
+     * if the shared container needs to be accessed, it means
+     * @return
+     */
     public SharedContainer getSharedContainer() {
         if (container != null) {
             return container;
@@ -279,31 +283,6 @@ public class RecordReaderIndexExtension {
      * @param currentValue
      */
     public void addKeyValue(LongWritable currentKey, Text currentValue) {
-
-
-//        if(index == null){
-//            try {
-//                index = (Index<String, String>) (indexClassName.getConstructor().newInstance());
-//            } catch (Exception e) {
-//                throw new RuntimeException(e);
-//            }
-//
-//            String path = generateIndexPath(getIndexFolder(), "" + getPos(), index.getIdentifier());
-//            index.initialize(path);
-//            LOG.warn("index is null!");
-//            return;
-//        }
-//
-//        if(currentValue == null){
-//            LOG.warn("currentValue is null!");
-//            return;
-//        }
-//
-//        index.parseEntry(currentValue.toString());
-
         getSharedContainer().add(currentValue.toString(), baseReader.getPos());
-
-        if (getSharedContainer().isFinished())
-            (new IndexWriterThread(getSharedContainer())).run();
     }
 }
