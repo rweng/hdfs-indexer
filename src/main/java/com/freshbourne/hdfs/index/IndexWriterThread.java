@@ -21,7 +21,6 @@ import java.util.Comparator;
 class IndexWriterThread extends Thread {
 	
 	private static final Logger LOG = Logger.getLogger(IndexWriterThread.class);
-	private SharedContainer sharedContainer;
 
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
@@ -32,18 +31,18 @@ class IndexWriterThread extends Thread {
 		LOG.debug("Running thread");
 
 		sort();
-		sharedContainer.getIndex().add(sharedContainer.getKeyValueList());
+		// sharedContainer.getIndex().add(sharedContainer.getKeyValueList());
 		
 		LOG.debug("Ending Thread");
 	}
 
 	private void sort() {
-		Comparator<String> comparator = sharedContainer.getIndex().getKeyComparator();
-		java.util.Collections.sort(sharedContainer.getKeyValueList(), new SimpleEntryComparator(comparator));
+		// Comparator<String> comparator = sharedContainer.getIndex().getKeyComparator();
+		// java.util.Collections.sort(sharedContainer.getKeyValueList(), new SimpleEntryComparator(comparator));
 	}
 
-	public IndexWriterThread(SharedContainer s) {
-		this.sharedContainer = s;
+	public IndexWriterThread(String s) {
+		// this.sharedContainer = s;
 	}
 
 	synchronized public void save(){

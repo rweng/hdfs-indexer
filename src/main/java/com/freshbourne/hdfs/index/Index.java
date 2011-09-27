@@ -1,5 +1,7 @@
 package com.freshbourne.hdfs.index;
 
+import org.apache.hadoop.io.Text;
+
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -9,69 +11,42 @@ import java.util.List;
 /**
  *
  * This interface is the most abstract description of an index.
+ * It usually contains one ore more storage structures to which data is written.
  *
- * @param <K>
- * @param <V>
+ * Note: It is important that opened indexes are closed. close() is the only method that
+ * actually ensures that the data is persisted.
+ *
  */
-public interface Index<K, V> {
+public interface Index {
 
 	/**
 	 * @return iterator over all key/value pairs in the storage
 	 */
-	public Iterator<V> getIterator();
+	public Iterator<SimpleEntry<String, String>> getIterator();
 
 	/**
 	 * @param start key
 	 * @param end key
 	 * @return iterator over all key/value pairs in the storage from the start key to the end key
 	 */
-	public Iterator<V> getIterator(K start, K end);
+	public Iterator<SimpleEntry<String, String>> getIterator(String start, String end);
 
 	/**
 	 * closes the index after we are done writing to it
+     * This is the only method that actually ensures that the data is saved permanently.
 	 */
 	public void close();
 
-	/**
-	 * adds one key value entry to the index
-	 * @param key
-	 * @param value
-	 */
-	public void add(K key, V value);
-
     /**
-     * Adds all elements of the keyValueList to the index. This can be done with a bulkInsert, or not.
-     * 
-     * @param keyValueList
+     * adds a line from a line-based record-reader to the index.
+     *
+     * For an index based on a cvs file and a b-tree index, this method could
+     * split the line by a delimiter (e.g ,) and then add the column-to-be-indexed as key
+     * and the hole line (in case of a primary index) or the position (in case of a secondary index)
+     * to the storage.
+     *
+     * @param line
+     * @param pos
      */
-    public void add(List<SimpleEntry<K, V>> keyValueList);
-
-	/**
-	 * @return a string to place in the index file which identifies file and column
-	 */
-	public String getIdentifier();
-
-	/**
-	 * Prepares the index for usage. This way, the constructor can be empty and doesn't throw any errors,
-	 * and this standardized method does the work.
-	 *
-	 * @param indexFile
-	 */
-	void initialize(String indexFile);
-
-
-	/**
-	 * transforms an entry of the hdfs file (which can be a line, a json path, ...) into a key
-	 * and value which can be fetched using getCurrentParsedKey() and getCurrentParsedValue();
-	 *
-	 * @param entry
-	 */
-	SimpleEntry<K,V> parseEntry(String entry);
-
-	/**
-	 * returns a comparator for the keys
-	 *
-	 * @return comparator for keys
-	 */
-	Comparator<K> getKeyComparator();
+    void addLine(String line, long pos);
 }

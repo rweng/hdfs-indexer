@@ -7,102 +7,34 @@
  */
 package com.freshbourne.hdfs.index;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.AbstractMap;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.freshbourne.multimap.btree.BTree;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.log4j.Logger;
 
-public abstract class CSVIndex<K, V> implements Index<K, V>, Serializable {
+public abstract class CSVIndex extends BTreeIndex {
 	
-	private static final long serialVersionUID = 1L;
-	protected BTree<K, V> index;
-	protected static final Log LOG = LogFactory.getLog(CSVIndex.class);
-	private String parsedKey;
-	private String parsedValue;
 	@SuppressWarnings({"FieldCanBeLocal"})
     private static String delimiter = "(\t| +)";
 
+    public void initialize(InputSplit genericSplit, TaskAttemptContext context, String indexId) {
+        super.initialize(genericSplit, context, "" + getColumn());
+    }
 
 
-	/* (non-Javadoc)
-		 * @see com.freshbourne.hdfs.index.Index#getIterator()
-		 */
-	@Override
-	public Iterator<V> getIterator() {
-		return index.getIterator();
-	}
-	
-
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#getIterator(java.lang.Object, java.lang.Object)
-	 */
-	@Override
-	public Iterator<V> getIterator(K start, K end) {
-		return index.getIterator(start, end);
-	}
-
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#close(java.lang.String)
-	 */
-	@Override
-	public void close() {
-		LOG.debug("saving index");
-		index.sync();
-		LOG.debug("index saved");
-	}
-	
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#add(java.lang.String[], long)
-	 */
-	@Override
-	public void add(K key, V value) {
-		index.add(key, value);
-	}
-	
-	/**
+    /**
 	 * @return position (-1) in the array to select
 	 */
 	public abstract int getColumn();
-	
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#load(java.lang.String)
-	 */
-	public Index<K, V> loadOrInitialize() {
-		LOG.info("creating injector and index");
-		
-		boolean loaded = false;
-		try{
-			index.load();
-			loaded = true;
-		} catch (Exception ignored) {
-		} 
-		
-		if(!loaded)
-			index.initialize();
-		
-		LOG.info("index created");
-		return this;
-	}
-	
-
-	/* (non-Javadoc)
-	 * @see com.freshbourne.hdfs.index.Index#getIdentifier()
-	 */
-	@Override
-	public String getIdentifier() {
-		return "" + getColumn();
-	}
-
-	@Override
-	public AbstractMap.SimpleEntry<K,V> parseEntry(String entry){
-		String[] splits = entry.split(delimiter);
-		String parsedKey = splits[getColumn()];
-		String parsedValue = entry;
-        return new AbstractMap.SimpleEntry<K, V>((K) parsedKey, (V) parsedValue);
-	}
-
+    
 }
