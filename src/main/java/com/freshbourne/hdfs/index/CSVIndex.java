@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.inject.name.Named;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -27,14 +28,7 @@ public abstract class CSVIndex extends BTreeIndex {
 	@SuppressWarnings({"FieldCanBeLocal"})
     private static String delimiter = "(\t| +)";
 
-    public void initialize(InputSplit genericSplit, TaskAttemptContext context, String indexId) {
-        super.initialize(genericSplit, context, "" + getColumn());
+    protected CSVIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder, @Named("indexId") String indexId) {
+        super(hdfsFile, indexFolder, indexId);
     }
-
-
-    /**
-	 * @return position (-1) in the array to select
-	 */
-	public abstract int getColumn();
-    
 }
