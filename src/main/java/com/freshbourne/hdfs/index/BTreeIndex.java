@@ -3,15 +3,9 @@ package com.freshbourne.hdfs.index;
 import com.freshbourne.multimap.btree.BTree;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.log4j.Logger;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.Properties;
@@ -19,21 +13,17 @@ import java.util.Properties;
 /**
  * This is the base class for all Indexes using the multimap btree.
  * <p/>
- * An instance can be created without any parameters to the constructor,
- * but to ensure that it is working initialize must be called!
- * The reason for not using the constructor are several:
- * First, constructor inheritance isn't supported so for subclasses the constructor would have to be repeated.
- * Second, in a constructor, this() has to be the first statement. This forces parsing to be done directly
- * in the parameter which results in method calls like this:
+ * Instances should be created through Guice.
+ * Reason for this are manifold.
  * <p/>
- * this(new File(inputSplitToFileSplit(genericSplit).getPath().toString()).getName(),
- * indexId,
- * new File(context.getConfiguration().get("indexSavePath")));
- * <p/>
- * <p/>
+ * The folder structure and files are not created when creating an instance of this class.
+ * Rather, you need to open the class explicitly through the open() method.
  * <p/>
  * Also, to ensure that data is really written to the disk, close has to be called as specified by the
  * Index interface.
+ * <p/>
+ * Some methods, like exists() work without an opened instance.
+ * Most methods, however, require that the instance was opened first.
  * <p/>
  * The instance gets a path in which all btrees are stored.
  * The folder structure within this index-path is acording to the files of the HDFS.
@@ -62,12 +52,38 @@ import java.util.Properties;
 public class BTreeIndex implements Index, Serializable {
 
     private static final long serialVersionUID = 1L;
-    protected BTree<String, String> btree;
-    protected static final Logger LOG = Logger.getLogger(CSVIndex.class);
+    private BTree<String, String> btree;
+    private static final Logger LOG = Logger.getLogger(BTreeIndex.class);
+
     private String     indexId;
     private String     hdfsFile;
-    private File       indexFolder;
+    private File       indexRootFolder;
     private Properties properties;
+    
+    private boolean isOpen = false;
+
+    public boolean isOpen() {
+        return isOpen;
+    }
+
+    String getPropertiesPath(){
+        return getIndexDir() + "/properties.xml";
+    }
+
+    public boolean open() throws Exception {
+        File indexDir = getIndexDir();
+        indexDir.mkdirs();
+
+        properties = new Properties();
+        properties.storeToXML(new FileOutputStream(getPropertiesPath()), "comment");
+
+        isOpen = true;
+        return true;
+    }
+
+    File getIndexDir() {
+        return new File(indexRootFolder.getPath() + hdfsFile);
+    }
 
     class BTreeIndexIterator implements Iterator<AbstractMap.SimpleEntry<String, String>> {
 
@@ -88,10 +104,16 @@ public class BTreeIndex implements Index, Serializable {
     }
 
     @Inject
-    protected BTreeIndex(@Named("hdfsFile") String hdfsFile,@Named("indexFolder") File indexFolder,@Named("indexId") String indexId) {
+    protected BTreeIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder, @Named("indexId") String indexId) {
+        hdfsFile = hdfsFile.replaceAll("^hdfs://", "");
+
         this.hdfsFile = hdfsFile;
-        this.indexFolder = indexFolder;
+        this.indexRootFolder = indexFolder;
         this.indexId = indexId;
+    }
+
+    String getHdfsFile() {
+        return hdfsFile;
     }
 
     private Properties getProperties() {
@@ -100,7 +122,7 @@ public class BTreeIndex implements Index, Serializable {
         }
 
         properties = new Properties();
-        File propertiesFile = new File(indexFolder + "properties");
+        File propertiesFile = new File(indexRootFolder + "properties");
         if (propertiesFile.exists()) {
             try {
                 FileInputStream fis = new FileInputStream(propertiesFile);

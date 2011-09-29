@@ -6,10 +6,28 @@ import com.google.inject.name.Names;
 import java.io.File;
 
 public class IndexModule extends AbstractModule {
+
+    private String hdfsFile;
+    private File indexFolder;
+    private String indexId;
+
+    public IndexModule(String hdfsFile, File indexFolder, String indexId) {
+        this.hdfsFile = hdfsFile;
+        this.indexFolder = indexFolder;
+        this.indexId = indexId;
+    }
+
+    public IndexModule(String hdfsFile, String indexFolder, String indexId) {
+        this.hdfsFile = hdfsFile;
+        this.indexFolder = new File(indexFolder);
+        this.indexId = indexId;
+    }
+
+
     @Override
     protected void configure() {
-        bind(String.class).annotatedWith(Names.named("hdfsFile")).toInstance("hdfs:///path/to/file.csv");
-        bind(File.class).annotatedWith(Names.named("indexFolder")).toInstance(new File("/tmp/indexTest"));
-        bind(String.class).annotatedWith(Names.named("indexId")).toInstance("col1");
+        bind(String.class).annotatedWith(Names.named("hdfsFile")).toInstance(hdfsFile);
+        bind(File.class).annotatedWith(Names.named("indexFolder")).toInstance(indexFolder);
+        bind(String.class).annotatedWith(Names.named("indexId")).toInstance(indexId);
     }
 }
