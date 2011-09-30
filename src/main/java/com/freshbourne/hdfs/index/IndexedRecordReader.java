@@ -23,7 +23,7 @@ public class IndexedRecordReader extends LineRecordReader {
     }
 
     public Iterator<String> getIndexIterator() {
-        if (indexIterator == null) {
+        if (indexIterator == null && index != null) {
             indexIterator = index.getIterator();
         }
 
@@ -31,6 +31,12 @@ public class IndexedRecordReader extends LineRecordReader {
     }
 
     public boolean nextKeyValue() throws IOException {
+        // if no index is set, return the value of the super method since
+        // all code after this depends on index
+        if(index == null){
+            return super.nextKeyValue();
+        }
+        
         // get next value from index as long as we have
         if (getIndexIterator().hasNext()) {
             LOG.debug("READING FROM INDEX");
@@ -52,7 +58,7 @@ public class IndexedRecordReader extends LineRecordReader {
             index.addLine(this.getCurrentValue().toString(), pos);
         else
             index.close();
-
+        
         return result;
     }
 }

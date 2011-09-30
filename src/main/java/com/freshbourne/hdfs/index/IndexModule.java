@@ -5,8 +5,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 
 import java.io.File;
+import java.io.Serializable;
 
-public class IndexModule extends AbstractModule {
+public class IndexModule extends AbstractModule implements Serializable {
+    
 
     private String hdfsFile;
     private File indexFolder;
