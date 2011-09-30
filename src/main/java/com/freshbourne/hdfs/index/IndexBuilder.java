@@ -35,7 +35,9 @@ public class IndexBuilder {
             LOG.debug("module created: " + module.getClass().getName().toString());
             Injector injector = Guice.createInjector(module);
             LOG.debug("injector created");
-            return (Index) injector.getInstance(indexClass);
+            Index index = (Index) injector.getInstance(indexClass);
+            index.open();
+            return index;
         } catch (Exception e) {
             LOG.debug(e);
             return null;

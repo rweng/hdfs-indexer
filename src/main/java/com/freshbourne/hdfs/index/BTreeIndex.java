@@ -90,14 +90,13 @@ public abstract class BTreeIndex implements Index, Serializable {
         return properties;
     }
 
-    public boolean open() throws Exception {
+    public void open() throws IOException {
         File indexDir = getIndexDir();
         indexDir.mkdirs();
 
         loadOrCreateProperties();
 
         isOpen = true;
-        return true;
     }
 
     public class PropertyEntry {
@@ -242,17 +241,27 @@ public abstract class BTreeIndex implements Index, Serializable {
 
     @Override
     public Iterator<String> getIterator() {
+        ensureOpen();
         return new BTreeIndexIterator(getTreeList());
+    }
+
+    protected void ensureOpen() {
+        if(!isOpen())
+            throw new IllegalStateException("index must be opened before it is used");
     }
 
     @Override
     public Iterator<AbstractMap.SimpleEntry<String, String>> getIterator(String start, String end) {
+        ensureOpen();
         //TODO: implement
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void close() {
+        if(!isOpen())
+            return;
+        
         try {
             saveProperties();
         } catch (IOException e) {
@@ -275,6 +284,7 @@ public abstract class BTreeIndex implements Index, Serializable {
 
     @Override
     public void addLine(String line, long pos) {
+        ensureOpen();
         String key = extractKeyFromLine(line);
         getOrCreateWritingTree().add(key, line);
 
@@ -310,7 +320,7 @@ public abstract class BTreeIndex implements Index, Serializable {
     private BTree<String, String> getTree(File file) {
         BTree<String, String> result = null;
         try {
-            result = factory.get(file, FixedStringSerializer.INSTANCE, FixedStringSerializer.INSTANCE,
+            result = factory.get(file, FixedStringSerializer.INSTANCE_1000, FixedStringSerializer.INSTANCE_1000,
                     StringComparator.INSTANCE);
         } catch (IOException e) {
             throw new RuntimeException("error occured while trying to get btree: " + file.getAbsolutePath(), e);
@@ -319,11 +329,19 @@ public abstract class BTreeIndex implements Index, Serializable {
     }
 
 
+    @Override
+    public boolean exists() {
+        throw new UnsupportedOperationException("todo: check if directory and properties file exists");
+    }
+
+
     /**
      * This method implemented by a subclass returns the key for a given line.
      * <p/>
      * This method isn't perfect since it assumes that each line is one entry.
      * Maybe this can be made more generic later!
+     *
+     * Also, call ensureOpen() in this method
      *
      * @param line in the hdfs file
      * @return key or null to ignore the line

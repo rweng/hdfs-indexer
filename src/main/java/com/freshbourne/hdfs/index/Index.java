@@ -1,7 +1,9 @@
 package com.freshbourne.hdfs.index;
 
+import com.freshbourne.io.MustBeOpened;
 import org.apache.hadoop.io.Text;
 
+import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -36,6 +38,25 @@ import java.util.List;
  *
  */
 public interface Index {
+
+    /**
+     *  Open or create the index. This could be the files or directory for example.
+     *
+     * @throws java.io.IOException
+     */
+    public void open() throws IOException;
+
+
+    /**
+     * @return if the index was opened
+     */
+    public boolean isOpen();
+
+
+    /**
+     * @return if the index does alread exist or if it would be created on #open()
+     */
+    public boolean exists();
 
 	/**
 	 * @return iterator over all key/value pairs in the storage
