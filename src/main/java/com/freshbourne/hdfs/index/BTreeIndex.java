@@ -6,6 +6,7 @@ import com.freshbourne.multimap.btree.BTreeFactory;
 import com.freshbourne.serializer.FixedStringSerializer;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import java.io.*;
@@ -191,7 +192,11 @@ public abstract class BTreeIndex implements Index, Serializable {
     protected BTreeIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder,
                          @Named("indexId") String indexId, BTreeFactory factory) {
 
-        hdfsFile = hdfsFile.replaceAll("^hdfs://", "");
+        // if hdfsFile doesn't start with /, the server name is before the path
+        hdfsFile = hdfsFile.replaceAll("^hdfs://[^/]*", "");
+
+        LOG.setLevel(Level.DEBUG);
+        LOG.debug("parsed hdfs file: " + hdfsFile);
 
         this.hdfsFile = hdfsFile;
         this.indexRootFolder = indexFolder;
@@ -227,7 +232,7 @@ public abstract class BTreeIndex implements Index, Serializable {
         List<BTree<String, String>> list = new LinkedList<BTree<String, String>>();
 
         // add trees from properties
-        for (String filename : properties.stringPropertyNames()) {
+        for (String filename : getProperties().stringPropertyNames()) {
             list.add(getTree(new File(getIndexDir() + "/" + filename)));
         }
 
@@ -308,7 +313,7 @@ public abstract class BTreeIndex implements Index, Serializable {
             result = factory.get(file, FixedStringSerializer.INSTANCE, FixedStringSerializer.INSTANCE,
                     StringComparator.INSTANCE);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("error occured while trying to get btree: " + file.getAbsolutePath(), e);
         }
         return result;
     }

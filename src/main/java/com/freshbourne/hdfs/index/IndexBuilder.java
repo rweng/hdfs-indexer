@@ -26,6 +26,7 @@ public class IndexBuilder {
         Class<?> guiceModule = conf.getClass("GuiceModule", null);
 
         String hdfsFile = inputToFileSplit(genericSplit).getPath().toString();
+        LOG.debug("HDFS-FILE: " + hdfsFile);
 
         try {
             LOG.debug("trying to create index of class "  + indexClass.toString() + " with module " + guiceModule.toString());
