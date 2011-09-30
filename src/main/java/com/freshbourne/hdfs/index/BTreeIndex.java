@@ -79,12 +79,23 @@ public abstract class BTreeIndex implements Index, Serializable {
         properties.storeToXML(new FileOutputStream(getPropertiesPath()), "comment");
     }
 
+    private Properties loadOrCreateProperties() throws IOException {
+        properties = new Properties();
+
+        try {
+            properties.loadFromXML(new FileInputStream(getPropertiesPath()));
+        } catch (IOException e){
+            saveProperties();
+        }
+
+        return properties;
+    }
+
     public boolean open() throws Exception {
         File indexDir = getIndexDir();
         indexDir.mkdirs();
 
-        properties = new Properties();
-        saveProperties();
+        loadOrCreateProperties();
 
         isOpen = true;
         return true;
