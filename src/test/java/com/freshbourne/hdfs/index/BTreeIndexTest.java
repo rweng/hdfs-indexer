@@ -12,6 +12,8 @@ import org.junit.Test;
 import java.io.File;
 import java.util.AbstractMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -70,14 +72,23 @@ public class BTreeIndexTest {
     @Test
     public void addingStuffToIndex() {
         openIndex();
-        index.addLine("1    Robin  25", 0);
-        index.addLine("2    Fritz   55", 10);
+
+        List<String> list = new LinkedList<String>();
+        list.add("1    Robin  25");
+        list.add("2    Fritz   55");
+
+        index.addLine(list.get(0), 0);
+        index.addLine(list.get(1), 10);
 
         index.close();
         openIndex();
 
         Iterator<String> i = index.getIterator();
         assertTrue(i.hasNext());
+        assertTrue(list.contains(i.next()));
+        assertTrue(list.contains(i.next()));
+        assertFalse(i.hasNext());
+        assertNull(i.next());
     }
 
     private void openIndex() {
