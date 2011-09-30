@@ -82,7 +82,7 @@ public abstract class BTreeIndex implements Index, Serializable {
 
         try {
             properties.loadFromXML(new FileInputStream(getPropertiesPath()));
-        } catch (IOException e){
+        } catch (IOException e) {
             saveProperties();
         }
 
@@ -99,6 +99,30 @@ public abstract class BTreeIndex implements Index, Serializable {
         return true;
     }
 
+    public class PropertyEntry {
+        private long start;
+        private long end;
+
+        public PropertyEntry() {
+            this(Long.MAX_VALUE, -1);
+        }
+
+        public PropertyEntry(long start, long end) {
+            this.end = end;
+            this.start = start;
+        }
+
+        public String toString() {
+            return "" + start + ";" + end;
+        }
+
+        public void loadFromString(String s) {
+            String[] splits = s.split(";");
+            start = Long.parseLong(splits[0]);
+            end = Long.parseLong(splits[1]);
+        }
+    }
+
     /**
      * @return directory of the index-files for the current hdfs file
      */
@@ -109,37 +133,37 @@ public abstract class BTreeIndex implements Index, Serializable {
     class BTreeIndexIterator implements Iterator<String> {
 
         private List<BTree<String, String>> trees;
-        private BTree<String, String> currentTree;
-        private Iterator<String> currentIterator;
-        
+        private BTree<String, String>       currentTree;
+        private Iterator<String>            currentIterator;
+
         /**
          * @param trees ordered list of btrees from which iterators are used
          */
-        private BTreeIndexIterator(List<BTree<String, String>> trees){
+        private BTreeIndexIterator(List<BTree<String, String>> trees) {
             this.trees = trees;
         }
 
         @Override
         public boolean hasNext() {
-            if(trees.size() == 0){
+            if (trees.size() == 0) {
                 return false;
             }
 
             // initial tree
-            if(currentTree == null)
+            if (currentTree == null)
                 currentTree = trees.get(0);
 
-            if(currentIterator == null){
+            if (currentIterator == null) {
                 currentIterator = currentTree.getIterator();
             }
 
-            if(currentIterator.hasNext()){
+            if (currentIterator.hasNext()) {
                 return true;
             }
 
             // try to get next tree
             int nextTree = trees.indexOf(currentTree) + 1;
-            if(nextTree >= trees.size()){
+            if (nextTree >= trees.size()) {
                 return false;
             } else {
                 currentTree = trees.get(nextTree);
@@ -150,7 +174,7 @@ public abstract class BTreeIndex implements Index, Serializable {
 
         @Override
         public String next() {
-            if(hasNext()){
+            if (hasNext()) {
                 return currentIterator.next();
             }
 
@@ -166,7 +190,7 @@ public abstract class BTreeIndex implements Index, Serializable {
     @Inject
     protected BTreeIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder,
                          @Named("indexId") String indexId, BTreeFactory factory) {
-        
+
         hdfsFile = hdfsFile.replaceAll("^hdfs://", "");
 
         this.hdfsFile = hdfsFile;
@@ -199,13 +223,14 @@ public abstract class BTreeIndex implements Index, Serializable {
         return properties;
     }
 
-    private List<BTree<String, String>> getTreeList(){
+    private List<BTree<String, String>> getTreeList() {
         List<BTree<String, String>> list = new LinkedList<BTree<String, String>>();
 
-        
+        // add trees from properties
+        for (String filename : properties.stringPropertyNames()) {
+            list.add(getTree(new File(getIndexDir() + "/" + filename)));
+        }
 
-        if(bTreeWriting != null)
-            list.add(bTreeWriting);
 
         return list;
     }
@@ -235,47 +260,63 @@ public abstract class BTreeIndex implements Index, Serializable {
 
     }
 
+    private String getWriteTreeFileName() {
+        if (bTreeWriting == null)
+            return null;
+
+        String[] splits = getOrCreateWritingTree().getPath().split("/");
+        return splits[splits.length - 1];
+    }
+
     @Override
     public void addLine(String line, long pos) {
         String key = extractKeyFromLine(line);
-        String[] splits = getOrCreateWritingTree().getPath().split("/");
-        String startProp =  splits[splits.length - 1] + "_start";
-
-        splits = getOrCreateWritingTree().getPath().split("/");
-        String endProp = splits[splits.length - 1] + "_end";
         getOrCreateWritingTree().add(key, line);
-        long start = Long.parseLong(properties.getProperty(startProp, "" + Long.MAX_VALUE));
-        long end = Long.parseLong(properties.getProperty(endProp, "" + -1));
 
-        if(pos < start){
-            properties.setProperty(startProp, "" + pos);
+        String filename = getWriteTreeFileName();
+        String propertyStr = properties.getProperty(filename, null);
+        PropertyEntry p = new PropertyEntry();
+
+        if (propertyStr != null)
+            p.loadFromString(propertyStr);
+
+        if (pos < p.start) {
+            p.start = pos;
         }
 
-        if(pos > end){
-            properties.setProperty(endProp, "" + pos);
+        if (pos > p.end) {
+            p.end = pos;
         }
+
+        properties.setProperty(filename, p.toString());
     }
 
 
     private BTree<String, String> getOrCreateWritingTree() {
-        if(bTreeWriting != null)
+        if (bTreeWriting != null)
             return bTreeWriting;
 
         String file = getIndexDir() + "/" + indexId + "_" + (new SecureRandom()).nextInt();
-        
+
+        bTreeWriting = getTree(new File(file));
+        return bTreeWriting;
+    }
+
+    private BTree<String, String> getTree(File file) {
+        BTree<String, String> result = null;
         try {
-            bTreeWriting = factory.get(new File(file), FixedStringSerializer.INSTANCE, FixedStringSerializer.INSTANCE,
+            result = factory.get(file, FixedStringSerializer.INSTANCE, FixedStringSerializer.INSTANCE,
                     StringComparator.INSTANCE);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-        return bTreeWriting;
+        return result;
     }
+
 
     /**
      * This method implemented by a subclass returns the key for a given line.
-     *
+     * <p/>
      * This method isn't perfect since it assumes that each line is one entry.
      * Maybe this can be made more generic later!
      *
