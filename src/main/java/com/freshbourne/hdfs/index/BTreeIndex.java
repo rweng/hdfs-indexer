@@ -167,8 +167,8 @@ public abstract class BTreeIndex implements Index, Serializable {
     @Override
     public void addLine(String line, long pos) {
         String key = extractKeyFromLine(line);
-        String startProp = bTreeWriting.getPath() + "_start";
-        String endProp = bTreeWriting.getPath() + "_end";
+        String startProp = getOrCreateWritingTree().getPath() + "_start";
+        String endProp = getOrCreateWritingTree().getPath() + "_end";
         getOrCreateWritingTree().add(key, line);
         long start = Long.parseLong(properties.getProperty(startProp, "" + Long.MAX_VALUE));
         long end = Long.parseLong(properties.getProperty(endProp, "" + -1));
@@ -188,9 +188,14 @@ public abstract class BTreeIndex implements Index, Serializable {
             return bTreeWriting;
 
         String file = getIndexDir() + indexId + (new SecureRandom()).nextInt();
-        bTreeWriting = factory.get(new File(file), FixedStringSerializer.INSTANCE, FixedStringSerializer.INSTANCE,
-                StringComparator.INSTANCE);
         
+        try {
+            bTreeWriting = factory.get(new File(file), FixedStringSerializer.INSTANCE, FixedStringSerializer.INSTANCE,
+                    StringComparator.INSTANCE);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         return bTreeWriting;
     }
 

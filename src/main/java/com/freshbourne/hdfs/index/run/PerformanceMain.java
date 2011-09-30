@@ -71,7 +71,6 @@ public class PerformanceMain extends Configured implements Tool {
 			String input, String output) throws Exception {
 		// configuration
 		Configuration conf = getConf();
-		conf.setClass("Index", Col1Index.class, Serializable.class);
 		conf.setClass("Filter", Filter.class, Serializable.class);
 		conf.set("indexSavePath", "/tmp/index/");
 		setConf(conf);

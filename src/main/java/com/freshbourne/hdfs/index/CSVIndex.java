@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.freshbourne.multimap.btree.BTreeFactory;
+import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,7 +25,7 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.log4j.Logger;
 
-public abstract class CSVIndex extends BTreeIndex {
+public class CSVIndex extends BTreeIndex {
 	
 	@SuppressWarnings({"FieldCanBeLocal"})
     private static String delimiter = "(\t| +)";
@@ -36,7 +37,8 @@ public abstract class CSVIndex extends BTreeIndex {
      * @param indexFolder
      * @param column starting by 0
      */
-    protected CSVIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder, int column, BTreeFactory factory) {
+    @Inject
+    protected CSVIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder, @Named("csvColumn") int column, BTreeFactory factory) {
         super(hdfsFile, indexFolder, "" + column, factory);
         this.column = column;
     }

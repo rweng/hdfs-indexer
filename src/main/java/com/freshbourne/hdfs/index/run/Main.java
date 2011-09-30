@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
+import com.freshbourne.hdfs.index.CSVIndex;
+import com.freshbourne.hdfs.index.IndexModule;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -56,7 +58,8 @@ public class Main extends Configured implements Tool {
 		// configuration for indexing
 
 		Configuration conf = getConf();
-		conf.setClass("Index", Col1Index.class, Serializable.class);
+		conf.setClass("GuiceModule", IndexModule.class, Serializable.class);
+        conf.setClass("Index", CSVIndex.class, Serializable.class);
 		conf.setClass("Filter", Filter.class, Serializable.class);
 		conf.set("indexSavePath", "/tmp/index/");
 		setConf(conf);
