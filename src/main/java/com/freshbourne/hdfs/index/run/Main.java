@@ -58,7 +58,7 @@ public class Main extends Configured implements Tool {
 		// configuration for indexing
 
 		Configuration conf = getConf();
-		conf.setClass("GuiceModule", IndexModule.class, Serializable.class);
+		conf.setClass("GuiceModule", RunModule.class, Serializable.class);
         conf.setClass("Index", CSVIndex.class, Serializable.class);
 		conf.setClass("Filter", Filter.class, Serializable.class);
 		conf.set("indexSavePath", "/tmp/index/");

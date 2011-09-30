@@ -7,11 +7,19 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 
 import java.io.File;
+import java.io.Serializable;
 
-public class RunModule extends AbstractModule {
+public class RunModule extends AbstractModule implements Serializable {
 
     private String hdfsFile;
     private String indexFolder = "/tmp/index";
+
+    public void setHdfsFile(String s){
+        hdfsFile = s;
+    }
+
+    // empty constructor is required by IndexBuilder
+    public RunModule(){}
 
     public RunModule(String hdfsFile){
         this.hdfsFile = hdfsFile;
