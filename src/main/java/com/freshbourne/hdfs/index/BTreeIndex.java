@@ -75,12 +75,16 @@ public abstract class BTreeIndex implements Index, Serializable {
         return getIndexDir() + "/properties.xml";
     }
 
+    private void saveProperties() throws IOException {
+        properties.storeToXML(new FileOutputStream(getPropertiesPath()), "comment");
+    }
+
     public boolean open() throws Exception {
         File indexDir = getIndexDir();
         indexDir.mkdirs();
 
         properties = new Properties();
-        properties.storeToXML(new FileOutputStream(getPropertiesPath()), "comment");
+        saveProperties();
 
         isOpen = true;
         return true;
@@ -160,8 +164,16 @@ public abstract class BTreeIndex implements Index, Serializable {
 
     @Override
     public void close() {
+        try {
+            saveProperties();
+        } catch (IOException e) {
+            // we dont need to do the bTree writing if this fails
+            throw new RuntimeException(e);
+        }
+
         if (bTreeWriting != null)
             bTreeWriting.sync();
+
     }
 
     @Override
@@ -187,7 +199,7 @@ public abstract class BTreeIndex implements Index, Serializable {
         if(bTreeWriting != null)
             return bTreeWriting;
 
-        String file = getIndexDir() + indexId + (new SecureRandom()).nextInt();
+        String file = getIndexDir() + "/" + indexId + "_" + (new SecureRandom()).nextInt();
         
         try {
             bTreeWriting = factory.get(new File(file), FixedStringSerializer.INSTANCE, FixedStringSerializer.INSTANCE,

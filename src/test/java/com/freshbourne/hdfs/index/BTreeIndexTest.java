@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 public class BTreeIndexTest {
 
     private CSVIndex index;
-    private static String indexRootFolder = "/tmp/indexTest";
+    private static File indexRootFolder = new File("/tmp/indexTest");
     private File indexFolder = new File(indexRootFolder + "/path/to/file.csv/");
 
     private static Injector injector;
@@ -27,15 +27,15 @@ public class BTreeIndexTest {
     static {
 
         RunModule module = new RunModule("hdfs:///path/to/file.csv");
-        module.setIndexFolder(indexRootFolder);
+        module.setIndexFolder(indexRootFolder.getAbsolutePath());
         injector = Guice.createInjector(module);
     }
 
     @Before
     public void setUp() {
         index = injector.getInstance(CSVIndex.class);
-        if (indexFolder.exists())
-            FileUtils.recursiveDelete(indexFolder);
+        if (indexRootFolder.exists())
+            FileUtils.recursiveDelete(indexRootFolder);
     }
 
     @Test
