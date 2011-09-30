@@ -1,17 +1,21 @@
 package com.freshbourne.hdfs.index;
 
+import com.freshbourne.comparator.StringComparator;
 import com.freshbourne.multimap.btree.BTree;
+import com.freshbourne.multimap.btree.BTreeFactory;
+import com.freshbourne.serializer.FixedStringSerializer;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.apache.log4j.Logger;
 
 import java.io.*;
+import java.security.SecureRandom;
 import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.Properties;
 
 /**
- * This is the base class for all Indexes using the multimap btree.
+ * This is the base class for all Indexes using the multimap bTreeWriting.
  * <p/>
  * Instances should be created through Guice.
  * Reason for this are manifold.
@@ -36,7 +40,7 @@ import java.util.Properties;
  * /data/indexes/csvs/users.csv/2_0
  * /data/indexes/csvs/users.csv/2_10005
  * <p/>
- * With each btree, there are four information that have to be stored:
+ * With each bTreeWriting, there are four information that have to be stored:
  * <p/>
  * - the hdfs file name and path
  * - the identifier to be indexed (column, xml-path, ...)
@@ -49,24 +53,25 @@ import java.util.Properties;
  * it is not possible to store the end position in the file name (assuming we dont want to rename).
  * Thus, a properties file is required.
  */
-public class BTreeIndex implements Index, Serializable {
+public abstract class BTreeIndex implements Index, Serializable {
 
     private static final long serialVersionUID = 1L;
-    private BTree<String, String> btree;
+    private BTree<String, String> bTreeWriting;
     private static final Logger LOG = Logger.getLogger(BTreeIndex.class);
 
     private String     indexId;
     private String     hdfsFile;
     private File       indexRootFolder;
     private Properties properties;
-    
+
     private boolean isOpen = false;
+    private BTreeFactory factory;
 
     public boolean isOpen() {
         return isOpen;
     }
 
-    String getPropertiesPath(){
+    String getPropertiesPath() {
         return getIndexDir() + "/properties.xml";
     }
 
@@ -81,6 +86,9 @@ public class BTreeIndex implements Index, Serializable {
         return true;
     }
 
+    /**
+     * @return directory of the index-files for the current hdfs file
+     */
     File getIndexDir() {
         return new File(indexRootFolder.getPath() + hdfsFile);
     }
@@ -104,12 +112,15 @@ public class BTreeIndex implements Index, Serializable {
     }
 
     @Inject
-    protected BTreeIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder, @Named("indexId") String indexId) {
+    protected BTreeIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder,
+                         @Named("indexId") String indexId, BTreeFactory factory) {
+        
         hdfsFile = hdfsFile.replaceAll("^hdfs://", "");
 
         this.hdfsFile = hdfsFile;
         this.indexRootFolder = indexFolder;
         this.indexId = indexId;
+        this.factory = factory;
     }
 
     String getHdfsFile() {
@@ -143,55 +154,54 @@ public class BTreeIndex implements Index, Serializable {
 
     @Override
     public Iterator<AbstractMap.SimpleEntry<String, String>> getIterator(String start, String end) {
-        // TODO: implement
-        return new BTreeIndexIterator();
+        //TODO: implement
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void close() {
-        if (btree != null)
-            btree.sync();
+        if (bTreeWriting != null)
+            bTreeWriting.sync();
     }
 
     @Override
     public void addLine(String line, long pos) {
-        // TODO: implement
+        String key = extractKeyFromLine(line);
+        String startProp = bTreeWriting.getPath() + "_start";
+        String endProp = bTreeWriting.getPath() + "_end";
+        getOrCreateWritingTree().add(key, line);
+        long start = Long.parseLong(properties.getProperty(startProp, "" + Long.MAX_VALUE));
+        long end = Long.parseLong(properties.getProperty(endProp, "" + -1));
+
+        if(pos < start){
+            properties.setProperty(startProp, "" + pos);
+        }
+
+        if(pos > end){
+            properties.setProperty(endProp, "" + pos);
+        }
+    }
+
+
+    private BTree<String, String> getOrCreateWritingTree() {
+        if(bTreeWriting != null)
+            return bTreeWriting;
+
+        String file = getIndexDir() + indexId + (new SecureRandom()).nextInt();
+        bTreeWriting = factory.get(new File(file), FixedStringSerializer.INSTANCE, FixedStringSerializer.INSTANCE,
+                StringComparator.INSTANCE);
+        
+        return bTreeWriting;
     }
 
     /**
+     * This method implemented by a subclass returns the key for a given line.
      *
-     * generates the complete path to the indexes
+     * This method isn't perfect since it assumes that each line is one entry.
+     * Maybe this can be made more generic later!
      *
-     * @param folder
-     * @param startPos
-     * @param columnIdentifier
-     * @return
+     * @param line in the hdfs file
+     * @return key or null to ignore the line
      */
-    /*
-    private String generateIndexPath(String folder, String startPos, String columnIdentifier) {
-
-        File folderFile = (new File(folder));
-        if (!(folderFile.isDirectory() || !folderFile.exists()))
-            throw new IllegalArgumentException("savePath must be a folder: "
-                    + folderFile.getAbsolutePath());
-
-        if (!processedHdfsFile.startsWith("hdfs://")) {
-            throw new IllegalArgumentException(
-                    "The File for the Index must be in the hdfs");
-        }
-
-        String path = processedHdfsFile.replaceFirst("hdfs://[^\\/]+", "");
-        String[] splits = path.split("\\/");
-        String fileName = splits[splits.length - 1];
-        LOG.debug("path: " + path);
-        String path2 = folderFile.getAbsolutePath() + path;
-
-        String path3 = path2 + "_" + columnIdentifier + "_"
-                + startPos;
-        LOG.debug("FILE NAME: " + path3);
-        (new File(path3).getParentFile()).mkdirs();
-
-        return path3;
-    }
-    */
+    public abstract String extractKeyFromLine(String line);
 }

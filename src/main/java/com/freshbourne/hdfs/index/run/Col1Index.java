@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import com.freshbourne.multimap.btree.BTreeFactory;
 import com.google.inject.name.Named;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -23,7 +24,8 @@ import org.apache.log4j.Logger;
 
 public class Col1Index extends CSVIndex {
 
-	protected Col1Index(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder, @Named("indexId") String indexId) {
-        super(hdfsFile, indexFolder, "2");
+	protected Col1Index(@Named("hdfsFile") String hdfsFile,
+                        @Named("indexFolder") File indexFolder , BTreeFactory factory) {
+        super(hdfsFile, indexFolder, 1, factory);
     }
 }

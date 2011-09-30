@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import com.freshbourne.multimap.btree.BTreeFactory;
 import com.google.inject.name.Named;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,8 +28,23 @@ public abstract class CSVIndex extends BTreeIndex {
 	
 	@SuppressWarnings({"FieldCanBeLocal"})
     private static String delimiter = "(\t| +)";
+    private int column;
 
-    protected CSVIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder, @Named("indexId") String indexId) {
-        super(hdfsFile, indexFolder, indexId);
+    /**
+     * 
+     * @param hdfsFile
+     * @param indexFolder
+     * @param column starting by 0
+     */
+    protected CSVIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder, int column, BTreeFactory factory) {
+        super(hdfsFile, indexFolder, "" + column, factory);
+        this.column = column;
+    }
+
+
+    @Override
+    public String extractKeyFromLine(String line) {
+        String[] splits = line.split(delimiter);
+        return splits[column];
     }
 }
