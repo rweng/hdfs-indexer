@@ -10,9 +10,7 @@ import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.security.SecureRandom;
-import java.util.AbstractMap;
-import java.util.Iterator;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * This is the base class for all Indexes using the multimap bTreeWriting.
@@ -108,21 +106,60 @@ public abstract class BTreeIndex implements Index, Serializable {
         return new File(indexRootFolder.getPath() + hdfsFile);
     }
 
-    class BTreeIndexIterator implements Iterator<AbstractMap.SimpleEntry<String, String>> {
+    class BTreeIndexIterator implements Iterator<String> {
 
-        @Override
-        public boolean hasNext() {
-            return false;
+        private List<BTree<String, String>> trees;
+        private BTree<String, String> currentTree;
+        private Iterator<String> currentIterator;
+        
+        /**
+         * @param trees ordered list of btrees from which iterators are used
+         */
+        private BTreeIndexIterator(List<BTree<String, String>> trees){
+            this.trees = trees;
         }
 
         @Override
-        public AbstractMap.SimpleEntry<String, String> next() {
+        public boolean hasNext() {
+            if(trees.size() == 0){
+                return false;
+            }
+
+            // initial tree
+            if(currentTree == null)
+                currentTree = trees.get(0);
+
+            if(currentIterator == null){
+                currentIterator = currentTree.getIterator();
+            }
+
+            if(currentIterator.hasNext()){
+                return true;
+            }
+
+            // try to get next tree
+            int nextTree = trees.indexOf(currentTree) + 1;
+            if(nextTree >= trees.size()){
+                return false;
+            } else {
+                currentTree = trees.get(nextTree);
+            }
+
+            return hasNext();
+        }
+
+        @Override
+        public String next() {
+            if(hasNext()){
+                return currentIterator.next();
+            }
+
             return null;
         }
 
         @Override
         public void remove() {
-
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -162,9 +199,20 @@ public abstract class BTreeIndex implements Index, Serializable {
         return properties;
     }
 
+    private List<BTree<String, String>> getTreeList(){
+        List<BTree<String, String>> list = new LinkedList<BTree<String, String>>();
+
+        
+
+        if(bTreeWriting != null)
+            list.add(bTreeWriting);
+
+        return list;
+    }
+
     @Override
-    public Iterator<AbstractMap.SimpleEntry<String, String>> getIterator() {
-        return new BTreeIndexIterator();
+    public Iterator<String> getIterator() {
+        return new BTreeIndexIterator(getTreeList());
     }
 
     @Override
@@ -190,8 +238,11 @@ public abstract class BTreeIndex implements Index, Serializable {
     @Override
     public void addLine(String line, long pos) {
         String key = extractKeyFromLine(line);
-        String startProp = getOrCreateWritingTree().getPath() + "_start";
-        String endProp = getOrCreateWritingTree().getPath() + "_end";
+        String[] splits = getOrCreateWritingTree().getPath().split("/");
+        String startProp =  splits[splits.length - 1] + "_start";
+
+        splits = getOrCreateWritingTree().getPath().split("/");
+        String endProp = splits[splits.length - 1] + "_end";
         getOrCreateWritingTree().add(key, line);
         long start = Long.parseLong(properties.getProperty(startProp, "" + Long.MAX_VALUE));
         long end = Long.parseLong(properties.getProperty(endProp, "" + -1));

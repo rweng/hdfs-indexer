@@ -14,7 +14,7 @@ public class IndexedRecordReader extends LineRecordReader {
     private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 
     private Index index;
-    private Iterator<AbstractMap.SimpleEntry<String, String>> indexIterator;
+    private Iterator<String> indexIterator;
 
     public void initialize(InputSplit genericSplit, TaskAttemptContext context)
             throws IOException {
@@ -22,7 +22,7 @@ public class IndexedRecordReader extends LineRecordReader {
         index = IndexBuilder.create(genericSplit, context);
     }
 
-    public Iterator<AbstractMap.SimpleEntry<String, String>> getIndexIterator() {
+    public Iterator<String> getIndexIterator() {
         if (indexIterator == null) {
             indexIterator = index.getIterator();
         }
@@ -37,9 +37,9 @@ public class IndexedRecordReader extends LineRecordReader {
 
             // get index for file if not set
             // read from index
-            AbstractMap.SimpleEntry<String, String> next = getIndexIterator().next();
+            String next = getIndexIterator().next();
             if (next != null) {
-                value.set(next.getValue());
+                value.set(next);
                 return true;
             } else {
                 return false;

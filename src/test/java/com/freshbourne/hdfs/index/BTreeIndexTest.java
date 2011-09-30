@@ -63,7 +63,7 @@ public class BTreeIndexTest {
     public void iteratorOnEmptyIndex() {
         openIndex();
 
-        Iterator<AbstractMap.SimpleEntry<String, String>> i = index.getIterator();
+        Iterator<String> i = index.getIterator();
         assertFalse(i.hasNext());
     }
 
@@ -76,7 +76,7 @@ public class BTreeIndexTest {
         index.close();
         openIndex();
 
-        Iterator<AbstractMap.SimpleEntry<String, String>> i = index.getIterator();
+        Iterator<String> i = index.getIterator();
         assertTrue(i.hasNext());
     }
 

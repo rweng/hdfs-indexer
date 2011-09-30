@@ -40,7 +40,7 @@ public interface Index {
 	/**
 	 * @return iterator over all key/value pairs in the storage
 	 */
-	public Iterator<SimpleEntry<String, String>> getIterator();
+	public Iterator<String> getIterator();
 
 	/**
 	 * @param start key
