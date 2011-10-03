@@ -17,6 +17,7 @@ dependencies {
     compile "commons-logging:commons-logging-api:1.0.4@jar"
 
     compile "log4j:log4j:1.2.16@jar"
+
     // http://dl.dropbox.com/u/456244/multimap-0.01.jar
     // a multimap project is required to exist beside this project
     //compile fileTree(dir: '../multimap/build/libs', includes: ['*.jar'])
@@ -64,24 +65,6 @@ sourceSets {
 
 //************* OWN TASKS ********************
 
-task installTpch << {
-    "scripts/install_tpch.sh".execute().text
-}
-installTpch.description = 'Downloads and installs tpch on linux x86. Requires curl and gcc'
-
-
-task runJar(dependsOn: jar) << {
-    run("scripts/runJar.sh")
-}
-
-task comparePerformance(dependsOn: jar) << {
-    run("scripts/comparePerformance.sh")
-}
-
-task setupHdfs << {
-    run("scripts/setupHdfs.sh")
-}
-runJar.description = 'trys to run the jar in Hadoop'
 
 //************* HELPER METHODS ********************
 
