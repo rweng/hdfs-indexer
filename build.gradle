@@ -65,6 +65,9 @@ sourceSets {
 
 //************* OWN TASKS ********************
 
+task publish_jar(dependsOn: jar) << {
+    run("cp -f " + jar.archivePath + " /Users/robin/Dropbox/public/hdfs-indexer-0.0.1.jar")
+}
 
 //************* HELPER METHODS ********************
 
