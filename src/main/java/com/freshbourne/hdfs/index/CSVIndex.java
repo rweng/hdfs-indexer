@@ -28,7 +28,7 @@ import org.apache.log4j.Logger;
 public class CSVIndex extends BTreeIndex {
 	
 	@SuppressWarnings({"FieldCanBeLocal"})
-    private static String delimiter = "(\t| +)";
+    private String delimiter = "(\t| +)";
     private int column;
 
     /**
@@ -38,8 +38,12 @@ public class CSVIndex extends BTreeIndex {
      * @param column starting by 0
      */
     @Inject
-    protected CSVIndex(@Named("hdfsFile") String hdfsFile, @Named("indexFolder") File indexFolder, @Named("csvColumn") int column, BTreeFactory factory) {
+    protected CSVIndex(@Named("hdfsFile") String hdfsFile,
+                       @Named("indexFolder") File indexFolder,
+                       @Named("csvColumn") int column, BTreeFactory factory,
+                       @Named("delimiter") String delimiter) {
         super(hdfsFile, indexFolder, "" + column, factory);
+        this.delimiter = delimiter;
         this.column = column;
     }
 

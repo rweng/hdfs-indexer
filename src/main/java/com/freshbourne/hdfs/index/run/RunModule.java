@@ -32,7 +32,8 @@ public class RunModule extends AbstractModule implements Serializable {
         bind(String.class).annotatedWith(Names.named("hdfsFile")).toInstance(hdfsFile);
         bind(File.class).annotatedWith(Names.named("indexFolder")).toInstance(new File(indexFolder));
 
-        bind(Integer.class).annotatedWith(Names.named("csvColumn")).toInstance(1);
+        bind(Integer.class).annotatedWith(Names.named("csvColumn")).toInstance(3); //L_LINENUMBER
+        bind(String.class).annotatedWith(Names.named("delimiter")).toInstance("|");
 
         install(new BTreeModule());
     }

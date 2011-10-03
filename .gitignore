@@ -1,17 +1,16 @@
-.classpath
-out/
-tpch/
-.project
-.settings/
-build.properties
-build/
-.externalToolBuilders/
-bin/
-target/
-.gradle/
-lib/
+/.classpath
+/out/
+/.project
+/.settings/
+/build.properties
+/build/
+/.externalToolBuilders/
+/bin/
+/target/
+/.gradle/
+/lib/
 *.log
-.vagrant
+/.vagrant
 .DS_Store
 
 # IDEA Editor files

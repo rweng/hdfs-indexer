@@ -10,5 +10,6 @@
 include_recipe "hadoop::cloudera"
 include_recipe "apt"
 include_recipe "gradle"
+include_recipe "tpch"
 
 package "git-core"
