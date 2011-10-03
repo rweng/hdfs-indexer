@@ -34,9 +34,10 @@ public class IndexedRecordReader extends LineRecordReader {
         // if no index is set, return the value of the super method since
         // all code after this depends on index
         if(index == null){
+            LOG.debug("index is null, returning nextKeyValue()");
             return super.nextKeyValue();
         }
-        
+
         // get next value from index as long as we have
         if (getIndexIterator().hasNext()) {
             LOG.debug("READING FROM INDEX");
@@ -54,9 +55,10 @@ public class IndexedRecordReader extends LineRecordReader {
 
         boolean result = super.nextKeyValue();
 
-        if (result)
+        if (result){
+            LOG.debug("adding to index:" + this.getCurrentValue().toString());
             index.addLine(this.getCurrentValue().toString(), pos);
-        else
+        } else
             index.close();
         
         return result;

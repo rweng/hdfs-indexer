@@ -1,6 +1,5 @@
 package com.freshbourne.hdfs.index;
 
-import com.freshbourne.hdfs.index.run.RunModule;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -25,18 +24,18 @@ public class IndexBuilder {
         Class<?> indexClass = conf.getClass("Index", null);
         Class<?> guiceModule = conf.getClass("GuiceModule", null);
 
-        String hdfsFile = inputToFileSplit(genericSplit).getPath().toString();
-        LOG.debug("HDFS-FILE: " + hdfsFile);
+        // String hdfsFile = inputToFileSplit(genericSplit).getPath().toString();
 
         try {
             LOG.debug("trying to create index of class "  + indexClass.toString() + " with module " + guiceModule.toString());
-            RunModule module = (RunModule) guiceModule.getConstructor().newInstance();
-            module.setHdfsFile(hdfsFile);
+            AbstractModule module = (AbstractModule) guiceModule.getConstructor().newInstance();
             LOG.debug("module created: " + module.getClass().getName().toString());
             Injector injector = Guice.createInjector(module);
             LOG.debug("injector created");
             Index index = (Index) injector.getInstance(indexClass);
+            LOG.debug("opening index");
             index.open();
+            LOG.debug("index opened. returning index.");
             return index;
         } catch (Exception e) {
             LOG.debug(e);
