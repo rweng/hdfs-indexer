@@ -1,6 +1,5 @@
 package com.freshbourne.hdfs.index;
 
-import com.freshbourne.hdfs.index.run.RunModule;
 import com.freshbourne.util.FileUtils;
 
 import com.google.inject.Guice;
@@ -18,15 +17,17 @@ import static org.junit.Assert.*;
 public class BTreeIndexTest {
 
     private CSVIndex index;
-    private static File indexRootFolder = new File("/tmp/indexTest");
-    private        File indexFolder     = new File(indexRootFolder + "/path/to/file.csv/");
+    private static File indexRootFolder;
+    private static File indexFolder;
 
     private static Injector injector;
 
     private static void createInjector() {
-        RunModule module = new RunModule("hdfs:///path/to/file.csv");
-        module.setIndexFolder(indexRootFolder.getAbsolutePath());
+	    RunModule module = new RunModule();
         injector = Guice.createInjector(module);
+
+	    indexRootFolder  = new File(module.indexRootFolder());
+	    indexFolder = new File(indexRootFolder + "/path/to/file.csv/");
     }
 
     static {

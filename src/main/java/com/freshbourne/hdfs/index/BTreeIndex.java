@@ -1,8 +1,8 @@
 package com.freshbourne.hdfs.index;
 
+import com.freshbourne.btree.BTree;
+import com.freshbourne.btree.BTreeFactory;
 import com.freshbourne.comparator.StringComparator;
-import com.freshbourne.multimap.btree.BTree;
-import com.freshbourne.multimap.btree.BTreeFactory;
 import com.freshbourne.serializer.FixedStringSerializer;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;

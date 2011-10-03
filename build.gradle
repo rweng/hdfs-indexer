@@ -23,11 +23,11 @@ dependencies {
     //compile fileTree(dir: '../multimap/build/libs', includes: ['*.jar'])
     //compile "http://dl.dropbox.com/u/456244/multimap-0.01.jar"
     // compile files("http://dl.dropbox.com/u/456244/multimap-0.01.jar")
-    compile('multimap:multimap:0.0.1') {
+    compile('jb-tree:jb-tree:0.0.1') {
         artifact {
-            name = 'multimap'
+            name = 'jb-tree'
             extension = 'jar'
-            url = 'http://dl.dropbox.com/u/456244/multimap-0.01.jar'
+            url = 'http://dl.dropbox.com/u/456244/jb-tree-0.0.1.jar'
             type = "jar"
         }
     }
@@ -47,6 +47,7 @@ jar {
 
     manifest {
         // attributes("Main-Class": "com.freshbourne.hdfs.index.run.Main")
+        attributes 'Implementation-Title': 'hdfs-indexer', 'Implementation-Version': version
     }
 }
 

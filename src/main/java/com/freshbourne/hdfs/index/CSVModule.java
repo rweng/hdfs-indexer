@@ -1,6 +1,6 @@
 package com.freshbourne.hdfs.index;
 
-import com.freshbourne.multimap.btree.BTreeModule;
+import com.freshbourne.btree.BTreeModule;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 

@@ -14,13 +14,12 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import com.freshbourne.multimap.btree.BTreeFactory;
+import com.freshbourne.btree.BTreeFactory;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.freshbourne.multimap.btree.BTree;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.log4j.Logger;
