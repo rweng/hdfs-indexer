@@ -9,7 +9,7 @@ import java.io.File;
 public class IntegerCSVIndex extends CSVIndex<Integer> {
 
 	@Inject
-	protected IntegerCSVIndex(CSVIndexBuilder b) {
+	protected IntegerCSVIndex(CSVIndexBuilder<Integer> b) {
 		super(b);
 	}
 
