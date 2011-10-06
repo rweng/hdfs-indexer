@@ -126,4 +126,8 @@ public class BTreeIndexTest {
             fail("index cannot be opened");
         }
     }
+
+	private void integerCSVIndex(){
+		injector.getInstance(IntegerCSVIndex.class);
+	}
 }
