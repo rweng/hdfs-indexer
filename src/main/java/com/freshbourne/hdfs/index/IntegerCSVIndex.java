@@ -1,12 +1,14 @@
 package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.BTreeFactory;
+import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
 import java.io.File;
 
 public class IntegerCSVIndex extends CSVIndex<Integer> {
-	
+
+	@Inject
 	protected IntegerCSVIndex(CSVIndexBuilder b) {
 		super(b);
 	}

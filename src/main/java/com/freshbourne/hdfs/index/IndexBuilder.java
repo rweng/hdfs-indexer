@@ -1,5 +1,6 @@
 package com.freshbourne.hdfs.index;
 
+import com.freshbourne.btree.BTreeModule;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -17,22 +18,19 @@ import org.apache.log4j.Logger;
 public class IndexBuilder {
     private static Logger LOG = Logger.getLogger(IndexBuilder.class);
     public static Index create(InputSplit genericSplit, TaskAttemptContext context) {
-        LOG.setLevel(Level.DEBUG);
 
+	    LOG.debug("creating index");
         Configuration conf = context.getConfiguration();
         
-        Class<?> indexClass = conf.getClass("Index", null);
         Class<?> guiceModule = conf.getClass("GuiceModule", null);
 
-        // String hdfsFile = inputToFileSplit(genericSplit).getPath().toString();
-
         try {
-            LOG.debug("trying to create index of class "  + indexClass.toString() + " with module " + guiceModule.toString());
-            AbstractModule module = (AbstractModule) guiceModule.getConstructor().newInstance();
+            LOG.debug("trying to create index with module " + guiceModule);
+            CSVModule module = (CSVModule) guiceModule.getConstructor().newInstance();
             LOG.debug("module created: " + module.getClass().getName().toString());
             Injector injector = Guice.createInjector(module);
             LOG.debug("injector created");
-            Index index = (Index) injector.getInstance(indexClass);
+            Index index = (Index) injector.getInstance(module.indexClass());
             LOG.debug("opening index");
             index.open();
             LOG.debug("index opened. returning index.");
