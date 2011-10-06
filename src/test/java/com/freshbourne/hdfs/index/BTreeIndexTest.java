@@ -78,7 +78,9 @@ public class BTreeIndexTest {
         list.add("1    Robin  25");
         list.add("2    Fritz   55");
 
+	    assertFalse(index.getLockFile().exists());
         index.addLine(list.get(0), 0);
+	    assertTrue(index.getLockFile().exists());
         index.addLine(list.get(1), 10);
 
         Iterator<String> i = index.getIterator();
@@ -87,6 +89,12 @@ public class BTreeIndexTest {
         assertTrue(list.contains(i.next()));
         assertFalse(i.hasNext());
         assertNull(i.next());
+
+
+	    // ensure lock if is deleted after close
+	    index.close();
+	    assertFalse(index.getLockFile().exists());
+        	    
     }
 
     @Test

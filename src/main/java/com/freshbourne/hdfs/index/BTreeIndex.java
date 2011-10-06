@@ -6,6 +6,7 @@ import com.freshbourne.comparator.StringComparator;
 import com.freshbourne.serializer.FixedStringSerializer;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -65,6 +66,7 @@ public abstract class BTreeIndex implements Index, Serializable {
 
     private boolean isOpen = false;
     private BTreeFactory factory;
+	private Boolean isLocked = null;
 
     public boolean isOpen() {
         return isOpen;
@@ -194,7 +196,6 @@ public abstract class BTreeIndex implements Index, Serializable {
         // if hdfsFile doesn't start with /, the server name is before the path
         hdfsFile = hdfsFile.replaceAll("^hdfs://[^/]*", "");
 
-        LOG.setLevel(Level.DEBUG);
         LOG.debug("parsed hdfs file: " + hdfsFile);
 
         this.hdfsFile = hdfsFile;
@@ -269,12 +270,18 @@ public abstract class BTreeIndex implements Index, Serializable {
             throw new RuntimeException(e);
         }
 
+	    unlock();
+
         if (bTreeWriting != null)
             bTreeWriting.sync();
 
     }
 
-    private String getWriteTreeFileName() {
+	private void unlock() {
+		getLockFile().delete();
+	}
+
+	private String getWriteTreeFileName() {
         if (bTreeWriting == null)
             return null;
 
@@ -285,6 +292,11 @@ public abstract class BTreeIndex implements Index, Serializable {
     @Override
     public void addLine(String line, long pos) {
         ensureOpen();
+	    if(isLocked())
+		    return;
+	    else
+	        lock();
+
         String key = extractKeyFromLine(line);
         getOrCreateWritingTree().add(key, line);
 
@@ -306,8 +318,29 @@ public abstract class BTreeIndex implements Index, Serializable {
         properties.setProperty(filename, p.toString());
     }
 
+	private void lock() {
+		try {
+			FileUtils.touch(getLockFile());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-    private BTree<String, String> getOrCreateWritingTree() {
+	private boolean isLocked() {
+		if(isLocked != null)
+			return isLocked;
+		
+		isLocked = getLockFile().exists();
+		return isLocked;
+	}
+
+
+	File getLockFile(){
+		return new File(getIndexDir() + "/lock");
+	}
+
+
+	private BTree<String, String> getOrCreateWritingTree() {
         if (bTreeWriting != null)
             return bTreeWriting;
 

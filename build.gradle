@@ -16,6 +16,8 @@ dependencies {
     compile "commons-logging:commons-logging:1.0.4@jar"
     compile "commons-logging:commons-logging-api:1.0.4@jar"
 
+    compile "commons-io:commons-io:1.3.2@jar"
+
     compile "log4j:log4j:1.2.16@jar"
 
     // http://dl.dropbox.com/u/456244/multimap-0.01.jar

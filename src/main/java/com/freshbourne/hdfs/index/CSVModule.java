@@ -14,7 +14,7 @@ public abstract class CSVModule extends AbstractModule implements Serializable {
         bind(String.class).annotatedWith(Names.named("hdfsFile")).toInstance(hdfsFile());
         bind(File.class).annotatedWith(Names.named("indexFolder")).toInstance(new File(indexRootFolder()));
 
-        bind(Integer.class).annotatedWith(Names.named("csvColumn")).toInstance(csvColumn()); //L_LINENUMBER
+        bind(Integer.class).annotatedWith(Names.named("csvColumn")).toInstance(csvColumn());
         bind(String.class).annotatedWith(Names.named("delimiter")).toInstance(delimiter());
 
         install(new BTreeModule());
