@@ -9,14 +9,15 @@ import java.io.Serializable;
 
 public abstract class CSVModule extends AbstractModule implements Serializable {
     @Override protected void configure() {
-        bind(Index.class).to(CSVIndex.class);
 
         bind(String.class).annotatedWith(Names.named("hdfsFile")).toInstance(hdfsFile());
         bind(File.class).annotatedWith(Names.named("indexFolder")).toInstance(new File(indexRootFolder()));
 
         bind(Integer.class).annotatedWith(Names.named("csvColumn")).toInstance(csvColumn());
+	    bind(String.class).annotatedWith(Names.named("indexId")).toInstance("" + csvColumn());
         bind(String.class).annotatedWith(Names.named("delimiter")).toInstance(delimiter());
 
+	    bind(Index.class).to(indexClass());
         install(new BTreeModule());
     }
 
@@ -24,4 +25,5 @@ public abstract class CSVModule extends AbstractModule implements Serializable {
     protected abstract String indexRootFolder();
     protected abstract int csvColumn();
     protected abstract String delimiter();
+	protected abstract Class<? extends Index> indexClass();
 }

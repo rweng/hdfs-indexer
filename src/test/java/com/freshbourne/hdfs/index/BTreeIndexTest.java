@@ -16,7 +16,7 @@ import static org.junit.Assert.*;
 
 public class BTreeIndexTest {
 
-    private CSVIndex index;
+    private StringCSVIndex index;
     private static File indexRootFolder;
     private static File indexFolder;
 
@@ -36,7 +36,7 @@ public class BTreeIndexTest {
 
     @Before
     public void setUp() {
-        index = injector.getInstance(CSVIndex.class);
+        index = injector.getInstance(StringCSVIndex.class);
         if (indexRootFolder.exists())
             FileUtils.recursiveDelete(indexRootFolder);
     }
@@ -106,7 +106,7 @@ public class BTreeIndexTest {
 
         index.close();
         createInjector();
-        CSVIndex index2 = injector.getInstance(CSVIndex.class);
+        StringCSVIndex index2 = injector.getInstance(StringCSVIndex.class);
 
         assertNotSame(index, index2);
 

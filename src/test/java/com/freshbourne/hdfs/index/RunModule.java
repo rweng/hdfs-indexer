@@ -17,4 +17,8 @@ public class RunModule extends CSVModule {
 	@java.lang.Override protected String delimiter() {
 		return "|";
 	}
+
+	@Override protected Class<? extends Index> indexClass() {
+		return StringCSVIndex.class;
+	}
 }

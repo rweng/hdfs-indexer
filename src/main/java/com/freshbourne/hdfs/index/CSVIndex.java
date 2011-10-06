@@ -24,32 +24,23 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.log4j.Logger;
 
-public class CSVIndex extends BTreeIndex {
+public abstract class CSVIndex<K> extends BTreeIndex<K> {
 	
 	@SuppressWarnings({"FieldCanBeLocal"})
-    private String delimiter = "(\t| +)";
-    private int column;
+    protected String delimiter = "(\t| +)";
+    protected int column;
 
-    /**
-     * 
-     * @param hdfsFile
-     * @param indexFolder
-     * @param column starting by 0
-     */
     @Inject
-    protected CSVIndex(@Named("hdfsFile") String hdfsFile,
-                       @Named("indexFolder") File indexFolder,
-                       @Named("csvColumn") int column, BTreeFactory factory,
-                       @Named("delimiter") String delimiter) {
-        super(hdfsFile, indexFolder, "" + column, factory);
-        this.delimiter = delimiter;
-        this.column = column;
+    protected CSVIndex(CSVIndexBuilder<K> b) {
+        super(b);
     }
 
 
     @Override
-    public String extractKeyFromLine(String line) {
+    public K extractKeyFromLine(String line) {
         String[] splits = line.split(delimiter);
-        return splits[column];
+        return transformToKeyType(splits[column]);
     }
+
+	protected abstract K transformToKeyType(String key);
 }
