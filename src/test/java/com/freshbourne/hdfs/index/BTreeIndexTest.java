@@ -72,7 +72,7 @@ public class BTreeIndexTest {
 
     @Test
     public void addingStuffToIndex() {
-        openIndex();
+	    openIndex();
 
         List<String> list = new LinkedList<String>();
         list.add("1    Robin  25");

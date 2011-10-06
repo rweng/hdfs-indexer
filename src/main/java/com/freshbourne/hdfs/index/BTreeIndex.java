@@ -56,8 +56,8 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 
 	private boolean isOpen = false;
 	private BTreeFactory factory;
-	private Boolean isLocked = null;
-	private Comparator<K> comparator;
+	private boolean ourLock = false;
+	private Comparator<K>                  comparator;
 	private FixLengthSerializer<K, byte[]> keySerializer;
 
 	public boolean isOpen() {
@@ -69,6 +69,7 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 	}
 
 	private void saveProperties() throws IOException {
+		LOG.debug("saving properties:\n " + properties);
 		properties.storeToXML(new FileOutputStream(getPropertiesPath()), "comment");
 	}
 
@@ -251,9 +252,11 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 
 	@Override
 	public void close() {
+		LOG.debug("closing BTreeIndex");
 		if (!isOpen())
 			return;
 
+		LOG.debug("saving Properties");
 		try {
 			saveProperties();
 		} catch (IOException e) {
@@ -261,15 +264,21 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 			throw new RuntimeException(e);
 		}
 
+		LOG.debug("unlocking");
 		unlock();
 
+		LOG.debug("writing btree");
 		if (bTreeWriting != null)
 			bTreeWriting.sync();
 
+		LOG.debug("closing done");
 	}
 
 	private void unlock() {
-		getLockFile().delete();
+		if(ourLock){
+			getLockFile().delete();
+			ourLock = false;
+		}
 	}
 
 	private String getWriteTreeFileName() {
@@ -282,17 +291,22 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 
 	@Override
 	public void addLine(String line, long pos) {
+		LOG.debug("adding line to index");
 		ensureOpen();
-		if (isLocked())
+		if (!ourLock && isLocked()) {
+			LOG.debug("return. ourLock=" + ourLock + ",isLocked()=" + isLocked()+",file="+getLockFile());
 			return;
-		else
+		} else {
 			lock();
+		}
 
 		K key = extractKeyFromLine(line);
+		LOG.debug("key: " + key);
 		getOrCreateWritingTree().add(key, line);
 
 		String filename = getWriteTreeFileName();
-		String propertyStr = properties.getProperty(filename, null);
+		String propertyStr = getProperties().getProperty(filename, null);
+
 		PropertyEntry p = new PropertyEntry();
 
 		if (propertyStr != null)
@@ -306,25 +320,34 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 			p.end = pos;
 		}
 
-		properties.setProperty(filename, p.toString());
+		getProperties().setProperty(filename, p.toString());
+		LOG.debug("properties after addLine: \n" + getProperties());
+	}
+
+	private boolean isLocked() {
+		return getLockFile().exists();
 	}
 
 	private void lock() {
+		LOG.debug("locking file: " + getLockFile());
 		try {
 			FileUtils.touch(getLockFile());
+			ourLock = true;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private boolean isLocked() {
-		if (isLocked != null)
-			return isLocked;
-
-		isLocked = getLockFile().exists();
-		return isLocked;
+	protected void finalize() throws Throwable {
+		try {
+			LOG.debug("finalize: unlock");
+			unlock();
+			LOG.debug("finalize: close");
+			close();
+		} finally {
+			super.finalize();
+		}
 	}
-
 
 	File getLockFile() {
 		return new File(getIndexDir() + "/lock");
@@ -338,6 +361,7 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 		String file = getIndexDir() + "/" + indexId + "_" + (new SecureRandom()).nextInt();
 
 		bTreeWriting = getTree(new File(file));
+		LOG.debug("creeated btree for writing: " + bTreeWriting.getPath());
 		return bTreeWriting;
 	}
 
@@ -362,8 +386,7 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 	/**
 	 * This method implemented by a subclass returns the key for a given line.
 	 * <p/>
-	 * This method isn't perfect since it assumes that each line is one entry. Maybe this can be made more generic
-	 * later!
+	 * This method isn't perfect since it assumes that each line is one entry. Maybe this can be made more generic later!
 	 * <p/>
 	 * Also, call ensureOpen() in this method
 	 *
