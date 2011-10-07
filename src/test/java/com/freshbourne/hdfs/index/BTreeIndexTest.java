@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -82,7 +83,7 @@ public class BTreeIndexTest {
         index.addLine(list.get(0), 0);
 	    assertTrue(index.getLockFile().exists());
         index.addLine(list.get(1), 10);
-
+		assertEquals(10, index.getMaxPos());
         Iterator<String> i = index.getIterator();
         assertTrue(i.hasNext());
         assertTrue(list.contains(i.next()));
@@ -118,6 +119,13 @@ public class BTreeIndexTest {
         assertFalse(i.hasNext());
         assertNull(i.next());
     }
+
+	@Test
+	public void maxPos() throws IOException {
+		addingStuffToIndex();
+		index.open();
+		assertEquals(10, index.getMaxPos());
+	}
 
     private void openIndex() {
         try {

@@ -88,4 +88,9 @@ public interface Index {
      * @param pos in the hdfs file
      */
     void addLine(String line, long pos);
+
+	/**
+	 * @return max position of the index
+	 */
+	long getMaxPos();
 }

@@ -185,7 +185,6 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 
 	@Inject
 	protected BTreeIndex(BTreeIndexBuilder<K> b) {
-
 		// if hdfsFile doesn't start with /, the server name is before the path
 		this.hdfsFile = b.hdfsFile.replaceAll("^hdfs://[^/]*", "");
 
@@ -338,9 +337,9 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 	}
 
 	private void lock() {
-		if(ourLock)
+		if (ourLock)
 			return;
-		
+
 		LOG.debug("locking file: " + getLockFile());
 		try {
 			FileUtils.touch(getLockFile());
@@ -382,6 +381,7 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 		try {
 			result = factory.get(file, keySerializer, FixedStringSerializer.INSTANCE_1000,
 					comparator);
+			result.checkStructure();
 		} catch (IOException e) {
 			throw new RuntimeException("error occured while trying to get btree: " + file.getAbsolutePath(), e);
 		}
@@ -392,6 +392,25 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 	@Override
 	public boolean exists() {
 		throw new UnsupportedOperationException("todo: check if directory and properties file exists");
+	}
+
+
+	@Override public long getMaxPos() {
+		long largest = 0;
+
+		for (String filename : getProperties().stringPropertyNames()) {
+			String propertyStr = getProperties().getProperty(filename, null);
+
+			PropertyEntry p = new PropertyEntry();
+
+			if (propertyStr != null)
+				p.loadFromString(propertyStr);
+
+			if( largest < p.end)
+				largest = p.end;
+
+		}
+		return largest;
 	}
 
 

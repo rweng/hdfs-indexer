@@ -16,5 +16,4 @@ public class IntegerCSVIndex extends CSVIndex<Integer> {
 	@Override protected Integer transformToKeyType(String key) {
 		return Integer.parseInt(key);
 	}
-
 }
