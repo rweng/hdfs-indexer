@@ -26,20 +26,26 @@ import org.apache.log4j.Logger;
 
 public abstract class CSVIndex<K> extends BTreeIndex<K> {
 	
-	@SuppressWarnings({"FieldCanBeLocal"})
-    protected String delimiter = "(\t| +)";
+	protected String delimiter;
     protected int column;
+
+	private static Logger LOG = Logger.getLogger(CSVIndex.class);
 
     @Inject
     protected CSVIndex(CSVIndexBuilder<K> b) {
-        super(b);
+	    super(b);
+	    this.delimiter = b.delimiter;
+	    this.column = b.column;
+	    LOG.debug("delimiter = '" + this.delimiter + "'");
+	    LOG.debug("column = " + this.column);
     }
 
 
     @Override
     public K extractKeyFromLine(String line) {
         String[] splits = line.split(delimiter);
-        return transformToKeyType(splits[column]);
+	    LOG.debug("trying to transform key: '" + splits[ column + 1 ] + "'"); // don't understand why we need +1
+	    return transformToKeyType(splits[column + 1]);
     }
 
 	protected abstract K transformToKeyType(String key);

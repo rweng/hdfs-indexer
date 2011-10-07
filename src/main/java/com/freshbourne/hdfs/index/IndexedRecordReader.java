@@ -7,6 +7,7 @@ import java.util.Iterator;
 import com.freshbourne.hdfs.index.mapreduce.LineRecordReader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
@@ -20,6 +21,7 @@ public class IndexedRecordReader extends LineRecordReader {
             throws IOException {
         super.initialize(genericSplit, context);
         index = IndexBuilder.create(genericSplit, context);
+	    value = new Text();
     }
 
     public Iterator<String> getIndexIterator() {
@@ -27,9 +29,10 @@ public class IndexedRecordReader extends LineRecordReader {
             indexIterator = index.getIterator();
         }
 
+	    LOG.debug("indexIterator: " + indexIterator);
         return indexIterator;
     }
-
+	
     public boolean nextKeyValue() throws IOException {
         // if no index is set, return the value of the super method since
         // all code after this depends on index
@@ -45,6 +48,7 @@ public class IndexedRecordReader extends LineRecordReader {
             // get index for file if not set
             // read from index
             String next = getIndexIterator().next();
+	        LOG.debug("got next: " + next);
             if (next != null) {
                 value.set(next);
                 return true;

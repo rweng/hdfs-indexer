@@ -35,9 +35,8 @@ dependencies {
     }
 
     // index dependencies
-    compile "com.google.code.guice:guice:2.0.1@jar"
-    compile "aopalliance:aopalliance:1.0@jar"
-
+    compile "com.google.inject:guice:3.0@jar"
+    compile "javax.inject:javax.inject:1@jar" // dependency needed by guice
 }
 
 //************* java plugin configuration ********************
