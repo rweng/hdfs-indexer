@@ -22,13 +22,16 @@ public class BTreeIndexTest {
     private static File indexFolder;
 
     private static Injector injector;
+	private static String hdfsFile = "/path/to/file.csv";
 
-    private static void createInjector() {
-	    RunModule module = new RunModule();
-        injector = Guice.createInjector(module);
+	private static void createInjector() {
+	    CSVModule module = new CSVModule();
+        module.hdfsFile = hdfsFile;
+		injector = Guice.createInjector(module);
 
-	    indexRootFolder  = new File(module.indexRootFolder());
-	    indexFolder = new File(indexRootFolder + "/path/to/file.csv/");
+
+	    indexRootFolder  = new File(module.indexRootFolder);
+	    indexFolder = new File(indexRootFolder + hdfsFile);
     }
 
     static {
@@ -45,8 +48,8 @@ public class BTreeIndexTest {
     @Test
     public void creation() {
         assertTrue(index != null);
-        assertEquals("/path/to/file.csv", index.getHdfsFile());
-        assertEquals(indexRootFolder + "/path/to/file.csv", index.getIndexDir().getAbsolutePath());
+        assertEquals(hdfsFile, index.getHdfsFile());
+        assertEquals(indexRootFolder + hdfsFile, index.getIndexDir().getAbsolutePath());
         assertEquals(indexRootFolder + "/path/to/file.csv/properties.xml", index.getPropertiesPath());
     }
 
@@ -60,7 +63,7 @@ public class BTreeIndexTest {
         index.open();
         assertTrue(index.isOpen());
         assertTrue(indexFolder.exists());
-        assertTrue((new File("/tmp/indexTest/path/to/file.csv/properties.xml")).exists());
+        assertTrue((new File(indexFolder.getAbsolutePath() + "/properties.xml")).exists());
     }
 
     @Test

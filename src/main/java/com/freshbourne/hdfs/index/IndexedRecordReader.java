@@ -1,7 +1,6 @@
 package com.freshbourne.hdfs.index;
 
 import java.io.IOException;
-import java.util.AbstractMap;
 import java.util.Iterator;
 
 import com.freshbourne.hdfs.index.mapreduce.LineRecordReader;
@@ -22,7 +21,7 @@ public class IndexedRecordReader extends LineRecordReader {
 	public void initialize(InputSplit genericSplit, TaskAttemptContext context)
 			throws IOException {
 		super.initialize(genericSplit, context);
-		index = IndexBuilder.create(genericSplit, context);
+		index = new IndexBuilderImpl().create(genericSplit, context);
 		value = new Text();
 	}
 
