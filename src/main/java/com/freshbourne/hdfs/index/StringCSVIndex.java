@@ -5,6 +5,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
 import java.io.File;
+import java.util.List;
 
 public class StringCSVIndex extends CSVIndex<String> {
 
@@ -16,5 +17,4 @@ public class StringCSVIndex extends CSVIndex<String> {
 	@Override protected String transformToKeyType(String key) {
 		return key;
 	}
-
 }

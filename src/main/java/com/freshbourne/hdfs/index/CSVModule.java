@@ -1,11 +1,14 @@
 package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.BTreeModule;
+import com.freshbourne.btree.Range;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.LinkedList;
+import java.util.List;
 
 public class CSVModule extends AbstractModule implements Serializable {
     public String hdfsFile = "/test/lineitem.tbl";
@@ -13,6 +16,7 @@ public class CSVModule extends AbstractModule implements Serializable {
 	public int csvColumn = 0;
 	public String delimiter = "( |\t)+";
 	public Class<? extends Index> indexClass = IntegerCSVIndex.class;
+	public List<Range<Integer>> searchRange = new LinkedList<Range<Integer>>();
 
 	@Override protected void configure() {
 

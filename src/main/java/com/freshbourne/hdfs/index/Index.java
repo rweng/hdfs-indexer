@@ -37,7 +37,7 @@ import java.util.List;
  * actually ensures that the data is persisted.
  *
  */
-public interface Index {
+public interface Index<K,V> {
 
     /**
      *  Open or create the index. This could be the files or directory for example.
@@ -61,14 +61,7 @@ public interface Index {
 	/**
 	 * @return iterator over all key/value pairs in the storage
 	 */
-	public Iterator<String> getIterator();
-
-	/**
-	 * @param start key
-	 * @param end key
-	 * @return iterator over all key/value pairs in the storage from the start key to the end key
-	 */
-	public Iterator<SimpleEntry<String, String>> getIterator(String start, String end);
+	public Iterator<V> getIterator();
 
 	/**
 	 * closes the index after we are done writing to it

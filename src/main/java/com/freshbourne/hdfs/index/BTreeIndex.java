@@ -2,6 +2,7 @@ package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.BTree;
 import com.freshbourne.btree.BTreeFactory;
+import com.freshbourne.btree.Range;
 import com.freshbourne.serializer.FixLengthSerializer;
 import com.freshbourne.serializer.FixedStringSerializer;
 import com.google.inject.Inject;
@@ -43,7 +44,7 @@ import java.util.*;
  * is created, it is not possible to store the end position in the file name (assuming we dont want to rename). Thus, a
  * properties file is required.
  */
-public abstract class BTreeIndex<K> implements Index, Serializable {
+public abstract class BTreeIndex<K> implements Index<K,String>, Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private BTree<K, String> bTreeWriting;
@@ -128,13 +129,16 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 		private List<BTree<K, String>> trees;
 		private BTree<K, String>       currentTree;
 		private Iterator<String>       currentIterator;
+		private List<Range<K>> searchRanges;
 
-		/**
-		 * @param trees
-		 * 		ordered list of btrees from which iterators are used
-		 */
-		private BTreeIndexIterator(List<BTree<K, String>> trees) {
-			this.trees = trees;
+
+		private BTreeIndexIterator() {
+			this.trees = getTreeList();
+		}
+
+		public BTreeIndexIterator(List<Range<K>> searchRange) {
+			this.searchRanges = searchRange;
+			this.trees = getTreeList();
 		}
 
 		@Override
@@ -149,7 +153,10 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 				currentTree = trees.get(0);
 
 			if (currentIterator == null) {
-				currentIterator = currentTree.getIterator();
+				if (searchRanges != null)
+					currentIterator = currentTree.getIterator(searchRanges);
+				else
+					currentIterator = currentTree.getIterator();
 			}
 
 			if (currentIterator.hasNext()) {
@@ -221,6 +228,7 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 		return properties;
 	}
 
+
 	private List<BTree<K, String>> getTreeList() {
 		List<BTree<K, String>> list = new LinkedList<BTree<K, String>>();
 
@@ -229,14 +237,13 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 			list.add(getTree(new File(getIndexDir() + "/" + filename)));
 		}
 
-
 		return list;
 	}
 
 	@Override
 	public Iterator<String> getIterator() {
 		ensureOpen();
-		return new BTreeIndexIterator(getTreeList());
+		return new BTreeIndexIterator();
 	}
 
 	protected void ensureOpen() {
@@ -244,11 +251,11 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 			throw new IllegalStateException("index must be opened before it is used");
 	}
 
-	@Override
-	public Iterator<AbstractMap.SimpleEntry<String, String>> getIterator(String start, String end) {
+
+
+	public Iterator<String> getIterator(List<Range<K>> searchRange) {
 		ensureOpen();
-		//TODO: implement
-		throw new UnsupportedOperationException();
+		return new BTreeIndexIterator(searchRange);
 	}
 
 	@Override
@@ -273,6 +280,7 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 			bTreeWriting.sync();
 
 		LOG.debug("closing done");
+		isOpen = false;
 	}
 
 	private void unlock() {
@@ -307,8 +315,8 @@ public abstract class BTreeIndex<K> implements Index, Serializable {
 			LOG.debug("key: " + key);
 			getOrCreateWritingTree().add(key, line);
 		} catch (Exception e) {
-			LOG.debug("error when storing line: " + line);
-			LOG.debug(e);
+			LOG.error("error when storing line: " + line);
+			LOG.error(e);
 			return;
 		}
 

@@ -44,8 +44,8 @@ public abstract class CSVIndex<K> extends BTreeIndex<K> {
     @Override
     public K extractKeyFromLine(String line) {
         String[] splits = line.split(delimiter);
-	    LOG.debug("trying to transform key: '" + splits[ column + 1 ] + "'"); // don't understand why we need +1
-	    return transformToKeyType(splits[column + 1]);
+	    LOG.debug("trying to transform key: '" + splits[ column ] + "'");
+	    return transformToKeyType(splits[column]);
     }
 
 	protected abstract K transformToKeyType(String key);
