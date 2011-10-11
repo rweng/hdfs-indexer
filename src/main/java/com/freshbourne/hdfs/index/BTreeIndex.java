@@ -44,7 +44,7 @@ import java.util.*;
  * is created, it is not possible to store the end position in the file name (assuming we dont want to rename). Thus, a
  * properties file is required.
  */
-public abstract class BTreeIndex<K> implements Index<K,String>, Serializable {
+public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private BTree<K, String> bTreeWriting;
@@ -60,6 +60,7 @@ public abstract class BTreeIndex<K> implements Index<K,String>, Serializable {
 	private boolean ourLock = false;
 	private Comparator<K>                  comparator;
 	private FixLengthSerializer<K, byte[]> keySerializer;
+	private List<Range<K>>                 defaultSearchRanges;
 
 	public boolean isOpen() {
 		return isOpen;
@@ -129,7 +130,7 @@ public abstract class BTreeIndex<K> implements Index<K,String>, Serializable {
 		private List<BTree<K, String>> trees;
 		private BTree<K, String>       currentTree;
 		private Iterator<String>       currentIterator;
-		private List<Range<K>> searchRanges;
+		private List<Range<K>>         searchRanges;
 
 
 		private BTreeIndexIterator() {
@@ -202,6 +203,7 @@ public abstract class BTreeIndex<K> implements Index<K,String>, Serializable {
 		this.factory = b.factory;
 		this.keySerializer = b.keySerializer;
 		this.comparator = b.comparater;
+		this.defaultSearchRanges = b.defaultSearchRanges;
 	}
 
 	String getHdfsFile() {
@@ -242,21 +244,28 @@ public abstract class BTreeIndex<K> implements Index<K,String>, Serializable {
 
 	@Override
 	public Iterator<String> getIterator() {
-		ensureOpen();
-		return new BTreeIndexIterator();
+		return getIterator(true);
 	}
+
+	public Iterator<String> getIterator(List<Range<K>> searchRange) {
+		ensureOpen();
+		return new BTreeIndexIterator(searchRange);
+	}
+
+	public Iterator<String> getIterator(boolean useDefaultSearchRanges) {
+		ensureOpen();
+		if (useDefaultSearchRanges)
+			return new BTreeIndexIterator(defaultSearchRanges);
+		else
+			return new BTreeIndexIterator();
+	}
+
 
 	protected void ensureOpen() {
 		if (!isOpen())
 			throw new IllegalStateException("index must be opened before it is used");
 	}
 
-
-
-	public Iterator<String> getIterator(List<Range<K>> searchRange) {
-		ensureOpen();
-		return new BTreeIndexIterator(searchRange);
-	}
 
 	@Override
 	public void close() {
@@ -414,7 +423,7 @@ public abstract class BTreeIndex<K> implements Index<K,String>, Serializable {
 			if (propertyStr != null)
 				p.loadFromString(propertyStr);
 
-			if( largest < p.end)
+			if (largest < p.end)
 				largest = p.end;
 
 		}

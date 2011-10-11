@@ -3,8 +3,11 @@ package com.freshbourne.hdfs.index;
 import com.freshbourne.btree.BTreeModule;
 import com.freshbourne.btree.Range;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.Serializable;
 import java.util.LinkedList;
@@ -27,7 +30,15 @@ public class CSVModule extends AbstractModule implements Serializable {
 	    bind(String.class).annotatedWith(Names.named("indexId")).toInstance("" + csvColumn);
         bind(String.class).annotatedWith(Names.named("delimiter")).toInstance(delimiter);
 
+		bind(new TypeLiteral<List<Range<Integer>>>(){}).toInstance(searchRange);
+		//bind(new TypeLiteral<List<Range<String>>>() {});
+
 	    bind(Index.class).to(indexClass);
         install(new BTreeModule());
     }
+
+	@Provides @Singleton
+	public List<Range<String>> provideSearchRange(){
+		return new LinkedList<Range<String>>();
+	}
 }
