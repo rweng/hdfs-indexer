@@ -285,11 +285,18 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		unlock();
 
 		LOG.debug("writing btree");
-		if (bTreeWriting != null)
+		if (bTreeWriting != null){
 			bTreeWriting.sync();
 
-		LOG.debug("closing done");
+			try {
+				bTreeWriting.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		isOpen = false;
+		LOG.debug("closing done");
 	}
 
 	private void unlock() {
@@ -385,6 +392,9 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private BTree<K, String> getOrCreateWritingTree() {
 		if (bTreeWriting != null)
 			return bTreeWriting;
+		
+		//if(isLocked())
+		//	return null;
 
 		String file = getIndexDir() + "/" + indexId + "_" + (new SecureRandom()).nextInt();
 
