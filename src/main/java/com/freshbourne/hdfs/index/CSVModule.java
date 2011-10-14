@@ -2,10 +2,13 @@ package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.BTreeModule;
 import com.freshbourne.btree.Range;
+import com.freshbourne.serializer.FixLengthSerializer;
+import com.freshbourne.serializer.StringCutSerializer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import com.google.inject.util.Modules;
 
 import javax.inject.Singleton;
 import java.io.File;
@@ -31,10 +34,14 @@ public class CSVModule extends AbstractModule implements Serializable {
         bind(String.class).annotatedWith(Names.named("delimiter")).toInstance(delimiter);
 
 		bind(new TypeLiteral<List<Range<Integer>>>(){}).toInstance(searchRange);
-		//bind(new TypeLiteral<List<Range<String>>>() {});
-
+		
 	    bind(Index.class).to(indexClass);
-        install(new BTreeModule());
+		
+        install(Modules.override(new BTreeModule()).with(new AbstractModule() {
+	        @Override protected void configure() {
+		        bind(new TypeLiteral<FixLengthSerializer<String, byte[]>>(){}).toInstance(StringCutSerializer.get(150));
+	        }
+        }));
     }
 
 	@Provides @Singleton

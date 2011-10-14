@@ -71,7 +71,8 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	}
 
 	private void saveProperties() throws IOException {
-		LOG.debug("saving properties:\n " + properties);
+		if (LOG.isDebugEnabled())
+			LOG.debug("saving properties:\n " + properties);
 		properties.storeToXML(new FileOutputStream(getPropertiesPath()), "comment");
 	}
 
@@ -144,7 +145,6 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 		@Override
 		public boolean hasNext() {
-			LOG.debug("hasNext() called");
 			if (trees.size() == 0) {
 				return false;
 			}
@@ -177,7 +177,6 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 		@Override
 		public String next() {
-			LOG.debug("returning next");
 			if (hasNext()) {
 				return currentIterator.next();
 			}
@@ -195,8 +194,6 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	protected BTreeIndex(BTreeIndexBuilder<K> b) {
 		// if hdfsFile doesn't start with /, the server name is before the path
 		this.hdfsFile = b.hdfsFile.replaceAll("^hdfs://[^/]*", "");
-
-		LOG.debug("parsed hdfs file: " + hdfsFile);
 
 		this.indexRootFolder = b.indexFolder;
 		this.indexId = b.indexId;
@@ -222,7 +219,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 				FileInputStream fis = new FileInputStream(propertiesFile);
 				properties.loadFromXML(fis);
 			} catch (Exception e) {
-				LOG.debug("deleting properties file");
+				LOG.warn("deleting properties file");
 				propertiesFile.delete();
 			}
 		}
@@ -269,11 +266,11 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 	@Override
 	public void close() {
-		LOG.debug("closing BTreeIndex");
 		if (!isOpen())
 			return;
 
-		LOG.debug("saving Properties");
+		if (LOG.isDebugEnabled())
+			LOG.debug("saving Properties");
 		try {
 			saveProperties();
 		} catch (IOException e) {
@@ -281,11 +278,10 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 			throw new RuntimeException(e);
 		}
 
-		LOG.debug("unlocking");
 		unlock();
 
-		LOG.debug("writing btree");
-		if (bTreeWriting != null){
+		LOG.info("writing btree");
+		if (bTreeWriting != null) {
 			bTreeWriting.sync();
 
 			try {
@@ -294,9 +290,8 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 				e.printStackTrace();
 			}
 		}
-		
+
 		isOpen = false;
-		LOG.debug("closing done");
 	}
 
 	private void unlock() {
@@ -316,10 +311,8 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 	@Override
 	public void addLine(String line, long pos) {
-		LOG.debug("adding line to index");
 		ensureOpen();
 		if (!ourLock && isLocked()) {
-			LOG.debug("return. ourLock=" + ourLock + ",isLocked()=" + isLocked() + ",file=" + getLockFile());
 			return;
 		} else {
 			lock();
@@ -327,12 +320,10 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 		try {
 			K key = extractKeyFromLine(line);
-			LOG.debug("key extracted!");
-			LOG.debug("key: " + key);
 			getOrCreateWritingTree().add(key, line);
 		} catch (Exception e) {
-			LOG.error("error when storing line: " + line);
-			LOG.error(e);
+			LOG.warn("error when storing line: " + line);
+			LOG.warn(e);
 			return;
 		}
 
@@ -353,6 +344,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		}
 
 		getProperties().setProperty(filename, p.toString());
+		if(LOG.isDebugEnabled())
 		LOG.debug("properties after addLine: \n" + getProperties());
 	}
 
@@ -364,6 +356,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		if (ourLock)
 			return;
 
+		if(LOG.isDebugEnabled())
 		LOG.debug("locking file: " + getLockFile());
 		try {
 			FileUtils.touch(getLockFile());
@@ -375,9 +368,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 	protected void finalize() throws Throwable {
 		try {
-			LOG.debug("finalize: unlock");
 			unlock();
-			LOG.debug("finalize: close");
 			close();
 		} finally {
 			super.finalize();
@@ -392,13 +383,14 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private BTree<K, String> getOrCreateWritingTree() {
 		if (bTreeWriting != null)
 			return bTreeWriting;
-		
+
 		//if(isLocked())
 		//	return null;
 
 		String file = getIndexDir() + "/" + indexId + "_" + (new SecureRandom()).nextInt();
 
 		bTreeWriting = getTree(new File(file));
+		if(LOG.isDebugEnabled())
 		LOG.debug("creeated btree for writing: " + bTreeWriting.getPath());
 		return bTreeWriting;
 	}

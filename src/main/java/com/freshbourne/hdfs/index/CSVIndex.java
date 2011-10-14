@@ -36,14 +36,17 @@ public abstract class CSVIndex<K> extends BTreeIndex<K> {
 	    super(b);
 	    this.delimiter = b.delimiter;
 	    this.column = b.column;
+	    if(LOG.isDebugEnabled()){
 	    LOG.debug("delimiter = '" + this.delimiter + "'");
 	    LOG.debug("column = " + this.column);
+	    }
     }
 
 
     @Override
     public K extractKeyFromLine(String line) {
         String[] splits = line.split(delimiter);
+	    if(LOG.isDebugEnabled())
 	    LOG.debug("trying to transform key: '" + splits[ column ] + "'");
 	    return transformToKeyType(splits[column]);
     }

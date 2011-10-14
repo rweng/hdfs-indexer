@@ -25,9 +25,9 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 public class IndexedInputFormat extends
 		FileInputFormat<LongWritable, Text> {
-	
+
 	private static final double SPLIT_SLOP = 1.1;   // 10% slop
-	private static Log LOG = LogFactory.getLog(IndexedInputFormat.class);
+	private static       Log    LOG        = LogFactory.getLog(IndexedInputFormat.class);
 
 	@Override
 	public RecordReader<LongWritable, Text> createRecordReader(
@@ -37,11 +37,9 @@ public class IndexedInputFormat extends
 		return new IndexedRecordReader();
 	}
 
-	/**
-	 * Generate the list of files and make them into FileSplits.
-	 */
+	/** Generate the list of files and make them into FileSplits. */
 	public List<InputSplit> getSplits(JobContext job) throws IOException {
-		
+
 		long minSize = Math.max(getFormatMinSplitSize(), getMinSplitSize(job));
 		long maxSize = getMaxSplitSize(job);
 
@@ -49,10 +47,12 @@ public class IndexedInputFormat extends
 		List<InputSplit> splits = new ArrayList<InputSplit>();
 		for (FileStatus file : listStatus(job)) {
 			Path path = file.getPath();
-			LOG.debug("Path of the file: " + path);
+			if (LOG.isDebugEnabled())
+				LOG.debug("Path of the file: " + path);
 			FileSystem fs = path.getFileSystem(job.getConfiguration());
 			long length = file.getLen();
-			LOG.debug("length of the file: " + length);
+			if (LOG.isDebugEnabled())
+				LOG.debug("length of the file: " + length);
 			BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0,
 					length);
 			if ((length != 0) && isSplitable(job, path)) {
@@ -81,11 +81,13 @@ public class IndexedInputFormat extends
 				splits.add(new FileSplit(path, 0, length, new String[0]));
 			}
 		}
-		LOG.debug("Total # of splits: " + splits.size());
-		for(InputSplit fs : splits){
-			LOG.debug("Path: " + ((FileSplit)fs).getPath());
-			LOG.debug("Start: " + ((FileSplit)fs).getStart());	
-			LOG.debug("Length: " + ((FileSplit)fs).getLength());	
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("Total # of splits: " + splits.size());
+			for (InputSplit fs : splits) {
+				LOG.debug("Path: " + ((FileSplit) fs).getPath());
+				LOG.debug("Start: " + ((FileSplit) fs).getStart());
+				LOG.debug("Length: " + ((FileSplit) fs).getLength());
+			}
 		}
 		return splits;
 	}
@@ -99,7 +101,7 @@ public class IndexedInputFormat extends
 			// is the offset inside this block?
 			if ((blkLocations[i].getOffset() <= offset)
 					&& (offset < blkLocations[i].getOffset()
-							+ blkLocations[i].getLength())) {
+					+ blkLocations[i].getLength())) {
 				return i;
 			}
 		}

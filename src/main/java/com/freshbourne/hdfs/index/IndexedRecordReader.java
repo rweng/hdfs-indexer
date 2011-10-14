@@ -37,7 +37,8 @@ public class IndexedRecordReader extends LineRecordReader {
 		// if no index is set, return the value of the super method since
 		// all code after this depends on index
 		if (index == null) {
-			LOG.debug("index is null, returning nextKeyValue()");
+			if (LOG.isDebugEnabled())
+				LOG.debug("index is null, returning nextKeyValue()");
 			return super.nextKeyValue();
 		}
 
@@ -46,7 +47,8 @@ public class IndexedRecordReader extends LineRecordReader {
 			boolean result = super.nextKeyValue();
 
 			if (result) {
-				LOG.debug("adding to index:" + this.getCurrentValue().toString());
+				if (LOG.isDebugEnabled())
+					LOG.debug("adding to index:" + this.getCurrentValue().toString());
 				index.addLine(this.getCurrentValue().toString(), pos);
 			} else
 				index.close();
@@ -55,12 +57,12 @@ public class IndexedRecordReader extends LineRecordReader {
 
 		// get next value from index as long as we have
 		if (getIndexIterator().hasNext()) {
-			LOG.debug("READING FROM INDEX");
 
 			// get index for file if not set
 			// read from index
 			String next = getIndexIterator().next();
-			LOG.debug("got next: " + next);
+			if (LOG.isDebugEnabled())
+				LOG.debug("got next: " + next);
 			if (next != null) {
 				value.set(next);
 				return true;
@@ -68,7 +70,8 @@ public class IndexedRecordReader extends LineRecordReader {
 				return false;
 			}
 		} else {
-			LOG.debug("Replacing current pos (" + pos + ") with index.getMaxPos(" + index.getMaxPos()+ ")");
+			if (LOG.isDebugEnabled())
+				LOG.debug("Replacing current pos (" + pos + ") with index.getMaxPos(" + index.getMaxPos() + ")");
 			pos = index.getMaxPos();
 
 			doneReadingFromIndex = true;
