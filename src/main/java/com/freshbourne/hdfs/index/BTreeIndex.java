@@ -46,9 +46,9 @@ import java.util.*;
  */
 public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
-	private static final long serialVersionUID = 1L;
+	private static final long   serialVersionUID = 1L;
+	private static final Logger LOG              = Logger.getLogger(BTreeIndex.class);
 	private BTree<K, String> bTreeWriting;
-	private static final Logger LOG = Logger.getLogger(BTreeIndex.class);
 
 	private String     indexId;
 	private String     hdfsFile;
@@ -61,9 +61,89 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private Comparator<K>                  comparator;
 	private FixLengthSerializer<K, byte[]> keySerializer;
 	private List<Range<K>>                 defaultSearchRanges;
+	private List<AbstractMap.SimpleEntry<K, String>> cache = new LinkedList<AbstractMap.SimpleEntry<K, String>>();
+
+	@Inject
+	protected BTreeIndex(BTreeIndexBuilder<K> b) {
+		// if hdfsFile doesn't start with /, the server name is before the path
+		this.hdfsFile = b.hdfsFile.replaceAll("^hdfs://[^/]*", "");
+
+		this.indexRootFolder = b.indexFolder;
+		this.indexId = b.indexId;
+		this.factory = b.factory;
+		this.keySerializer = b.keySerializer;
+		this.comparator = b.comparater;
+		this.defaultSearchRanges = b.defaultSearchRanges;
+	}
 
 	public boolean isOpen() {
 		return isOpen;
+	}
+
+	public void open() throws IOException {
+		File indexDir = getIndexDir();
+		indexDir.mkdirs();
+
+		loadOrCreateProperties();
+
+		isOpen = true;
+	}
+
+
+	@Override
+	public void close() {
+		if (!isOpen())
+			return;
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("saving Properties");
+		try {
+			saveProperties();
+		} catch (IOException e) {
+			// we dont need to do the bTree writing if this fails
+			throw new RuntimeException(e);
+		}
+
+		unlock();
+
+		LOG.info("writing btree");
+		if (bTreeWriting != null) {
+			bTreeWriting.sync();
+
+			try {
+				bTreeWriting.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		isOpen = false;
+	}
+
+
+	protected void ensureOpen() {
+		if (!isOpen())
+			throw new IllegalStateException("index must be opened before it is used");
+	}
+
+	private Properties getProperties() {
+		if (properties != null) {
+			return properties;
+		}
+
+		properties = new Properties();
+		File propertiesFile = new File(indexRootFolder + "properties");
+		if (propertiesFile.exists()) {
+			try {
+				FileInputStream fis = new FileInputStream(propertiesFile);
+				properties.loadFromXML(fis);
+			} catch (Exception e) {
+				LOG.warn("deleting properties file");
+				propertiesFile.delete();
+			}
+		}
+
+		return properties;
 	}
 
 	String getPropertiesPath() {
@@ -88,14 +168,238 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		return properties;
 	}
 
-	public void open() throws IOException {
-		File indexDir = getIndexDir();
-		indexDir.mkdirs();
-
-		loadOrCreateProperties();
-
-		isOpen = true;
+	/** @return directory of the index-files for the current hdfs file */
+	File getIndexDir() {
+		return new File(indexRootFolder.getPath() + hdfsFile);
 	}
+
+	String getHdfsFile() {
+		return hdfsFile;
+	}
+
+
+	private List<BTree<K, String>> getTreeList() {
+		List<BTree<K, String>> list = new LinkedList<BTree<K, String>>();
+
+		// add trees from properties
+		for (String filename : getProperties().stringPropertyNames()) {
+			list.add(getTree(new File(getIndexDir() + "/" + filename)));
+		}
+
+		return list;
+	}
+
+	@Override
+	public Iterator<String> getIterator() {
+		return getIterator(true);
+	}
+
+	public Iterator<String> getIterator(List<Range<K>> searchRange) {
+		ensureOpen();
+		return new BTreeIndexIterator(searchRange);
+	}
+
+	public Iterator<String> getIterator(boolean useDefaultSearchRanges) {
+		ensureOpen();
+		if (useDefaultSearchRanges)
+			return new BTreeIndexIterator(defaultSearchRanges);
+		else
+			return new BTreeIndexIterator();
+	}
+
+	private void unlock() {
+		if (ourLock) {
+			getLockFile().delete();
+			ourLock = false;
+		}
+	}
+
+	private String getWriteTreeFileName() {
+		if (bTreeWriting == null)
+			return null;
+
+		String[] splits = new String[0];
+		splits = bTreeWriting.getPath().split("/");
+
+		return splits[splits.length - 1];
+	}
+
+	@Override
+	public void addLine(String line, long pos) {
+		ensureOpen();
+		if (!ourLock && isLocked()) {
+			return;
+		} else {
+			lock();
+		}
+
+
+		try {
+			K key = extractKeyFromLine(line);
+			if (isEnoughMemory())
+				cache.add(new AbstractMap.SimpleEntry<K, String>(key, line));
+			else {
+				LOG.info("bulkInitializing tree");
+				BTree<K, String> tree = createWritingTree();
+				tree.bulkInitialize(cache.toArray(new AbstractMap.SimpleEntry[0]), false);
+				tree.close();
+				cache.clear();
+			}
+
+		} catch (Exception e) {
+			LOG.warn("error when storing line: " + line);
+			LOG.warn(e);
+			return;
+		}
+
+		String filename = getWriteTreeFileName();
+		String propertyStr = getProperties().getProperty(filename, null);
+
+		PropertyEntry p = new PropertyEntry();
+
+		if (propertyStr != null)
+			p.loadFromString(propertyStr);
+
+		if (pos < p.start) {
+			p.start = pos;
+		}
+
+		if (pos > p.end) {
+			p.end = pos;
+		}
+
+		getProperties().setProperty(filename, p.toString());
+		if (LOG.isDebugEnabled())
+			LOG.debug("properties after addLine: \n" + getProperties());
+	}
+
+	private boolean isEnoughMemory() {
+		long free = Runtime.getRuntime().freeMemory() / 1024 / 1024;
+		if (free < 3) {
+			LOG.info("collecting garbarge");
+			collectGarbage();
+			collectGarbage();
+		}
+
+		if(free < 5){
+			return false;
+		} else {
+			return true;
+		}
+	}
+
+	private static int fSLEEP_INTERVAL = 100;
+
+	private static void collectGarbage() {
+		try {
+			System.gc();
+			Thread.currentThread().sleep(fSLEEP_INTERVAL);
+			System.runFinalization();
+			Thread.currentThread().sleep(fSLEEP_INTERVAL);
+		} catch (InterruptedException ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private boolean isLocked() {
+		return getLockFile().exists();
+	}
+
+	private void lock() {
+		if (ourLock)
+			return;
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("locking file: " + getLockFile());
+		try {
+			FileUtils.touch(getLockFile());
+			ourLock = true;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected void finalize() throws Throwable {
+		try {
+			unlock();
+			close();
+		} finally {
+			super.finalize();
+		}
+	}
+
+	File getLockFile() {
+		return new File(getIndexDir() + "/lock");
+	}
+
+	private BTree<K, String> createWritingTree() throws IOException {
+		if (bTreeWriting != null)
+			throw new IllegalStateException("writing tree already exists: " + bTreeWriting.getPath());
+
+		String file = getIndexDir() + "/" + indexId + "_" + (new SecureRandom()).nextInt();
+		bTreeWriting = factory.get(new File(file), keySerializer, FixedStringSerializer.INSTANCE_1000,
+							comparator, false);
+
+		if (LOG.isDebugEnabled())
+					LOG.debug("creeated btree for writing: " + bTreeWriting.getPath());
+
+		return bTreeWriting;
+	}
+
+	private BTree<K, String> getTree(File file) {
+		BTree<K, String> result = null;
+		try {
+			result = factory.get(file, keySerializer, FixedStringSerializer.INSTANCE_1000,
+					comparator);
+
+			// checkStructure is very expensive, so do not do this usually
+			if(LOG.isDebugEnabled())
+				result.checkStructure();
+
+		} catch (IOException e) {
+			throw new RuntimeException("error occured while trying to get btree: " + file.getAbsolutePath(), e);
+		}
+		return result;
+	}
+
+
+	@Override
+	public boolean exists() {
+		throw new UnsupportedOperationException("todo: check if directory and properties file exists");
+	}
+
+
+	@Override public long getMaxPos() {
+		long largest = 0;
+
+		for (String filename : getProperties().stringPropertyNames()) {
+			String propertyStr = getProperties().getProperty(filename, null);
+
+			PropertyEntry p = new PropertyEntry();
+
+			if (propertyStr != null)
+				p.loadFromString(propertyStr);
+
+			if (largest < p.end)
+				largest = p.end;
+
+		}
+		return largest;
+	}
+
+
+	/**
+	 * This method implemented by a subclass returns the key for a given line.
+	 * <p/>
+	 * This method isn't perfect since it assumes that each line is one entry. Maybe this can be made more generic later!
+	 * <p/>
+	 * Also, call ensureOpen() in this method
+	 *
+	 * @param line
+	 * 		in the hdfs file
+	 * @return key or null to ignore the line
+	 */
+	public abstract K extractKeyFromLine(String line);
 
 	public class PropertyEntry {
 		private long start;
@@ -119,11 +423,6 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 			start = Long.parseLong(splits[0]);
 			end = Long.parseLong(splits[1]);
 		}
-	}
-
-	/** @return directory of the index-files for the current hdfs file */
-	File getIndexDir() {
-		return new File(indexRootFolder.getPath() + hdfsFile);
 	}
 
 	class BTreeIndexIterator implements Iterator<String> {
@@ -189,257 +488,4 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 			throw new UnsupportedOperationException();
 		}
 	}
-
-	@Inject
-	protected BTreeIndex(BTreeIndexBuilder<K> b) {
-		// if hdfsFile doesn't start with /, the server name is before the path
-		this.hdfsFile = b.hdfsFile.replaceAll("^hdfs://[^/]*", "");
-
-		this.indexRootFolder = b.indexFolder;
-		this.indexId = b.indexId;
-		this.factory = b.factory;
-		this.keySerializer = b.keySerializer;
-		this.comparator = b.comparater;
-		this.defaultSearchRanges = b.defaultSearchRanges;
-	}
-
-	String getHdfsFile() {
-		return hdfsFile;
-	}
-
-	private Properties getProperties() {
-		if (properties != null) {
-			return properties;
-		}
-
-		properties = new Properties();
-		File propertiesFile = new File(indexRootFolder + "properties");
-		if (propertiesFile.exists()) {
-			try {
-				FileInputStream fis = new FileInputStream(propertiesFile);
-				properties.loadFromXML(fis);
-			} catch (Exception e) {
-				LOG.warn("deleting properties file");
-				propertiesFile.delete();
-			}
-		}
-
-		return properties;
-	}
-
-
-	private List<BTree<K, String>> getTreeList() {
-		List<BTree<K, String>> list = new LinkedList<BTree<K, String>>();
-
-		// add trees from properties
-		for (String filename : getProperties().stringPropertyNames()) {
-			list.add(getTree(new File(getIndexDir() + "/" + filename)));
-		}
-
-		return list;
-	}
-
-	@Override
-	public Iterator<String> getIterator() {
-		return getIterator(true);
-	}
-
-	public Iterator<String> getIterator(List<Range<K>> searchRange) {
-		ensureOpen();
-		return new BTreeIndexIterator(searchRange);
-	}
-
-	public Iterator<String> getIterator(boolean useDefaultSearchRanges) {
-		ensureOpen();
-		if (useDefaultSearchRanges)
-			return new BTreeIndexIterator(defaultSearchRanges);
-		else
-			return new BTreeIndexIterator();
-	}
-
-
-	protected void ensureOpen() {
-		if (!isOpen())
-			throw new IllegalStateException("index must be opened before it is used");
-	}
-
-
-	@Override
-	public void close() {
-		if (!isOpen())
-			return;
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("saving Properties");
-		try {
-			saveProperties();
-		} catch (IOException e) {
-			// we dont need to do the bTree writing if this fails
-			throw new RuntimeException(e);
-		}
-
-		unlock();
-
-		LOG.info("writing btree");
-		if (bTreeWriting != null) {
-			bTreeWriting.sync();
-
-			try {
-				bTreeWriting.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-		isOpen = false;
-	}
-
-	private void unlock() {
-		if (ourLock) {
-			getLockFile().delete();
-			ourLock = false;
-		}
-	}
-
-	private String getWriteTreeFileName() {
-		if (bTreeWriting == null)
-			return null;
-
-		String[] splits = getOrCreateWritingTree().getPath().split("/");
-		return splits[splits.length - 1];
-	}
-
-	@Override
-	public void addLine(String line, long pos) {
-		ensureOpen();
-		if (!ourLock && isLocked()) {
-			return;
-		} else {
-			lock();
-		}
-
-		try {
-			K key = extractKeyFromLine(line);
-			getOrCreateWritingTree().add(key, line);
-		} catch (Exception e) {
-			LOG.warn("error when storing line: " + line);
-			LOG.warn(e);
-			return;
-		}
-
-		String filename = getWriteTreeFileName();
-		String propertyStr = getProperties().getProperty(filename, null);
-
-		PropertyEntry p = new PropertyEntry();
-
-		if (propertyStr != null)
-			p.loadFromString(propertyStr);
-
-		if (pos < p.start) {
-			p.start = pos;
-		}
-
-		if (pos > p.end) {
-			p.end = pos;
-		}
-
-		getProperties().setProperty(filename, p.toString());
-		if (LOG.isDebugEnabled())
-			LOG.debug("properties after addLine: \n" + getProperties());
-	}
-
-	private boolean isLocked() {
-		return getLockFile().exists();
-	}
-
-	private void lock() {
-		if (ourLock)
-			return;
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("locking file: " + getLockFile());
-		try {
-			FileUtils.touch(getLockFile());
-			ourLock = true;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected void finalize() throws Throwable {
-		try {
-			unlock();
-			close();
-		} finally {
-			super.finalize();
-		}
-	}
-
-	File getLockFile() {
-		return new File(getIndexDir() + "/lock");
-	}
-
-
-	private BTree<K, String> getOrCreateWritingTree() {
-		if (bTreeWriting != null)
-			return bTreeWriting;
-
-		String file = getIndexDir() + "/" + indexId + "_" + (new SecureRandom()).nextInt();
-
-		bTreeWriting = getTree(new File(file));
-		if (LOG.isDebugEnabled())
-			LOG.debug("creeated btree for writing: " + bTreeWriting.getPath());
-		return bTreeWriting;
-	}
-
-	private BTree<K, String> getTree(File file) {
-		BTree<K, String> result = null;
-		try {
-			result = factory.get(file, keySerializer, FixedStringSerializer.INSTANCE_1000,
-					comparator);
-			result.checkStructure();
-		} catch (IOException e) {
-			throw new RuntimeException("error occured while trying to get btree: " + file.getAbsolutePath(), e);
-		}
-		return result;
-	}
-
-
-	@Override
-	public boolean exists() {
-		throw new UnsupportedOperationException("todo: check if directory and properties file exists");
-	}
-
-
-	@Override public long getMaxPos() {
-		long largest = 0;
-
-		for (String filename : getProperties().stringPropertyNames()) {
-			String propertyStr = getProperties().getProperty(filename, null);
-
-			PropertyEntry p = new PropertyEntry();
-
-			if (propertyStr != null)
-				p.loadFromString(propertyStr);
-
-			if (largest < p.end)
-				largest = p.end;
-
-		}
-		return largest;
-	}
-
-
-	/**
-	 * This method implemented by a subclass returns the key for a given line.
-	 * <p/>
-	 * This method isn't perfect since it assumes that each line is one entry. Maybe this can be made more generic later!
-	 * <p/>
-	 * Also, call ensureOpen() in this method
-	 *
-	 * @param line
-	 * 		in the hdfs file
-	 * @return key or null to ignore the line
-	 */
-	public abstract K extractKeyFromLine(String line);
 }
