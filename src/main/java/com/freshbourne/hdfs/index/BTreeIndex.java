@@ -61,7 +61,9 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private Comparator<K>                  comparator;
 	private FixLengthSerializer<K, byte[]> keySerializer;
 	private List<Range<K>>                 defaultSearchRanges;
-	private List<AbstractMap.SimpleEntry<K, String>> cache = new LinkedList<AbstractMap.SimpleEntry<K, String>>();
+	private List<AbstractMap.SimpleEntry<K, String>> cache           =
+			new LinkedList<AbstractMap.SimpleEntry<K, String>>();
+	private PropertyEntry writingTreePropertyEntry = new PropertyEntry();
 
 	@Inject
 	protected BTreeIndex(BTreeIndexBuilder<K> b) {
@@ -236,41 +238,36 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 		try {
 			K key = extractKeyFromLine(line);
-			if (isEnoughMemory())
+			if (isEnoughMemory()) {
+				if (writingTreePropertyEntry.start == null)
+					writingTreePropertyEntry.start = pos;
+
+				writingTreePropertyEntry.end = pos;
 				cache.add(new AbstractMap.SimpleEntry<K, String>(key, line));
-			else {
+			} else {
+				if(cache.isEmpty()){
+					LOG.warn("cache is empty and yet we have not enough memory to add to the cache.");
+					return;
+				}
+				
 				LOG.info("bulkInitializing tree");
 				BTree<K, String> tree = createWritingTree();
 				tree.bulkInitialize(cache.toArray(new AbstractMap.SimpleEntry[0]), false);
 				tree.close();
 				cache.clear();
-			}
 
+				String filename = getWriteTreeFileName();
+				getProperties().setProperty(filename, writingTreePropertyEntry.toString());
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("properties after addLine: \n" + getProperties());
+
+			}
 		} catch (Exception e) {
 			LOG.warn("error when storing line: " + line);
 			LOG.warn(e);
 			return;
 		}
-
-		String filename = getWriteTreeFileName();
-		String propertyStr = getProperties().getProperty(filename, null);
-
-		PropertyEntry p = new PropertyEntry();
-
-		if (propertyStr != null)
-			p.loadFromString(propertyStr);
-
-		if (pos < p.start) {
-			p.start = pos;
-		}
-
-		if (pos > p.end) {
-			p.end = pos;
-		}
-
-		getProperties().setProperty(filename, p.toString());
-		if (LOG.isDebugEnabled())
-			LOG.debug("properties after addLine: \n" + getProperties());
 	}
 
 	private boolean isEnoughMemory() {
@@ -281,7 +278,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 			collectGarbage();
 		}
 
-		if(free < 5){
+		if (free < 5) {
 			return false;
 		} else {
 			return true;
@@ -338,10 +335,10 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 		String file = getIndexDir() + "/" + indexId + "_" + (new SecureRandom()).nextInt();
 		bTreeWriting = factory.get(new File(file), keySerializer, FixedStringSerializer.INSTANCE_1000,
-							comparator, false);
+				comparator, false);
 
 		if (LOG.isDebugEnabled())
-					LOG.debug("creeated btree for writing: " + bTreeWriting.getPath());
+			LOG.debug("creeated btree for writing: " + bTreeWriting.getPath());
 
 		return bTreeWriting;
 	}
@@ -353,7 +350,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 					comparator);
 
 			// checkStructure is very expensive, so do not do this usually
-			if(LOG.isDebugEnabled())
+			if (LOG.isDebugEnabled())
 				result.checkStructure();
 
 		} catch (IOException e) {
@@ -402,11 +399,11 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	public abstract K extractKeyFromLine(String line);
 
 	public class PropertyEntry {
-		private long start;
-		private long end;
+		private Long start = null;
+		private Long end = null;
 
 		public PropertyEntry() {
-			this(Long.MAX_VALUE, -1);
+			
 		}
 
 		public PropertyEntry(long start, long end) {
@@ -415,7 +412,13 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		}
 
 		public String toString() {
-			return "" + start + ";" + end;
+			String str = "";
+			if(start != null)
+				str += start;
+			str += ";";
+			if(end != null)
+				str += end;
+			return str;
 		}
 
 		public void loadFromString(String s) {
