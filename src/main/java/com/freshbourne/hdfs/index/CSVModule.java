@@ -36,12 +36,7 @@ public class CSVModule extends AbstractModule implements Serializable {
 		bind(new TypeLiteral<List<Range<Integer>>>(){}).toInstance(searchRange);
 		
 	    bind(Index.class).to(indexClass);
-		
-        install(Modules.override(new BTreeModule()).with(new AbstractModule() {
-	        @Override protected void configure() {
-		        bind(new TypeLiteral<FixLengthSerializer<String, byte[]>>(){}).toInstance(StringCutSerializer.get(150));
-	        }
-        }));
+		install(new BTreeModule());
     }
 
 	@Provides @Singleton

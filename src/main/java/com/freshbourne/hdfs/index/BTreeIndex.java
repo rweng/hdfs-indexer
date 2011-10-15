@@ -344,8 +344,8 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		}
 
 		getProperties().setProperty(filename, p.toString());
-		if(LOG.isDebugEnabled())
-		LOG.debug("properties after addLine: \n" + getProperties());
+		if (LOG.isDebugEnabled())
+			LOG.debug("properties after addLine: \n" + getProperties());
 	}
 
 	private boolean isLocked() {
@@ -356,8 +356,8 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		if (ourLock)
 			return;
 
-		if(LOG.isDebugEnabled())
-		LOG.debug("locking file: " + getLockFile());
+		if (LOG.isDebugEnabled())
+			LOG.debug("locking file: " + getLockFile());
 		try {
 			FileUtils.touch(getLockFile());
 			ourLock = true;
@@ -384,14 +384,11 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		if (bTreeWriting != null)
 			return bTreeWriting;
 
-		//if(isLocked())
-		//	return null;
-
 		String file = getIndexDir() + "/" + indexId + "_" + (new SecureRandom()).nextInt();
 
 		bTreeWriting = getTree(new File(file));
-		if(LOG.isDebugEnabled())
-		LOG.debug("creeated btree for writing: " + bTreeWriting.getPath());
+		if (LOG.isDebugEnabled())
+			LOG.debug("creeated btree for writing: " + bTreeWriting.getPath());
 		return bTreeWriting;
 	}
 
