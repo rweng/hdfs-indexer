@@ -1,7 +1,9 @@
 package com.freshbourne.hdfs.index;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -24,7 +26,7 @@ public class IndexBuilderImpl implements IndexBuilder {
 		try {
 			if (LOG.isDebugEnabled())
 				LOG.debug("trying to create index with module " + guiceModule);
-			CSVModule module = (CSVModule) guiceModule.getConstructor().newInstance();
+			Module module = (Module) guiceModule.getConstructor().newInstance();
 			if (LOG.isDebugEnabled())
 				LOG.debug("module created: " + module.getClass().getName().toString());
 			Injector injector = Guice.createInjector(module);
