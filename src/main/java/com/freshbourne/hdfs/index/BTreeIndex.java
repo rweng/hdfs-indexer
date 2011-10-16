@@ -61,9 +61,9 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private Comparator<K>                  comparator;
 	private FixLengthSerializer<K, byte[]> keySerializer;
 	private List<Range<K>>                 defaultSearchRanges;
-	private List<AbstractMap.SimpleEntry<K, String>> cache           =
+	private List<AbstractMap.SimpleEntry<K, String>> cache                    =
 			new LinkedList<AbstractMap.SimpleEntry<K, String>>();
-	private PropertyEntry writingTreePropertyEntry = new PropertyEntry();
+	private PropertyEntry                            writingTreePropertyEntry = new PropertyEntry();
 
 	@Inject
 	protected BTreeIndex(BTreeIndexBuilder<K> b) {
@@ -97,26 +97,10 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		if (!isOpen())
 			return;
 
-		if (LOG.isDebugEnabled())
-			LOG.debug("saving Properties");
 		try {
-			saveProperties();
+			writeTree();
 		} catch (IOException e) {
-			// we dont need to do the bTree writing if this fails
-			throw new RuntimeException(e);
-		}
-
-		unlock();
-
-		LOG.info("writing btree");
-		if (bTreeWriting != null) {
-			bTreeWriting.sync();
-
-			try {
-				bTreeWriting.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			LOG.error(e);
 		}
 
 		isOpen = false;
@@ -245,22 +229,14 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 				writingTreePropertyEntry.end = pos;
 				cache.add(new AbstractMap.SimpleEntry<K, String>(key, line));
 			} else {
-				if(cache.isEmpty()){
+				if (cache.isEmpty()) {
 					LOG.warn("cache is empty and yet we have not enough memory to add to the cache.");
 					return;
 				}
-				
-				LOG.info("bulkInitializing tree");
-				BTree<K, String> tree = createWritingTree();
-				tree.bulkInitialize(cache.toArray(new AbstractMap.SimpleEntry[0]), false);
-				tree.close();
-				cache.clear();
+				writeTree();
 
-				String filename = getWriteTreeFileName();
-				getProperties().setProperty(filename, writingTreePropertyEntry.toString());
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("properties after addLine: \n" + getProperties());
+				if (LOG.isDebugEnabled())
+					LOG.debug("properties after addLine: \n" + getProperties());
 
 			}
 		} catch (Exception e) {
@@ -268,6 +244,23 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 			LOG.warn(e);
 			return;
 		}
+	}
+
+	private void writeTree() throws IOException {
+		if(cache.isEmpty())
+			return;
+		
+		LOG.info("bulkInitializing tree");
+		BTree<K, String> tree = createWritingTree();
+		tree.bulkInitialize(cache.toArray(new AbstractMap.SimpleEntry[0]), false);
+		tree.close();
+		cache.clear();
+
+		String filename = getWriteTreeFileName();
+		getProperties().setProperty(filename, writingTreePropertyEntry.toString());
+
+		// so that the next tree can be created
+		tree = null;
 	}
 
 	private boolean isEnoughMemory() {
@@ -400,10 +393,10 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 	public class PropertyEntry {
 		private Long start = null;
-		private Long end = null;
+		private Long end   = null;
 
 		public PropertyEntry() {
-			
+
 		}
 
 		public PropertyEntry(long start, long end) {
@@ -413,10 +406,10 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 		public String toString() {
 			String str = "";
-			if(start != null)
+			if (start != null)
 				str += start;
 			str += ";";
-			if(end != null)
+			if (end != null)
 				str += end;
 			return str;
 		}
