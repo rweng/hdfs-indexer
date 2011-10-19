@@ -7,10 +7,11 @@ import com.freshbourne.serializer.FixLengthSerializer;
 import com.freshbourne.serializer.FixedStringSerializer;
 import com.google.inject.Inject;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 import java.io.*;
-import java.security.SecureRandom;
 import java.util.*;
 
 /**
@@ -46,9 +47,8 @@ import java.util.*;
  */
 public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
-	private static final long   serialVersionUID = 1L;
-	private static final Logger LOG              = Logger.getLogger(BTreeIndex.class);
-	private BTree<K, String> bTreeWriting;
+	private static final long serialVersionUID = 1L;
+	private static       Log  LOG              = LogFactory.getLog(BTreeIndex.class);
 
 	private String     indexId;
 	private String     hdfsFile;
@@ -58,12 +58,13 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private boolean isOpen = false;
 	private BTreeFactory factory;
 	private boolean ourLock = false;
-	private Comparator<K>                  comparator;
-	private FixLengthSerializer<K, byte[]> keySerializer;
-	private List<Range<K>>                 defaultSearchRanges;
-	private List<AbstractMap.SimpleEntry<K, String>> cache                    =
-			new LinkedList<AbstractMap.SimpleEntry<K, String>>();
-	private PropertyEntry                            writingTreePropertyEntry = new PropertyEntry();
+	private Comparator<K>                            comparator;
+	private FixLengthSerializer<K, byte[]>           keySerializer;
+	private List<Range<K>>                           defaultSearchRanges;
+	private AbstractMap.SimpleEntry<K, String>[] cache;
+	private PropertyEntry writingTreePropertyEntry = new PropertyEntry();
+	private int cacheSize;
+	private int cachePointer = 0;
 
 	@Inject
 	protected BTreeIndex(BTreeIndexBuilder<K> b) {
@@ -76,6 +77,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		this.keySerializer = b.keySerializer;
 		this.comparator = b.comparater;
 		this.defaultSearchRanges = b.defaultSearchRanges;
+		this.cacheSize = b.cacheSize;
 	}
 
 	public boolean isOpen() {
@@ -88,6 +90,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 		loadOrCreateProperties();
 
+		this.cache = new AbstractMap.SimpleEntry[cacheSize];
 		isOpen = true;
 	}
 
@@ -98,11 +101,13 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 			return;
 
 		try {
-			writeTree();
+			saveWriteTree();
 		} catch (IOException e) {
 			LOG.error(e);
 		}
 
+		if (ourLock)
+			unlock();
 		isOpen = false;
 	}
 
@@ -200,16 +205,6 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		}
 	}
 
-	private String getWriteTreeFileName() {
-		if (bTreeWriting == null)
-			return null;
-
-		String[] splits = new String[0];
-		splits = bTreeWriting.getPath().split("/");
-
-		return splits[splits.length - 1];
-	}
-
 	@Override
 	public void addLine(String line, long pos) {
 		ensureOpen();
@@ -222,45 +217,43 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 		try {
 			K key = extractKeyFromLine(line);
-			if (isEnoughMemory()) {
+			if (cachePointer < cacheSize) {
 				if (writingTreePropertyEntry.start == null)
 					writingTreePropertyEntry.start = pos;
 
 				writingTreePropertyEntry.end = pos;
-				cache.add(new AbstractMap.SimpleEntry<K, String>(key, line));
+				cache[cachePointer++] = new AbstractMap.SimpleEntry<K, String>(key, line);
 			} else {
-				if (cache.isEmpty()) {
-					LOG.warn("cache is empty and yet we have not enough memory to add to the cache.");
-					return;
-				}
-				writeTree();
-
-				if (LOG.isDebugEnabled())
-					LOG.debug("properties after addLine: \n" + getProperties());
-
+				saveWriteTree();
 			}
 		} catch (Exception e) {
 			LOG.warn("error when storing line: " + line);
-			LOG.warn(e);
+			LOG.warn(e.getStackTrace());
 			return;
 		}
 	}
 
-	private void writeTree() throws IOException {
-		if(cache.isEmpty())
+	private void saveWriteTree() throws IOException {
+		if (cachePointer == 0)
 			return;
-		
-		LOG.info("bulkInitializing tree");
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("bulkInitializing tree");
+
 		BTree<K, String> tree = createWritingTree();
-		tree.bulkInitialize(cache.toArray(new AbstractMap.SimpleEntry[0]), false);
-		tree.close();
-		cache.clear();
+		tree.bulkInitialize(cache, 0, cachePointer - 1, false);
 
-		String filename = getWriteTreeFileName();
+		String filename = new File(tree.getPath()).getName();
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("new trees filename: " + filename);
+
 		getProperties().setProperty(filename, writingTreePropertyEntry.toString());
+		saveProperties();
 
-		// so that the next tree can be created
-		tree = null;
+		tree.close();
+		cachePointer = 0;
+		writingTreePropertyEntry.start = writingTreePropertyEntry.end = null;
 	}
 
 	private boolean isEnoughMemory() {
@@ -323,17 +316,17 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	}
 
 	private BTree<K, String> createWritingTree() throws IOException {
-		if (bTreeWriting != null)
-			throw new IllegalStateException("writing tree already exists: " + bTreeWriting.getPath());
+		String file = getIndexDir() + "/" + indexId + "_" + System.currentTimeMillis();
+		if (LOG.isDebugEnabled())
+			LOG.debug("trying to create btree: " + file);
 
-		String file = getIndexDir() + "/" + indexId + "_" + (new SecureRandom()).nextInt();
-		bTreeWriting = factory.get(new File(file), keySerializer, FixedStringSerializer.INSTANCE_1000,
+		BTree<K, String> tree = factory.get(new File(file), keySerializer, FixedStringSerializer.INSTANCE_1000,
 				comparator, false);
 
 		if (LOG.isDebugEnabled())
-			LOG.debug("creeated btree for writing: " + bTreeWriting.getPath());
+			LOG.debug("creeated btree for writing: " + tree.getPath());
 
-		return bTreeWriting;
+		return tree;
 	}
 
 	private BTree<K, String> getTree(File file) {
@@ -341,6 +334,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		try {
 			result = factory.get(file, keySerializer, FixedStringSerializer.INSTANCE_1000,
 					comparator);
+			result.loadOrInitialize();
 
 			// checkStructure is very expensive, so do not do this usually
 			if (LOG.isDebugEnabled())

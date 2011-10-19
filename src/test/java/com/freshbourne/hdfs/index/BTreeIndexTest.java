@@ -1,11 +1,11 @@
 package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.Range;
-import com.freshbourne.util.FileUtils;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,11 +50,11 @@ public class BTreeIndexTest {
 	}
 
 	@Before
-	public void setUp() {
+	public void setUp() throws IOException {
 		index = injector.getInstance(StringCSVIndex.class);
 		intIndex = injector.getInstance(IntegerCSVIndex.class);
 		if (indexRootFolder.exists())
-			FileUtils.recursiveDelete(indexRootFolder);
+			FileUtils.deleteDirectory(indexRootFolder);
 	}
 
 	@Test
@@ -87,7 +87,7 @@ public class BTreeIndexTest {
 	}
 
 	@Test
-	public void addingStuffToIndex() {
+	public void addingStuffToIndex() throws IOException {
 		openIndex();
 
 		List<String> list = new LinkedList<String>();
@@ -98,6 +98,8 @@ public class BTreeIndexTest {
 		index.addLine(list.get(0), 0);
 		assertTrue(index.getLockFile().exists());
 		index.addLine(list.get(1), 10);
+		index.close();
+		index.open();
 		assertEquals(10, index.getMaxPos());
 		Iterator<String> i = index.getIterator(false);
 		assertTrue(i.hasNext());
@@ -162,6 +164,9 @@ public class BTreeIndexTest {
 			intIndex.addLine("" + i + " col2", i);
 		}
 
+		intIndex.close();
+		intIndex.open();
+
 		List<Range<Integer>> ranges = new ArrayList<Range<Integer>>();
 		ranges.add(new Range<Integer>(-5, 5));
 		ranges.add(new Range<Integer>(0, 10));
@@ -192,7 +197,9 @@ public class BTreeIndexTest {
 			intIndex.addLine("" + i + " col2", i);
 		}
 
-
+		intIndex.close();
+		intIndex.open();
+		
 		Iterator<String> iterator = intIndex.getIterator();
 
 		for (int i = 0; i <= 10; i++) {

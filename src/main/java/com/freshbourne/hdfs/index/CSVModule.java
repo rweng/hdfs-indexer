@@ -7,6 +7,7 @@ import com.freshbourne.serializer.StringCutSerializer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 
@@ -23,6 +24,7 @@ public class CSVModule extends AbstractModule implements Serializable {
 	public String delimiter = "( |\t)+";
 	public Class<? extends Index> indexClass = IntegerCSVIndex.class;
 	public List<Range<Integer>> searchRange = new LinkedList<Range<Integer>>();
+	public Integer cacheSize = 10000;
 
 	@Override protected void configure() {
 
@@ -34,7 +36,8 @@ public class CSVModule extends AbstractModule implements Serializable {
         bind(String.class).annotatedWith(Names.named("delimiter")).toInstance(delimiter);
 
 		bind(new TypeLiteral<List<Range<Integer>>>(){}).toInstance(searchRange);
-		
+		bind(Integer.class).annotatedWith(Names.named("bTreeIndexCacheSize")).toInstance(cacheSize);
+
 	    bind(Index.class).to(indexClass);
 		install(new BTreeModule());
     }

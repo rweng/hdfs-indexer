@@ -14,11 +14,12 @@ import java.util.List;
 
 @Singleton
 public class BTreeIndexBuilder<K> {
-	@Inject @Named("hdfsFile")    String                         hdfsFile;
-	@Inject @Named("indexFolder") File                           indexFolder;
-	@Inject @Named("indexId")     String                         indexId;
-	@Inject                       BTreeFactory                   factory;
-	@Inject                       FixLengthSerializer<K, byte[]> keySerializer;
-	@Inject                       Comparator<K>                  comparater;
-	@Inject @Nullable             List<Range<K>>                 defaultSearchRanges;
+	@Inject @Named("bTreeIndexCacheSize") int                            cacheSize;
+	@Inject @Named("hdfsFile")            String                         hdfsFile;
+	@Inject @Named("indexFolder")         File                           indexFolder;
+	@Inject @Named("indexId")             String                         indexId;
+	@Inject                               BTreeFactory                   factory;
+	@Inject                               FixLengthSerializer<K, byte[]> keySerializer;
+	@Inject                               Comparator<K>                  comparater;
+	@Inject @Nullable                     List<Range<K>>                 defaultSearchRanges;
 }
