@@ -58,9 +58,9 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private boolean isOpen = false;
 	private BTreeFactory factory;
 	private boolean ourLock = false;
-	private Comparator<K>                            comparator;
-	private FixLengthSerializer<K, byte[]>           keySerializer;
-	private List<Range<K>>                           defaultSearchRanges;
+	private Comparator<K>                        comparator;
+	private FixLengthSerializer<K, byte[]>       keySerializer;
+	private List<Range<K>>                       defaultSearchRanges;
 	private AbstractMap.SimpleEntry<K, String>[] cache;
 	private PropertyEntry writingTreePropertyEntry = new PropertyEntry();
 	private int cacheSize;
@@ -100,11 +100,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		if (!isOpen())
 			return;
 
-		try {
-			saveWriteTree();
-		} catch (IOException e) {
-			LOG.error(e);
-		}
+		saveWriteTree();
 
 		if (ourLock)
 			unlock();
@@ -214,44 +210,47 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 			lock();
 		}
 
-
-		try {
-			K key = extractKeyFromLine(line);
-			if (cachePointer < cacheSize) {
-				if (writingTreePropertyEntry.start == null)
-					writingTreePropertyEntry.start = pos;
-
-				writingTreePropertyEntry.end = pos;
-				cache[cachePointer++] = new AbstractMap.SimpleEntry<K, String>(key, line);
-			} else {
-				saveWriteTree();
-			}
-		} catch (Exception e) {
-			LOG.warn("error when storing line: " + line);
-			LOG.warn(e.getStackTrace());
-			return;
+		if (cachePointer >= cacheSize) {
+			saveWriteTree();
 		}
+
+		K key = extractKeyFromLine(line);
+		if (writingTreePropertyEntry.start == null)
+			writingTreePropertyEntry.start = pos;
+
+		writingTreePropertyEntry.end = pos;
+		cache[cachePointer++] = new AbstractMap.SimpleEntry<K, String>(key, line);
 	}
 
-	private void saveWriteTree() throws IOException {
+	private void saveWriteTree() {
+
 		if (cachePointer == 0)
 			return;
 
 		if (LOG.isDebugEnabled())
 			LOG.debug("bulkInitializing tree");
 
-		BTree<K, String> tree = createWritingTree();
-		tree.bulkInitialize(cache, 0, cachePointer - 1, false);
+		BTree<K, String> tree = null;
 
-		String filename = new File(tree.getPath()).getName();
+		try {
+			tree = createWritingTree();
+			tree.bulkInitialize(cache, 0, cachePointer - 1, false);
 
-		if (LOG.isDebugEnabled())
-			LOG.debug("new trees filename: " + filename);
+			String filename = new File(tree.getPath()).getName();
 
-		getProperties().setProperty(filename, writingTreePropertyEntry.toString());
-		saveProperties();
+			if (LOG.isDebugEnabled())
+				LOG.debug("new trees filename: " + filename);
 
-		tree.close();
+			getProperties().setProperty(filename, writingTreePropertyEntry.toString());
+			saveProperties();
+
+			tree.close();
+		} catch (IOException e) {
+			LOG.error("error when saving index");
+			LOG.error(e.getStackTrace());
+			// reset cache and properties next, maybe we can save this index partial next time
+		}
+
 		cachePointer = 0;
 		writingTreePropertyEntry.start = writingTreePropertyEntry.end = null;
 	}
@@ -443,10 +442,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 				currentTree = trees.get(0);
 
 			if (currentIterator == null) {
-				if (searchRanges != null)
-					currentIterator = currentTree.getIterator(searchRanges);
-				else
-					currentIterator = currentTree.getIterator();
+				currentIterator = currentTree.getIterator(searchRanges);
 			}
 
 			if (currentIterator.hasNext()) {
@@ -459,6 +455,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 				return false;
 			} else {
 				currentTree = trees.get(nextTree);
+				currentIterator = currentTree.getIterator(searchRanges);
 			}
 
 			return hasNext();

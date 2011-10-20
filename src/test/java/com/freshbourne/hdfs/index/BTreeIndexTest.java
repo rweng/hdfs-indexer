@@ -6,6 +6,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,18 +28,22 @@ public class BTreeIndexTest {
 	private static Injector injector;
 	private static String hdfsFile = "/path/to/file.csv";
 	private static CSVModule module;
+	private static final int CACHE_SIZE = 1000;
+	private static final Log LOG = LogFactory.getLog(BTreeIndexTest.class);
 
 	private static void createInjector() {
 		module = new CSVModule();
+		module.cacheSize = CACHE_SIZE;
 
 		module.hdfsFile = hdfsFile;
+
 		module.searchRange.add(new Range<Integer>(0, 10));
 		module.searchRange.add(new Range<Integer>(-5, 5));
 		module.searchRange.add(new Range<Integer>(0, 10));
 		module.searchRange.add(new Range<Integer>(50, 55));
 		module.searchRange.add(new Range<Integer>(99, 99));
 		module.searchRange.add(new Range<Integer>(100, 1010));
-
+		
 		injector = Guice.createInjector(module);
 
 
@@ -53,9 +59,27 @@ public class BTreeIndexTest {
 	public void setUp() throws IOException {
 		index = injector.getInstance(StringCSVIndex.class);
 		intIndex = injector.getInstance(IntegerCSVIndex.class);
+
 		if (indexRootFolder.exists())
 			FileUtils.deleteDirectory(indexRootFolder);
 	}
+
+	@Test
+	public void cache() throws IOException {
+		intIndex.open();
+		fillIndex(intIndex, CACHE_SIZE + 1);
+		intIndex.close();
+
+		String[] files = new File(indexRootFolder + hdfsFile).list();
+		assertEquals(3, files.length);
+		intIndex.open();
+		Iterator<String> iterator = intIndex.getIterator(false);
+		for (int i = 0; i < (CACHE_SIZE + 1); i++) {
+			assertNotNull(iterator.next());
+		}
+		assertNull(iterator.next());
+	}
+
 
 	@Test
 	public void creation() {
@@ -152,17 +176,18 @@ public class BTreeIndexTest {
 		}
 	}
 
-	private void integerCSVIndex() {
-		injector.getInstance(IntegerCSVIndex.class);
+	private void fillIndex(Index index, int count) {
+		for (int i = 0; i < count; i++) {
+			index.addLine("" + i + " col2", i);
+		}
+
 	}
 
 	@Test
 	public void testRange() throws IOException {
 		intIndex.open();
 
-		for (int i = 0; i < 100; i++) {
-			intIndex.addLine("" + i + " col2", i);
-		}
+		fillIndex(intIndex, 100);
 
 		intIndex.close();
 		intIndex.open();
@@ -199,7 +224,7 @@ public class BTreeIndexTest {
 
 		intIndex.close();
 		intIndex.open();
-		
+
 		Iterator<String> iterator = intIndex.getIterator();
 
 		for (int i = 0; i <= 10; i++) {
