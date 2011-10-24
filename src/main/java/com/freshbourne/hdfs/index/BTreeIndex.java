@@ -433,32 +433,55 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 		@Override
 		public boolean hasNext() {
-			if (trees.size() == 0) {
-				return false;
+			try {
+				if (trees.size() == 0) {
+					return false;
+				}
+
+				// initial tree
+				if (currentTree == null)
+					currentTree = trees.get(0);
+
+				if (currentIterator == null) {
+					currentIterator = currentTree.getIterator(searchRanges);
+				}
+
+				if (currentIterator.hasNext()) {
+					return true;
+				}
+
+				// try to get next tree
+				int nextTree = trees.indexOf(currentTree) + 1;
+				if (nextTree >= trees.size()) {
+					return false;
+				} else {
+					currentTree = trees.get(nextTree);
+					currentIterator = currentTree.getIterator(searchRanges);
+				}
+
+				return hasNext();
+			} catch (Exception e) {
+				// if anything went wrong, log and remove tree
+				LOG.error("Error in BTreeIndexIterator#hasNext()", e);
+
+				try {
+					currentTree.close();
+				} catch (IOException ignore) {
+					LOG.error("error closing currentTree", e);
+				}
+
+				String path = currentTree.getPath();
+				String[] splits = path.split("\\/");
+				new File(path).delete();
+				getProperties().remove(splits[splits.length - 1]);
+				try {
+					saveProperties();
+				} catch (IOException e1) {
+					LOG.error("error saving properties after deleting not-working tree", e);
+				}
+
+				return hasNext();
 			}
-
-			// initial tree
-			if (currentTree == null)
-				currentTree = trees.get(0);
-
-			if (currentIterator == null) {
-				currentIterator = currentTree.getIterator(searchRanges);
-			}
-
-			if (currentIterator.hasNext()) {
-				return true;
-			}
-
-			// try to get next tree
-			int nextTree = trees.indexOf(currentTree) + 1;
-			if (nextTree >= trees.size()) {
-				return false;
-			} else {
-				currentTree = trees.get(nextTree);
-				currentIterator = currentTree.getIterator(searchRanges);
-			}
-
-			return hasNext();
 		}
 
 		@Override
