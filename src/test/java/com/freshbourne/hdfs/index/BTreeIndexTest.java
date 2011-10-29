@@ -15,10 +15,9 @@ import static org.fest.assertions.Assertions.assertThat;
 
 public class BTreeIndexTest {
 
-	private        BTreeIndex<Integer> index;
-	private static final File indexFolder = new File("/tmp/BTreeIndexTest");
-
-	private static String hdfsFile = "/path/to/file.csv";
+	private BTreeIndex<Integer> index;
+	private static final File   indexRootFolder = new File("/tmp/BTreeIndexTest");
+	private static       String hdfsFile        = "/path/to/file.csv";
 	private static CSVModule module;
 	private static final int CACHE_SIZE = 1000;
 	private static final Log LOG        = LogFactory.getLog(BTreeIndexTest.class);
@@ -37,20 +36,38 @@ public class BTreeIndexTest {
 		module.searchRange.add(new Range<Integer>(100, 1010));
 
 	}
-	
+
 	@BeforeMethod
 	public void setUp() throws IOException {
-		if (indexFolder.exists())
-			Files.deleteRecursively(indexFolder);
-		indexFolder.mkdir();
+		if (indexRootFolder.exists())
+			FileUtils.deleteDirectory(indexRootFolder);
+		indexRootFolder.mkdir();
 
-		index = new BTreeIndexBuilder().cacheSize(1000).indexFolder(indexFolder).build();
+		index = new BTreeIndexBuilder().cacheSize(1000).indexFolder(indexRootFolder).hdfsFilePath(hdfsFile).build();
 	}
 
 	@Test
- 	public void creation() {
+	public void creation() {
 		assertThat(index != null);
 	}
+
+	@Test
+	public void indexFolder() {
+		assertThat(index.getIndexFolder().getAbsolutePath()).isEqualTo(indexRootFolder.getAbsolutePath() + hdfsFile);
+	}
+
+	@Test
+	public void open() throws IOException {
+		assertThat(index.getIndexFolder()).doesNotExist();
+
+		index.open();
+		assertThat(index.isOpen()).isTrue();
+		assertThat(index.getIndexFolder()).exists();
+
+		File file = new File(index.getIndexFolder().getAbsolutePath() + "/properties.xml");
+		assertThat(file).exists();
+	}
+
 
 /*
 
@@ -72,18 +89,6 @@ public class BTreeIndexTest {
 		assertNull(iterator.next());
 	}
 
-	@Test
-	public void indexFolderShouldNotBeAutomaticallyCreated() {
-		assertFalse(indexFolder.exists());
-	}
-
-	@Test
-	public void openShouldCreateFolders() throws Exception {
-		index.open();
-		assertTrue(index.isOpen());
-		assertTrue(indexFolder.exists());
-		assertTrue((new File(indexFolder.getAbsolutePath() + "/properties.xml")).exists());
-	}
 
 	@Test
 	public void iteratorOnEmptyIndex() {

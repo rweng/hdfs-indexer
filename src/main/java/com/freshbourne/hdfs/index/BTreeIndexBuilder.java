@@ -66,4 +66,8 @@ public class BTreeIndexBuilder {
 		checkState(hdfsPath != null && hdfsPath.startsWith("/"), "hdfsPath must start with /");
 		return new BTreeIndex(this);
 	}
+
+	public BTreeIndexBuilder indexFolder(String path) {
+		return indexFolder(new File(path));
+	}
 }

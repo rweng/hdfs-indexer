@@ -6,6 +6,7 @@ import com.freshbourne.io.AutoSaveResourceManager;
 import com.freshbourne.io.ResourceManagerBuilder;
 import com.freshbourne.serializer.FixLengthSerializer;
 import com.freshbourne.serializer.FixedStringSerializer;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -64,11 +65,13 @@ public class BTreeIndex<K> implements Index<K, String> {
 	private int cacheSize;
 	private int cachePointer = 0;
 	private KeyExtractor<K> keyExtractor;
+	private File propertiesFile;
 
 	protected BTreeIndex(BTreeIndexBuilder b) {
 		this.cacheSize = b.getCacheSize();
 		this.hdfsFile = b.getHdfsPath();
 		this.indexRootFolder = b.getIndexFolder();
+		this.propertiesFile = new File(getIndexFolder() + "/properties.xml");
 
 		/*
 		this.indexRootFolder = b.indexFolder;
@@ -85,7 +88,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 	}
 
 	public void open() throws IOException {
-		File indexDir = getIndexDir();
+		File indexDir = getIndexFolder();
 		indexDir.mkdirs();
 
 		loadOrCreateProperties();
@@ -113,13 +116,33 @@ public class BTreeIndex<K> implements Index<K, String> {
 			throw new IllegalStateException("index must be opened before it is used");
 	}
 
+	private void saveProperties() throws IOException {
+		if (LOG.isDebugEnabled())
+			LOG.debug("saving properties:\n " + properties);
+
+		properties.storeToXML(new FileOutputStream(propertiesFile), "comment");
+
+		int x = 1;
+	}
+
+	private Properties loadOrCreateProperties() throws IOException {
+		properties = new Properties();
+
+		try {
+			properties.loadFromXML(new FileInputStream(propertiesFile));
+		} catch (IOException e) {
+			saveProperties();
+		}
+
+		return properties;
+	}
+
 	private Properties getProperties() {
 		if (properties != null) {
 			return properties;
 		}
 
 		properties = new Properties();
-		File propertiesFile = new File(indexRootFolder + "properties");
 		if (propertiesFile.exists()) {
 			try {
 				FileInputStream fis = new FileInputStream(propertiesFile);
@@ -133,34 +156,17 @@ public class BTreeIndex<K> implements Index<K, String> {
 		return properties;
 	}
 
-	String getPropertiesPath() {
-		return getIndexDir() + "/properties.xml";
-	}
-
-	private void saveProperties() throws IOException {
-		if (LOG.isDebugEnabled())
-			LOG.debug("saving properties:\n " + properties);
-		properties.storeToXML(new FileOutputStream(getPropertiesPath()), "comment");
-	}
-
-	private Properties loadOrCreateProperties() throws IOException {
-		properties = new Properties();
-
-		try {
-			properties.loadFromXML(new FileInputStream(getPropertiesPath()));
-		} catch (IOException e) {
-			saveProperties();
-		}
-
-		return properties;
-	}
-
 	/** @return directory of the index-files for the current hdfs file */
-	private File getIndexDir() {
+	@VisibleForTesting
+	File getIndexFolder() {
 		return new File(indexRootFolder.getPath() + hdfsFile);
 	}
 
-	String getHdfsFile() {
+	private File getIndexRootFolder(){
+		return indexRootFolder;
+	}
+
+	private String getHdfsFile() {
 		return hdfsFile;
 	}
 
@@ -170,7 +176,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 
 		// add trees from properties
 		for (String filename : getProperties().stringPropertyNames()) {
-			list.add(getTree(new File(getIndexDir() + "/" + filename)));
+			list.add(getTree(new File(getIndexFolder() + "/" + filename)));
 		}
 
 		return list;
@@ -192,6 +198,49 @@ public class BTreeIndex<K> implements Index<K, String> {
 			return new BTreeIndexIterator(defaultSearchRanges);
 		else
 			return new BTreeIndexIterator();
+	}
+
+
+	@Override public long getMaxPos() {
+		long largest = 0;
+
+		for (String filename : getProperties().stringPropertyNames()) {
+			String propertyStr = getProperties().getProperty(filename, null);
+
+			PropertyEntry p = new PropertyEntry();
+
+			if (propertyStr != null)
+				p.loadFromString(propertyStr);
+
+			if (largest < p.end)
+				largest = p.end;
+
+		}
+		return largest;
+	}
+
+	private BTree<K, String> getTree(File file) {
+		BTree<K, String> result = null;
+		try {
+			AutoSaveResourceManager manager =
+							new ResourceManagerBuilder().file(file).cacheSize(cacheSize).buildAutoSave();
+
+			result = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
+					comparator);
+			result.loadOrInitialize();
+
+			// checkStructure is very expensive, so do not do this usually
+			if (LOG.isDebugEnabled())
+				result.checkStructure();
+
+		} catch (IOException e) {
+			throw new RuntimeException("error occured while trying to get btree: " + file.getAbsolutePath(), e);
+		}
+		return result;
+	}
+
+	File getLockFile() {
+		return new File(getIndexFolder() + "/lock");
 	}
 
 	private void unlock() {
@@ -310,12 +359,8 @@ public class BTreeIndex<K> implements Index<K, String> {
 		}
 	}
 
-	File getLockFile() {
-		return new File(getIndexDir() + "/lock");
-	}
-
 	private BTree<K, String> createWritingTree() throws IOException {
-		String file = getIndexDir() + "/" + indexId + "_" + System.currentTimeMillis();
+		String file = getIndexFolder() + "/" + indexId + "_" + System.currentTimeMillis();
 
 		if (LOG.isDebugEnabled())
 			LOG.debug("trying to create btree: " + file);
@@ -331,49 +376,10 @@ public class BTreeIndex<K> implements Index<K, String> {
 		return tree;
 	}
 
-	private BTree<K, String> getTree(File file) {
-		BTree<K, String> result = null;
-		try {
-			AutoSaveResourceManager manager =
-							new ResourceManagerBuilder().file(file).cacheSize(cacheSize).buildAutoSave();
-
-			result = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
-					comparator);
-			result.loadOrInitialize();
-
-			// checkStructure is very expensive, so do not do this usually
-			if (LOG.isDebugEnabled())
-				result.checkStructure();
-
-		} catch (IOException e) {
-			throw new RuntimeException("error occured while trying to get btree: " + file.getAbsolutePath(), e);
-		}
-		return result;
-	}
-
 
 	@Override
 	public boolean exists() {
 		throw new UnsupportedOperationException("todo: check if directory and properties file exists");
-	}
-
-
-	@Override public long getMaxPos() {
-		long largest = 0;
-
-		for (String filename : getProperties().stringPropertyNames()) {
-			String propertyStr = getProperties().getProperty(filename, null);
-
-			PropertyEntry p = new PropertyEntry();
-
-			if (propertyStr != null)
-				p.loadFromString(propertyStr);
-
-			if (largest < p.end)
-				largest = p.end;
-
-		}
-		return largest;
 	}
 
 	public class PropertyEntry {
