@@ -5,11 +5,13 @@ import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 
 import static org.fest.assertions.Assertions.assertThat;
 
@@ -37,26 +39,22 @@ public class BTreeIndexTest {
 
 	}
 
-	@BeforeMethod
-	public void setUp() throws IOException {
+	@Test
+	public void build() throws IOException {
 		if (indexRootFolder.exists())
 			FileUtils.deleteDirectory(indexRootFolder);
 		indexRootFolder.mkdir();
 
 		index = new BTreeIndexBuilder().cacheSize(1000).indexFolder(indexRootFolder).hdfsFilePath(hdfsFile).build();
+		assertThat(index).isNotNull();
 	}
 
-	@Test
-	public void creation() {
-		assertThat(index != null);
-	}
-
-	@Test
+	@Test(dependsOnMethods = "open")
 	public void indexFolder() {
 		assertThat(index.getIndexFolder().getAbsolutePath()).isEqualTo(indexRootFolder.getAbsolutePath() + hdfsFile);
 	}
 
-	@Test
+	@Test(dependsOnMethods = "build")
 	public void open() throws IOException {
 		assertThat(index.getIndexFolder()).doesNotExist();
 
@@ -68,8 +66,16 @@ public class BTreeIndexTest {
 		assertThat(file).exists();
 	}
 
+	@Test(dependsOnMethods = "open")
+	public void iteratorOnEmptyIndex() {
+		Iterator<String> i = index.getIterator();
+		assertThat(i.hasNext()).isFalse();
+	}
+
 
 /*
+
+
 
 	/*
 
@@ -87,15 +93,6 @@ public class BTreeIndexTest {
 			assertNotNull(iterator.next());
 		}
 		assertNull(iterator.next());
-	}
-
-
-	@Test
-	public void iteratorOnEmptyIndex() {
-		openIndex();
-
-		Iterator<String> i = index.getIterator();
-		assertFalse(i.hasNext());
 	}
 
 	@Test
