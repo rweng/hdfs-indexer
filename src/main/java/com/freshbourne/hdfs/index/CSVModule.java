@@ -1,6 +1,5 @@
 package com.freshbourne.hdfs.index;
 
-import com.freshbourne.btree.BTreeModule;
 import com.freshbourne.btree.Range;
 import com.google.inject.*;
 import com.google.inject.name.Names;
@@ -30,7 +29,6 @@ public class CSVModule extends AbstractModule implements Serializable {
 		bind(new TypeLiteral<List<Range<Integer>>>(){}).toInstance(searchRange);
 		bind(Integer.class).annotatedWith(Names.named("bTreeIndexCacheSize")).toInstance(cacheSize);
 
-	    install(new BTreeModule());
     }
 
 	@Provides @Singleton @Inject

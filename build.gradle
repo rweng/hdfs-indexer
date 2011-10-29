@@ -11,8 +11,7 @@ repositories {
 
 dependencies {
     compile "org.apache.hadoop:hadoop-core:0.20.2@jar"
-    compile "junit:junit:4.8.2@jar"
-
+    
     compile "commons-logging:commons-logging:1.0.4@jar"
     compile "commons-logging:commons-logging-api:1.0.4@jar"
 
@@ -20,14 +19,17 @@ dependencies {
 
     compile "log4j:log4j:1.2.16@jar"
 
-    compile('jb-tree:jb-tree:0.0.1') {
+    compile('jb-tree:jb-tree:0.0.2') {
         artifact {
             name = 'jb-tree'
             extension = 'jar'
-            url = 'http://dl.dropbox.com/u/456244/jb-tree-0.0.1.jar'
+            url = 'http://dl.dropbox.com/u/456244/jb-tree-0.0.2.jar'
             type = "jar"
         }
     }
+
+    testCompile "org.testng:testng:6.2.1"
+
 
     // index dependencies
     compile "com.google.inject:guice:3.0@jar"
@@ -59,6 +61,11 @@ sourceSets {
 			srcDir 'src/test/java'
 			}
 	}
+}
+
+
+test {
+    useTestNG()
 }
 
 //************* OWN TASKS ********************

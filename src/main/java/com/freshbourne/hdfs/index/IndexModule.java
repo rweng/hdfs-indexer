@@ -1,6 +1,5 @@
 package com.freshbourne.hdfs.index;
 
-import com.freshbourne.btree.BTreeModule;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 
@@ -33,6 +32,5 @@ public class IndexModule extends AbstractModule implements Serializable {
         bind(File.class).annotatedWith(Names.named("indexFolder")).toInstance(indexFolder);
         bind(String.class).annotatedWith(Names.named("indexId")).toInstance(indexId);
         
-        install(new BTreeModule());
     }
 }
