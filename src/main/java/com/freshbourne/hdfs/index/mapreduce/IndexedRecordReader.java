@@ -1,9 +1,10 @@
-package com.freshbourne.hdfs.index;
+package com.freshbourne.hdfs.index.mapreduce;
 
 import java.io.IOException;
 import java.util.Iterator;
 
-import com.freshbourne.hdfs.index.mapreduce.LineRecordReader;
+import com.freshbourne.hdfs.index.Index;
+import com.freshbourne.hdfs.index.IndexBuilderImpl;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.Text;
@@ -13,7 +14,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 public class IndexedRecordReader extends LineRecordReader {
 	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 
-	private Index            index;
+	private Index index;
 	private Iterator<String> indexIterator;
 	private boolean doneReadingFromIndex = false;
 
