@@ -4,6 +4,7 @@ import com.freshbourne.io.MustBeOpened;
 import org.apache.hadoop.io.Text;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Comparator;
 import java.util.Iterator;

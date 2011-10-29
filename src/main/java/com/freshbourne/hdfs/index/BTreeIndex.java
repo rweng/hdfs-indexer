@@ -44,7 +44,7 @@ import java.util.*;
  * is created, it is not possible to store the end position in the file name (assuming we dont want to rename). Thus, a
  * properties file is required.
  */
-public class BTreeIndex<K> implements Index<K, String>, Serializable {
+public class BTreeIndex<K> implements Index<K, String> {
 
 	private static final long serialVersionUID = 1L;
 	private static       Log  LOG              = LogFactory.getLog(BTreeIndex.class);
@@ -66,8 +66,9 @@ public class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private KeyExtractor<K> keyExtractor;
 
 	protected BTreeIndex(BTreeIndexBuilder b) {
-		// if hdfsFile doesn't start with /, the server name is before the path
-		// this.hdfsFile = b.hdfsFile.replaceAll("^hdfs://[^/]*", "");
+		this.cacheSize = b.getCacheSize();
+		this.hdfsFile = b.getHdfsPath();
+		this.indexRootFolder = b.getIndexFolder();
 
 		/*
 		this.indexRootFolder = b.indexFolder;
@@ -75,7 +76,6 @@ public class BTreeIndex<K> implements Index<K, String>, Serializable {
 		this.keySerializer = b.keySerializer;
 		this.comparator = b.comparater;
 		this.defaultSearchRanges = b.defaultSearchRanges;
-		this.cacheSize = b.cacheSize;
 		this.keyExtractor = b.keyExtractor;
 		*/
 	}

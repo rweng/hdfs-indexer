@@ -16,6 +16,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 public class BTreeIndexBuilder {
+	int getCacheSize() {
+		return cacheSize;
+	}
+
+	String getHdfsPath() {
+		return hdfsPath;
+	}
+
+	File getIndexFolder() {
+		return indexFolder;
+	}
+
 	private int cacheSize = 1000;
 	private File indexFolder;
 	String              indexId;
@@ -23,6 +35,7 @@ public class BTreeIndexBuilder {
 	Comparator          comparater;
 	List<Range>         defaultSearchRanges;
 	public KeyExtractor keyExtractor;
+	private String hdfsPath;
 
 	public BTreeIndexBuilder cacheSize(int cacheSize) {
 		checkArgument(cacheSize > 0, "cacheSize must be > 0");
@@ -38,6 +51,16 @@ public class BTreeIndexBuilder {
 
 		return this;
 	}
+
+	public BTreeIndexBuilder hdfsFilePath(String path) {
+		checkNotNull(path);
+
+		// if hdfsFile doesn't start with /, the server name is before the path
+		this.hdfsPath = path.replaceAll("^hdfs://[^/]*", "");
+
+		return this;
+	}
+
 
 	public BTreeIndex build(){
 		return new BTreeIndex(this);

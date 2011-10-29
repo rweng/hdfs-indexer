@@ -22,6 +22,10 @@ public class IndexedRecordReader extends LineRecordReader {
 	public void initialize(InputSplit genericSplit, TaskAttemptContext context)
 			throws IOException {
 		super.initialize(genericSplit, context);
+
+		// get conf
+		// get implementation of Index
+
 		index = new IndexBuilderImpl().create(genericSplit, context);
 		value = new Text();
 	}
