@@ -1,15 +1,14 @@
 package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.BTree;
-import com.freshbourne.btree.BTreeFactory;
 import com.freshbourne.btree.Range;
+import com.freshbourne.io.AutoSaveResourceManager;
+import com.freshbourne.io.ResourceManagerBuilder;
 import com.freshbourne.serializer.FixLengthSerializer;
 import com.freshbourne.serializer.FixedStringSerializer;
-import com.google.inject.Inject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.util.*;
@@ -55,8 +54,7 @@ public class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private File       indexRootFolder;
 	private Properties properties;
 
-	private boolean isOpen = false;
-	private BTreeFactory factory;
+	private boolean isOpen  = false;
 	private boolean ourLock = false;
 	private Comparator<K>                        comparator;
 	private FixLengthSerializer<K, byte[]>       keySerializer;
@@ -67,14 +65,12 @@ public class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private int cachePointer = 0;
 	private KeyExtractor<K> keyExtractor;
 
-	@Inject
 	protected BTreeIndex(BTreeIndexBuilder<K> b) {
 		// if hdfsFile doesn't start with /, the server name is before the path
 		this.hdfsFile = b.hdfsFile.replaceAll("^hdfs://[^/]*", "");
 
 		this.indexRootFolder = b.indexFolder;
 		this.indexId = b.indexId;
-		this.factory = b.factory;
 		this.keySerializer = b.keySerializer;
 		this.comparator = b.comparater;
 		this.defaultSearchRanges = b.defaultSearchRanges;
@@ -318,11 +314,14 @@ public class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 	private BTree<K, String> createWritingTree() throws IOException {
 		String file = getIndexDir() + "/" + indexId + "_" + System.currentTimeMillis();
+
 		if (LOG.isDebugEnabled())
 			LOG.debug("trying to create btree: " + file);
 
-		BTree<K, String> tree = factory.get(new File(file), keySerializer, FixedStringSerializer.INSTANCE_1000,
-				comparator, false);
+		AutoSaveResourceManager manager =
+				new ResourceManagerBuilder().file(file).cacheSize(cacheSize).buildAutoSave();
+		BTree<K, String> tree = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
+				comparator);
 
 		if (LOG.isDebugEnabled())
 			LOG.debug("creeated btree for writing: " + tree.getPath());
@@ -333,7 +332,10 @@ public class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private BTree<K, String> getTree(File file) {
 		BTree<K, String> result = null;
 		try {
-			result = factory.get(file, keySerializer, FixedStringSerializer.INSTANCE_1000,
+			AutoSaveResourceManager manager =
+							new ResourceManagerBuilder().file(file).cacheSize(cacheSize).buildAutoSave();
+
+			result = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
 					comparator);
 			result.loadOrInitialize();
 
