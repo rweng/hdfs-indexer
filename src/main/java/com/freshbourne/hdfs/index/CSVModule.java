@@ -2,16 +2,9 @@ package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.BTreeModule;
 import com.freshbourne.btree.Range;
-import com.freshbourne.serializer.FixLengthSerializer;
-import com.freshbourne.serializer.StringCutSerializer;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
+import com.google.inject.*;
 import com.google.inject.name.Names;
-import com.google.inject.util.Modules;
 
-import javax.inject.Singleton;
 import java.io.File;
 import java.io.Serializable;
 import java.util.LinkedList;
@@ -22,7 +15,6 @@ public class CSVModule extends AbstractModule implements Serializable {
 	public String indexRootFolder = "/tmp/index";
 	public int csvColumn = 0;
 	public String delimiter = "( |\t)+";
-	public Class<? extends Index> indexClass = IntegerCSVIndex.class;
 	public List<Range<Integer>> searchRange = new LinkedList<Range<Integer>>();
 	public Integer cacheSize = 10000;
 
@@ -38,9 +30,13 @@ public class CSVModule extends AbstractModule implements Serializable {
 		bind(new TypeLiteral<List<Range<Integer>>>(){}).toInstance(searchRange);
 		bind(Integer.class).annotatedWith(Names.named("bTreeIndexCacheSize")).toInstance(cacheSize);
 
-	    bind(Index.class).to(indexClass);
-		install(new BTreeModule());
+	    install(new BTreeModule());
     }
+
+	@Provides @Singleton @Inject
+	public Index<Integer, String> provideIndex(BTreeIndexBuilder<Integer> builder){
+		return new BTreeIndex<Integer>(builder);
+	}
 
 	@Provides @Singleton
 	public List<Range<String>> provideSearchRange(){

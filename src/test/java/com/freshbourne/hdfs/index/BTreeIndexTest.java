@@ -1,5 +1,6 @@
 package com.freshbourne.hdfs.index;
 
+import com.freshbourne.btree.BTree;
 import com.freshbourne.btree.Range;
 
 import com.google.inject.Guice;
@@ -20,8 +21,7 @@ import static org.junit.Assert.*;
 
 public class BTreeIndexTest {
 
-	private        StringCSVIndex  index;
-	private        IntegerCSVIndex intIndex;
+	private BTreeIndex<Integer> index;
 	private static File            indexRootFolder;
 	private static File            indexFolder;
 
@@ -57,29 +57,12 @@ public class BTreeIndexTest {
 
 	@Before
 	public void setUp() throws IOException {
-		index = injector.getInstance(StringCSVIndex.class);
-		intIndex = injector.getInstance(IntegerCSVIndex.class);
+		BTreeIndexFactory factory = injector.getInstance(BTreeIndexFactory.class);
+		// index = factory.get()
 
 		if (indexRootFolder.exists())
 			FileUtils.deleteDirectory(indexRootFolder);
 	}
-
-	@Test
-	public void cache() throws IOException {
-		intIndex.open();
-		fillIndex(intIndex, CACHE_SIZE + 1);
-		intIndex.close();
-
-		String[] files = new File(indexRootFolder + hdfsFile).list();
-		assertEquals(3, files.length);
-		intIndex.open();
-		Iterator<String> iterator = intIndex.getIterator(false);
-		for (int i = 0; i < (CACHE_SIZE + 1); i++) {
-			assertNotNull(iterator.next());
-		}
-		assertNull(iterator.next());
-	}
-
 
 	@Test
 	public void creation() {
@@ -87,6 +70,22 @@ public class BTreeIndexTest {
 		assertEquals(hdfsFile, index.getHdfsFile());
 		assertEquals(indexRootFolder + hdfsFile, index.getIndexDir().getAbsolutePath());
 		assertEquals(indexRootFolder + "/path/to/file.csv/properties.xml", index.getPropertiesPath());
+	}
+
+	@Test
+	public void cache() throws IOException {
+		index.open();
+		fillIndex(index, CACHE_SIZE + 1);
+		index.close();
+
+		String[] files = new File(indexRootFolder + hdfsFile).list();
+		assertEquals(3, files.length);
+		index.open();
+		Iterator<String> iterator = index.getIterator(false);
+		for (int i = 0; i < (CACHE_SIZE + 1); i++) {
+			assertNotNull(iterator.next());
+		}
+		assertNull(iterator.next());
 	}
 
 	@Test
@@ -139,6 +138,7 @@ public class BTreeIndexTest {
 
 	}
 
+	/**
 	@Test
 	public void secondIndex() throws Exception {
 		addingStuffToIndex();
@@ -166,21 +166,6 @@ public class BTreeIndexTest {
 		addingStuffToIndex();
 		index.open();
 		assertEquals(10, index.getMaxPos());
-	}
-
-	private void openIndex() {
-		try {
-			index.open();
-		} catch (Exception e) {
-			fail("index cannot be opened");
-		}
-	}
-
-	private void fillIndex(Index index, int count) {
-		for (int i = 0; i < count; i++) {
-			index.addLine("" + i + " col2", i);
-		}
-
 	}
 
 	@Test
@@ -237,5 +222,22 @@ public class BTreeIndexTest {
 
 		assertEquals("99 col2", iterator.next());
 		assertFalse(iterator.hasNext());
+	}
+	**/
+
+
+	private void fillIndex(Index index, int count) {
+		for (int i = 0; i < count; i++) {
+			index.addLine("" + i + " col2", i);
+		}
+	}
+
+
+	private void openIndex() {
+		try {
+			index.open();
+		} catch (Exception e) {
+			fail("index cannot be opened");
+		}
 	}
 }

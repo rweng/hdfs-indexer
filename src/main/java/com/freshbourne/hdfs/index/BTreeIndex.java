@@ -45,7 +45,7 @@ import java.util.*;
  * is created, it is not possible to store the end position in the file name (assuming we dont want to rename). Thus, a
  * properties file is required.
  */
-public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
+public class BTreeIndex<K> implements Index<K, String>, Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private static       Log  LOG              = LogFactory.getLog(BTreeIndex.class);
@@ -65,6 +65,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private PropertyEntry writingTreePropertyEntry = new PropertyEntry();
 	private int cacheSize;
 	private int cachePointer = 0;
+	private KeyExtractor<K> keyExtractor;
 
 	@Inject
 	protected BTreeIndex(BTreeIndexBuilder<K> b) {
@@ -78,6 +79,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		this.comparator = b.comparater;
 		this.defaultSearchRanges = b.defaultSearchRanges;
 		this.cacheSize = b.cacheSize;
+		this.keyExtractor = b.keyExtractor;
 	}
 
 	public boolean isOpen() {
@@ -214,7 +216,7 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 			saveWriteTree();
 		}
 
-		K key = extractKeyFromLine(line);
+		K key = keyExtractor.extract(line);
 		if (writingTreePropertyEntry.start == null)
 			writingTreePropertyEntry.start = pos;
 
@@ -369,20 +371,6 @@ public abstract class BTreeIndex<K> implements Index<K, String>, Serializable {
 		}
 		return largest;
 	}
-
-
-	/**
-	 * This method implemented by a subclass returns the key for a given line.
-	 * <p/>
-	 * This method isn't perfect since it assumes that each line is one entry. Maybe this can be made more generic later!
-	 * <p/>
-	 * Also, call ensureOpen() in this method
-	 *
-	 * @param line
-	 * 		in the hdfs file
-	 * @return key or null to ignore the line
-	 */
-	public abstract K extractKeyFromLine(String line);
 
 	public class PropertyEntry {
 		private Long start = null;

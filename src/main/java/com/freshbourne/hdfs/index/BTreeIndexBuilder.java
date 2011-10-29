@@ -22,4 +22,5 @@ public class BTreeIndexBuilder<K> {
 	@Inject                               FixLengthSerializer<K, byte[]> keySerializer;
 	@Inject                               Comparator<K>                  comparater;
 	@Inject @Nullable                     List<Range<K>>                 defaultSearchRanges;
+	public                                KeyExtractor<K>                keyExtractor;
 }
