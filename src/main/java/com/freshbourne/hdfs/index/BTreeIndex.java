@@ -156,7 +156,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 	}
 
 	/** @return directory of the index-files for the current hdfs file */
-	File getIndexDir() {
+	private File getIndexDir() {
 		return new File(indexRootFolder.getPath() + hdfsFile);
 	}
 
