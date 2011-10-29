@@ -19,6 +19,8 @@ dependencies {
 
     compile "log4j:log4j:1.2.16@jar"
 
+    compile group: 'com.google.guava', name: 'guava', version: '10.0.1'
+
     compile('jb-tree:jb-tree:0.0.2') {
         artifact {
             name = 'jb-tree'

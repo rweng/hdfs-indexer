@@ -31,11 +31,6 @@ public class CSVModule extends AbstractModule implements Serializable {
 
     }
 
-	@Provides @Singleton @Inject
-	public Index<Integer, String> provideIndex(BTreeIndexBuilder<Integer> builder){
-		return new BTreeIndex<Integer>(builder);
-	}
-
 	@Provides @Singleton
 	public List<Range<String>> provideSearchRange(){
 		return new LinkedList<Range<String>>();

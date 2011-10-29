@@ -12,14 +12,14 @@ import java.io.IOException;
 
 public class BTreeIndexTest {
 
-	private BTreeIndex<Integer> index;
-	private static File indexRootFolder;
-	private static File            indexFolder;
+	private        BTreeIndex<Integer> index;
+	private static File                indexRootFolder;
+	private static final File indexFolder = new File("/tmp/BTreeIndexTest");
 
 	private static String hdfsFile = "/path/to/file.csv";
 	private static CSVModule module;
 	private static final int CACHE_SIZE = 1000;
-	private static final Log LOG = LogFactory.getLog(BTreeIndexTest.class);
+	private static final Log LOG        = LogFactory.getLog(BTreeIndexTest.class);
 
 	private static void createInjector() {
 		module = new CSVModule();
@@ -33,18 +33,17 @@ public class BTreeIndexTest {
 		module.searchRange.add(new Range<Integer>(50, 55));
 		module.searchRange.add(new Range<Integer>(99, 99));
 		module.searchRange.add(new Range<Integer>(100, 1010));
-		
+
 		indexRootFolder = new File(module.indexRootFolder);
-		indexFolder = new File(indexRootFolder + hdfsFile);
 	}
 
 
 	@BeforeMethod
 	public void setUp() throws IOException {
-		// index = factory.get()
-
 		if (indexRootFolder.exists())
 			FileUtils.deleteDirectory(indexRootFolder);
+
+		BTreeIndex tree = new BTreeIndexBuilder().cacheSize(1000).indexFolder(indexFolder).build();
 	}
 
 	@Test
@@ -52,15 +51,16 @@ public class BTreeIndexTest {
 		
 	}
 
-
 	/*
 	@Test
-	public void creation() {
-		assertTrue(index != null);
+ 	public void creation() {
+		assertThat(index != null);
 		assertEquals(hdfsFile, index.getHdfsFile());
 		assertEquals(indexRootFolder + hdfsFile, index.getIndexDir().getAbsolutePath());
 		assertEquals(indexRootFolder + "/path/to/file.csv/properties.xml", index.getPropertiesPath());
 	}
+
+	/*
 
 	@Test
 	public void cache() throws IOException {

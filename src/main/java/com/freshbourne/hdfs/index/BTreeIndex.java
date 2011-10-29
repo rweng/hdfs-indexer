@@ -65,10 +65,11 @@ public class BTreeIndex<K> implements Index<K, String>, Serializable {
 	private int cachePointer = 0;
 	private KeyExtractor<K> keyExtractor;
 
-	protected BTreeIndex(BTreeIndexBuilder<K> b) {
+	protected BTreeIndex(BTreeIndexBuilder b) {
 		// if hdfsFile doesn't start with /, the server name is before the path
-		this.hdfsFile = b.hdfsFile.replaceAll("^hdfs://[^/]*", "");
+		// this.hdfsFile = b.hdfsFile.replaceAll("^hdfs://[^/]*", "");
 
+		/*
 		this.indexRootFolder = b.indexFolder;
 		this.indexId = b.indexId;
 		this.keySerializer = b.keySerializer;
@@ -76,6 +77,7 @@ public class BTreeIndex<K> implements Index<K, String>, Serializable {
 		this.defaultSearchRanges = b.defaultSearchRanges;
 		this.cacheSize = b.cacheSize;
 		this.keyExtractor = b.keyExtractor;
+		*/
 	}
 
 	public boolean isOpen() {

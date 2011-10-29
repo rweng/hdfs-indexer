@@ -11,14 +11,35 @@ import java.io.File;
 import java.util.Comparator;
 import java.util.List;
 
-@Singleton
-public class BTreeIndexBuilder<K> {
-	@Inject @Named("bTreeIndexCacheSize") int                            cacheSize;
-	@Inject @Named("hdfsFile")            String                         hdfsFile;
-	@Inject @Named("indexFolder")         File                           indexFolder;
-	@Inject @Named("indexId")             String                         indexId;
-	@Inject                               FixLengthSerializer<K, byte[]> keySerializer;
-	@Inject                               Comparator<K>                  comparater;
-	@Inject @Nullable                     List<Range<K>>                 defaultSearchRanges;
-	public                                KeyExtractor<K>                keyExtractor;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
+public class BTreeIndexBuilder {
+	private int cacheSize = 1000;
+	private File indexFolder;
+	String              indexId;
+	FixLengthSerializer keySerializer;
+	Comparator          comparater;
+	List<Range>         defaultSearchRanges;
+	public KeyExtractor keyExtractor;
+
+	public BTreeIndexBuilder cacheSize(int cacheSize) {
+		checkArgument(cacheSize > 0, "cacheSize must be > 0");
+		this.cacheSize = cacheSize;
+		return this;
+	}
+
+	public BTreeIndexBuilder indexFolder(File folder) {
+		checkNotNull(folder);
+		checkArgument(folder.exists(), "indexFolder must exist");
+
+		this.indexFolder = folder;
+
+		return this;
+	}
+
+	public BTreeIndex build(){
+		return new BTreeIndex(this);
+	}
 }
