@@ -1,6 +1,7 @@
 package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.Range;
+import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -10,10 +11,11 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 
+import static org.fest.assertions.Assertions.assertThat;
+
 public class BTreeIndexTest {
 
 	private        BTreeIndex<Integer> index;
-	private static File                indexRootFolder;
 	private static final File indexFolder = new File("/tmp/BTreeIndexTest");
 
 	private static String hdfsFile = "/path/to/file.csv";
@@ -34,21 +36,20 @@ public class BTreeIndexTest {
 		module.searchRange.add(new Range<Integer>(99, 99));
 		module.searchRange.add(new Range<Integer>(100, 1010));
 
-		indexRootFolder = new File(module.indexRootFolder);
 	}
-
-
+	
 	@BeforeMethod
 	public void setUp() throws IOException {
-		if (indexRootFolder.exists())
-			FileUtils.deleteDirectory(indexRootFolder);
+		if (indexFolder.exists())
+			Files.deleteRecursively(indexFolder);
+		indexFolder.mkdir();
 
 		BTreeIndex tree = new BTreeIndexBuilder().cacheSize(1000).indexFolder(indexFolder).build();
 	}
 
 	@Test
 	public void empty(){
-		
+		assertThat(true).isTrue();
 	}
 
 	/*

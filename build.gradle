@@ -31,7 +31,7 @@ dependencies {
     }
 
     testCompile "org.testng:testng:6.2.1"
-
+    testCompile "org.easytesting:fest-assert:1.4"
 
     // index dependencies
     compile "com.google.inject:guice:3.0@jar"
