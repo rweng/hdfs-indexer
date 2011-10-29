@@ -44,22 +44,15 @@ public class BTreeIndexTest {
 			Files.deleteRecursively(indexFolder);
 		indexFolder.mkdir();
 
-		BTreeIndex tree = new BTreeIndexBuilder().cacheSize(1000).indexFolder(indexFolder).build();
+		index = new BTreeIndexBuilder().cacheSize(1000).indexFolder(indexFolder).build();
 	}
 
-	@Test
-	public void empty(){
-		assertThat(true).isTrue();
-	}
-
-	/*
 	@Test
  	public void creation() {
 		assertThat(index != null);
-		assertEquals(hdfsFile, index.getHdfsFile());
-		assertEquals(indexRootFolder + hdfsFile, index.getIndexDir().getAbsolutePath());
-		assertEquals(indexRootFolder + "/path/to/file.csv/properties.xml", index.getPropertiesPath());
 	}
+
+/*
 
 	/*
 
