@@ -45,7 +45,7 @@ public class BTreeIndexTest {
 			FileUtils.deleteDirectory(indexRootFolder);
 		indexRootFolder.mkdir();
 
-		index = new BTreeIndexBuilder().cacheSize(1000).indexFolder(indexRootFolder).hdfsFilePath(hdfsFile).build();
+		index = setUpBuilder().build();
 		assertThat(index).isNotNull();
 	}
 
@@ -53,6 +53,14 @@ public class BTreeIndexTest {
 	public void indexFolder() {
 		assertThat(index.getIndexFolder().getAbsolutePath()).isEqualTo(indexRootFolder.getAbsolutePath() + hdfsFile);
 	}
+
+	private BTreeIndexBuilder setUpBuilder(){
+		return new BTreeIndexBuilder()
+				.indexFolder(indexRootFolder)
+				.hdfsFilePath(hdfsFile)
+				.keyExtractor(new IntegerCSVExtractor(0, "( |\\t)+"));
+	}
+
 
 	@Test
 	public void open() throws IOException {

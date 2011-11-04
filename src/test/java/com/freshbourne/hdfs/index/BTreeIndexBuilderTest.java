@@ -25,16 +25,23 @@ public class BTreeIndexBuilderTest {
 
 	@Test
 	public void validCase(){
-		BTreeIndex build = new BTreeIndexBuilder().indexFolder("/tmp/index").hdfsFilePath("/test/bla").build();
+		BTreeIndex build = setUpBuilder().build();
 		assertThat(build.getIndexFolder().getAbsolutePath()).isEqualTo("/tmp/index/test/bla");
+	}
+
+	private BTreeIndexBuilder setUpBuilder(){
+		return new BTreeIndexBuilder()
+				.indexFolder("/tmp/index")
+				.hdfsFilePath("hdfs://localhost/test/bla")
+				.keyExtractor(new IntegerCSVExtractor(0, "( |\\t)+"));
 	}
 
 	@Test
 	public void strippingOfProtocol(){
-		BTreeIndex build = new BTreeIndexBuilder().indexFolder("/tmp/index").hdfsFilePath("hdfs://localhost/test/bla").build();
+		BTreeIndex build = setUpBuilder().build();
 		assertThat(build.getIndexFolder().getAbsolutePath()).isEqualTo("/tmp/index/test/bla");
 
-		build = new BTreeIndexBuilder().indexFolder("/tmp/index").hdfsFilePath("hdfs:///test/bla").build();
+		build = setUpBuilder().hdfsFilePath("hdfs:///test/bla").build();
 		assertThat(build.getIndexFolder().getAbsolutePath()).isEqualTo("/tmp/index/test/bla");
 	}
 }

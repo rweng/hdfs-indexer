@@ -72,6 +72,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 		this.cacheSize = b.getCacheSize();
 		this.hdfsFile = b.getHdfsPath();
 		this.indexRootFolder = b.getIndexFolder();
+		this.keyExtractor = b.getKeyExtractor();
 		this.propertiesFile = new File(getIndexFolder() + "/properties.xml");
 
 		/*

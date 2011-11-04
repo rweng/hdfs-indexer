@@ -28,6 +28,16 @@ public class BTreeIndexBuilder {
 	FixLengthSerializer keySerializer;
 	Comparator          comparater;
 	List<Range>         defaultSearchRanges;
+
+	public BTreeIndexBuilder keyExtractor(KeyExtractor keyExtractor) {
+		this.keyExtractor = keyExtractor;
+		return this;
+	}
+
+	public KeyExtractor getKeyExtractor() {
+		return keyExtractor;
+	}
+
 	public KeyExtractor keyExtractor;
 	private String hdfsPath;
 
@@ -58,6 +68,7 @@ public class BTreeIndexBuilder {
 
 	public BTreeIndex build(){
 		checkState(hdfsPath != null && hdfsPath.startsWith("/"), "hdfsPath must start with /");
+		checkState(keyExtractor != null, "keyExtractor must be set.");
 		return new BTreeIndex(this);
 	}
 
