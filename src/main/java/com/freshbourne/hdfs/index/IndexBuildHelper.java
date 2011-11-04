@@ -1,9 +1,5 @@
 package com.freshbourne.hdfs.index;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Module;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
@@ -16,6 +12,11 @@ import org.apache.log4j.Logger;
 public class IndexBuildHelper {
 	private static Logger LOG = Logger.getLogger(IndexBuildHelper.class);
 
+	public Index build(InputSplit genericSplit, TaskAttemptContext context) {
+		return null;
+	}
+
+	/*
 	public Index build(InputSplit genericSplit, TaskAttemptContext context) {
 
 		Configuration conf = context.getConfiguration();
@@ -43,6 +44,7 @@ public class IndexBuildHelper {
 			return null;
 		}
 	}
+	*/
 
 	private static FileSplit inputToFileSplit(InputSplit inputSplit) {
 		FileSplit split;

@@ -1,12 +1,9 @@
 package com.freshbourne.hdfs.index;
 
-import com.freshbourne.btree.Range;
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -22,10 +19,10 @@ public class BTreeIndexTest {
 	private BTreeIndex<Integer> index;
 	private static final File   indexRootFolder = new File("/tmp/BTreeIndexTest");
 	private static       String hdfsFile        = "/path/to/file.csv";
-	private static CSVModule module;
 	private static final int CACHE_SIZE = 1000;
 	private static final Log LOG        = LogFactory.getLog(BTreeIndexTest.class);
 
+	/*
 	private static void createInjector() {
 		module = new CSVModule();
 		module.cacheSize = CACHE_SIZE;
@@ -40,6 +37,7 @@ public class BTreeIndexTest {
 		module.searchRange.add(new Range<Integer>(100, 1010));
 
 	}
+	*/
 
 	@BeforeMethod
 	public void build() throws IOException {
@@ -69,7 +67,9 @@ public class BTreeIndexTest {
 	}
 
 	@Test(dependsOnMethods = "open")
-	public void iteratorOnEmptyIndex() {
+	public void iteratorOnEmptyIndex() throws IOException {
+		open();
+
 		Iterator<String> i = index.getIterator();
 		assertThat(i.hasNext()).isFalse();
 	}

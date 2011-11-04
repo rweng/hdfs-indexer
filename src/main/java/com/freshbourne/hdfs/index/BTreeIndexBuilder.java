@@ -2,18 +2,12 @@ package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.Range;
 import com.freshbourne.serializer.FixLengthSerializer;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
-import com.sun.istack.internal.Nullable;
 
 import java.io.File;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Preconditions.*;
 
 public class BTreeIndexBuilder {
 	int getCacheSize() {

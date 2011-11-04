@@ -1,7 +1,5 @@
 package com.freshbourne.hdfs.index;
 
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import org.apache.log4j.Logger;
 
 public class IntegerCSVExtractor implements KeyExtractor<Integer> {
@@ -12,8 +10,8 @@ public class IntegerCSVExtractor implements KeyExtractor<Integer> {
 	private static Logger LOG = Logger.getLogger(IntegerCSVExtractor.class);
 
 
-	@Inject IntegerCSVExtractor(@Named("csvColumn") int column,
-	                            @Named("delimiter") String delimiter) {
+	public IntegerCSVExtractor(int column,
+	                            String delimiter) {
 		this.column = column;
 		this.delimiter = delimiter;
 
