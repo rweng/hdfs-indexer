@@ -364,7 +364,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 		String file = getIndexFolder() + "/" + indexId + "_" + System.currentTimeMillis();
 
 		if (LOG.isDebugEnabled())
-			LOG.debug("trying to create btree: " + file);
+			LOG.debug("trying to build btree: " + file);
 
 		ResourceManager manager =
 				new ResourceManagerBuilder().file(file).build();

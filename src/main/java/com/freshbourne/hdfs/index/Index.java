@@ -41,7 +41,7 @@ import java.util.List;
 public interface Index<K,V> {
 
     /**
-     *  Open or create the index. This could be the files or directory for example.
+     *  Open or build the index. This could be the files or directory for example.
      *
      * @throws java.io.IOException
      */

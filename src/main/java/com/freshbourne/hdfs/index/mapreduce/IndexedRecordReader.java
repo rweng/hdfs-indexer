@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import com.freshbourne.hdfs.index.Index;
-import com.freshbourne.hdfs.index.IndexBuilderImpl;
+import com.freshbourne.hdfs.index.IndexBuildHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.Text;
@@ -26,7 +26,7 @@ public class IndexedRecordReader extends LineRecordReader {
 		// get conf
 		// get implementation of Index
 
-		index = new IndexBuilderImpl().create(genericSplit, context);
+		index = new IndexBuildHelper().build(genericSplit, context);
 		value = new Text();
 	}
 

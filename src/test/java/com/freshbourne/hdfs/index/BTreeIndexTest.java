@@ -41,7 +41,7 @@ public class BTreeIndexTest {
 
 	}
 
-	@Test
+	@BeforeMethod
 	public void build() throws IOException {
 		if (indexRootFolder.exists())
 			FileUtils.deleteDirectory(indexRootFolder);
@@ -56,7 +56,7 @@ public class BTreeIndexTest {
 		assertThat(index.getIndexFolder().getAbsolutePath()).isEqualTo(indexRootFolder.getAbsolutePath() + hdfsFile);
 	}
 
-	@Test(dependsOnMethods = "build")
+	@Test
 	public void open() throws IOException {
 		assertThat(index.getIndexFolder()).doesNotExist();
 
@@ -75,9 +75,10 @@ public class BTreeIndexTest {
 	}
 
 
-	@Test(dependsOnMethods = "open")
+	@Test //(dependsOnMethods = "open")
 	public void addingStuffToIndex() throws IOException {
-
+		open();
+		
 		List<String> list = Lists.newArrayList();
 		list.add("1    Robin  25");
 		list.add("2    Fritz   55");
