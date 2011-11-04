@@ -3,6 +3,7 @@ package com.freshbourne.hdfs.index;
 import com.freshbourne.btree.BTree;
 import com.freshbourne.btree.Range;
 import com.freshbourne.io.AutoSaveResourceManager;
+import com.freshbourne.io.ResourceManager;
 import com.freshbourne.io.ResourceManagerBuilder;
 import com.freshbourne.serializer.FixLengthSerializer;
 import com.freshbourne.serializer.FixedStringSerializer;
@@ -222,8 +223,8 @@ public class BTreeIndex<K> implements Index<K, String> {
 	private BTree<K, String> getTree(File file) {
 		BTree<K, String> result = null;
 		try {
-			AutoSaveResourceManager manager =
-							new ResourceManagerBuilder().file(file).cacheSize(cacheSize).buildAutoSave();
+			ResourceManager manager =
+							new ResourceManagerBuilder().file(file).build();
 
 			result = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
 					comparator);
@@ -365,8 +366,8 @@ public class BTreeIndex<K> implements Index<K, String> {
 		if (LOG.isDebugEnabled())
 			LOG.debug("trying to create btree: " + file);
 
-		AutoSaveResourceManager manager =
-				new ResourceManagerBuilder().file(file).cacheSize(cacheSize).buildAutoSave();
+		ResourceManager manager =
+				new ResourceManagerBuilder().file(file).build();
 		BTree<K, String> tree = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
 				comparator);
 

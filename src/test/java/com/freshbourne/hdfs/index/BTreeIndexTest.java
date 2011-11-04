@@ -1,6 +1,7 @@
 package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.Range;
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
@@ -12,6 +13,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
 
@@ -73,6 +75,35 @@ public class BTreeIndexTest {
 	}
 
 
+	@Test(dependsOnMethods = "open")
+	public void addingStuffToIndex() throws IOException {
+
+		List<String> list = Lists.newArrayList();
+		list.add("1    Robin  25");
+		list.add("2    Fritz   55");
+
+		index.addLine(list.get(0), 0);
+		index.addLine(list.get(1), 10);
+		index.close();
+		index.open();
+
+		assertThat(index.getMaxPos()).isEqualTo(10);
+
+		/*
+		  Iterator<String> i = index.getIterator(false);
+		  assertTrue(i.hasNext());
+		  assertTrue(list.contains(i.next()));
+		  assertTrue(list.contains(i.next()));
+		  assertFalse(i.hasNext());
+		  assertNull(i.next());
+
+
+		  // ensure lock if is deleted after close
+		  index.close();
+		  assertFalse(index.getLockFile().exists());
+  */
+	}
+
 /*
 
 
@@ -93,35 +124,6 @@ public class BTreeIndexTest {
 			assertNotNull(iterator.next());
 		}
 		assertNull(iterator.next());
-	}
-
-	@Test
-	public void addingStuffToIndex() throws IOException {
-		openIndex();
-
-		List<String> list = new LinkedList<String>();
-		list.add("1    Robin  25");
-		list.add("2    Fritz   55");
-
-		assertFalse(index.getLockFile().exists());
-		index.addLine(list.get(0), 0);
-		assertTrue(index.getLockFile().exists());
-		index.addLine(list.get(1), 10);
-		index.close();
-		index.open();
-		assertEquals(10, index.getMaxPos());
-		Iterator<String> i = index.getIterator(false);
-		assertTrue(i.hasNext());
-		assertTrue(list.contains(i.next()));
-		assertTrue(list.contains(i.next()));
-		assertFalse(i.hasNext());
-		assertNull(i.next());
-
-
-		// ensure lock if is deleted after close
-		index.close();
-		assertFalse(index.getLockFile().exists());
-
 	}
 
 	/**
