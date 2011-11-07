@@ -59,7 +59,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 	private boolean ourLock = false;
 	private Comparator<K>                        comparator;
 	private FixLengthSerializer<K, byte[]>       keySerializer;
-	private List<Range<K>>                       defaultSearchRanges;
+	private List<Range<K>> defaultSearchRanges;
 	private AbstractMap.SimpleEntry<K, String>[] cache;
 	private PropertyEntry writingTreePropertyEntry = new PropertyEntry();
 	private int cacheSize;
@@ -75,12 +75,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 		this.propertiesFile = new File(getIndexFolder() + "/properties.xml");
 		this.keySerializer = b.getKeySerializer();
 		this.comparator = b.getComparator();
-		/*
-		this.indexRootFolder = b.indexFolder;
-		this.indexId = b.indexId;
-		this.defaultSearchRanges = b.defaultSearchRanges;
-		this.keyExtractor = b.keyExtractor;
-		*/
+		this.defaultSearchRanges = b.getDefaultSearchRanges();
 	}
 
 	public boolean isOpen() {
@@ -223,7 +218,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 		BTree<K, String> result = null;
 		try {
 			ResourceManager manager =
-							new ResourceManagerBuilder().file(file).build();
+							new ResourceManagerBuilder().file(file).useLock(false).build();
 
 			result = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
 					comparator);

@@ -2,6 +2,7 @@ package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.Range;
 import com.freshbourne.serializer.FixLengthSerializer;
+import com.google.common.collect.Lists;
 
 import java.io.File;
 import java.util.Comparator;
@@ -9,14 +10,14 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.*;
 
-public class BTreeIndexBuilder {
+public class BTreeIndexBuilder<K,V> {
 
 	private int cacheSize = 1000;
 	private File indexFolder;
 	private String indexId;
-	private FixLengthSerializer keySerializer;
-	private Comparator  comparator;
-	private List<Range> defaultSearchRanges;
+	private FixLengthSerializer<K,byte[]> keySerializer;
+	private Comparator<K>  comparator;
+	private List<Range<K>> defaultSearchRanges;
 
 
 
@@ -83,7 +84,7 @@ public class BTreeIndexBuilder {
 		checkNotNull(keyExtractor);
 		checkNotNull(keySerializer);
 		checkNotNull(comparator);
-
+		
 		checkState(hdfsPath.startsWith("/"), "hdfsPath must start with /");
 
 		return new BTreeIndex(this);
@@ -100,5 +101,17 @@ public class BTreeIndexBuilder {
 
 	public FixLengthSerializer getKeySerializer() {
 		return keySerializer;
+	}
+
+	public List<Range<K>> getDefaultSearchRanges() {
+		if(defaultSearchRanges == null)
+			defaultSearchRanges = Lists.newArrayList();
+		
+		return defaultSearchRanges;
+	}
+
+	public BTreeIndexBuilder addDefaultRange(Range r){
+		getDefaultSearchRanges().add(r);
+		return this;
 	}
 }

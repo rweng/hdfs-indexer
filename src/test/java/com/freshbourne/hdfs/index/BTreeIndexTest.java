@@ -33,12 +33,6 @@ public class BTreeIndexTest {
 
 		module.hdfsFile = hdfsFile;
 
-		module.searchRange.add(new Range<Integer>(0, 10));
-		module.searchRange.add(new Range<Integer>(-5, 5));
-		module.searchRange.add(new Range<Integer>(0, 10));
-		module.searchRange.add(new Range<Integer>(50, 55));
-		module.searchRange.add(new Range<Integer>(99, 99));
-		module.searchRange.add(new Range<Integer>(100, 1010));
 
 	}
 	*/
@@ -64,7 +58,12 @@ public class BTreeIndexTest {
 				.hdfsFilePath(hdfsFile)
 				.keyExtractor(new IntegerCSVExtractor(0, "( |\\t)+"))
 				.keySerializer(IntegerSerializer.INSTANCE)
-				.comparator(IntegerComparator.INSTANCE);
+				.comparator(IntegerComparator.INSTANCE)
+				.addDefaultRange(new Range<Integer>(0, 10))
+				.addDefaultRange(new Range<Integer>(-5, 5))
+				.addDefaultRange(new Range<Integer>(50, 55))
+				.addDefaultRange(new Range<Integer>(99, 99))
+				.addDefaultRange(new Range<Integer>(100, 1010));
 	}
 
 
@@ -172,50 +171,35 @@ public class BTreeIndexTest {
 		assertThat(iterator.hasNext()).isFalse();
 	}
 
+
+	@Test(dependsOnMethods = "testRange")
+	public void testDefaultRanges() throws IOException {
+		index.open();
+
+		for (int i = 0; i < 100; i++) {
+			index.addLine("" + i + " col2", i);
+		}
+
+		index.close();
+		index.open();
+
+		Iterator<String> iterator = index.getIterator();
+
+		for (int i = 0; i <= 10; i++) {
+			assertThat(iterator.next()).isEqualTo("" + i + " col2");
+		}
+
+
+		for (int i = 50; i <= 55; i++)
+			assertThat(iterator.next()).isEqualTo("" + i + " col2");
+
+		assertThat(iterator.next()).isEqualTo("99 col2");
+		assertThat(iterator.hasNext()).isFalse();
+	}
+
 	private void fillIndex(Index index, int count) {
 		for (int i = 0; i < count; i++) {
 			index.addLine("" + i + " col2", i);
 		}
 	}
-
-
-	/*
-
-	@Test
-	public void testDefaultRanges() throws IOException {
-		intIndex.open();
-
-		for (int i = 0; i < 100; i++) {
-			intIndex.addLine("" + i + " col2", i);
-		}
-
-		intIndex.close();
-		intIndex.open();
-
-		Iterator<String> iterator = intIndex.getIterator();
-
-		for (int i = 0; i <= 10; i++) {
-			assertEquals("" + i + " col2", iterator.next());
-		}
-
-
-		for (int i = 50; i <= 55; i++)
-			assertEquals("" + i + " col2", iterator.next());
-
-		assertEquals("99 col2", iterator.next());
-		assertFalse(iterator.hasNext());
-	}
-	**/
-
-/*
-	
-
-	private void openIndex() {
-		try {
-			// index.open();
-		} catch (Exception e) {
-			fail("index cannot be opened");
-		}
-	}
-*/
 }
