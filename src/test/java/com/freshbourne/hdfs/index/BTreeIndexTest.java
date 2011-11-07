@@ -22,8 +22,8 @@ public class BTreeIndexTest {
 	private BTreeIndex<Integer> index;
 	private static final File   indexRootFolder = new File("/tmp/BTreeIndexTest");
 	private static       String hdfsFile        = "/path/to/file.csv";
-	private static final int CACHE_SIZE = 1000;
-	private static final Log LOG        = LogFactory.getLog(BTreeIndexTest.class);
+	private static final int    CACHE_SIZE      = 1000;
+	private static final Log    LOG             = LogFactory.getLog(BTreeIndexTest.class);
 
 	/*
 	private static void createInjector() {
@@ -57,7 +57,7 @@ public class BTreeIndexTest {
 		assertThat(index.getIndexFolder().getAbsolutePath()).isEqualTo(indexRootFolder.getAbsolutePath() + hdfsFile);
 	}
 
-	private BTreeIndexBuilder setUpBuilder(){
+	private BTreeIndexBuilder setUpBuilder() {
 		return new BTreeIndexBuilder()
 				.indexFolder(indexRootFolder)
 				.hdfsFilePath(hdfsFile)
@@ -88,10 +88,10 @@ public class BTreeIndexTest {
 	}
 
 
-	@Test //(dependsOnMethods = "open")
+	@Test(dependsOnMethods = "open")
 	public void addingStuffToIndex() throws IOException {
 		open();
-		
+
 		List<String> list = Lists.newArrayList();
 		list.add("1    Robin  25");
 		list.add("2    Fritz   55");
@@ -102,20 +102,17 @@ public class BTreeIndexTest {
 		index.open();
 
 		assertThat(index.getMaxPos()).isEqualTo(10);
-
-		/*
-		  Iterator<String> i = index.getIterator(false);
-		  assertTrue(i.hasNext());
-		  assertTrue(list.contains(i.next()));
-		  assertTrue(list.contains(i.next()));
-		  assertFalse(i.hasNext());
-		  assertNull(i.next());
+		Iterator<String> i = index.getIterator(false);
+		assertThat(i.hasNext()).isTrue();
+		assertThat(list.contains(i.next())).isTrue();
+		assertThat(list.contains(i.next())).isTrue();
+		assertThat(i.hasNext()).isFalse();
+		assertThat(i.next()).isNull();
 
 
-		  // ensure lock if is deleted after close
-		  index.close();
-		  assertFalse(index.getLockFile().exists());
-  */
+		// ensure lock if is deleted after close
+		index.close();
+		assertThat(index.getLockFile()).doesNotExist();
 	}
 
 /*
