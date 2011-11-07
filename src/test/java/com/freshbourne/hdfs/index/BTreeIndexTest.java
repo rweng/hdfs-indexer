@@ -1,5 +1,6 @@
 package com.freshbourne.hdfs.index;
 
+import com.freshbourne.btree.Range;
 import com.freshbourne.comparator.IntegerComparator;
 import com.freshbourne.serializer.IntegerSerializer;
 import com.google.common.collect.Lists;
@@ -141,38 +142,44 @@ public class BTreeIndexTest {
 		assertThat(i.next()).isNull();
 	}
 
-	/*
-
-	@Test
+	@Test(dependsOnMethods = "secondIndex")
 	public void testRange() throws IOException {
-		intIndex.open();
+		index.open();
 
-		fillIndex(intIndex, 100);
+		fillIndex(index, 100);
 
-		intIndex.close();
-		intIndex.open();
+		index.close();
+		index.open();
 
-		List<Range<Integer>> ranges = new ArrayList<Range<Integer>>();
+		List<Range<Integer>> ranges = Lists.newArrayList();
 		ranges.add(new Range<Integer>(-5, 5));
 		ranges.add(new Range<Integer>(0, 10));
 		ranges.add(new Range<Integer>(50, 55));
 		ranges.add(new Range<Integer>(99, 99));
 		ranges.add(new Range<Integer>(100, 1010));
 
-		Iterator<String> iterator = intIndex.getIterator(ranges);
+		Iterator<String> iterator = index.getIterator(ranges);
 
 		for (int i = 0; i <= 10; i++) {
-			assertEquals("" + i + " col2", iterator.next());
+			assertThat(iterator.next()).isEqualTo("" + i + " col2");
 		}
 
 
 		for (int i = 50; i <= 55; i++)
-			assertEquals("" + i + " col2", iterator.next());
-
-		assertEquals("99 col2", iterator.next());
-		assertFalse(iterator.hasNext());
+			assertThat(iterator.next()).isEqualTo("" + i + " col2");
+		
+		assertThat(iterator.next()).isEqualTo("99 col2");
+		assertThat(iterator.hasNext()).isFalse();
 	}
 
+	private void fillIndex(Index index, int count) {
+		for (int i = 0; i < count; i++) {
+			index.addLine("" + i + " col2", i);
+		}
+	}
+
+
+	/*
 
 	@Test
 	public void testDefaultRanges() throws IOException {
@@ -201,12 +208,7 @@ public class BTreeIndexTest {
 	**/
 
 /*
-	private void fillIndex(Index index, int count) {
-		for (int i = 0; i < count; i++) {
-			index.addLine("" + i + " col2", i);
-		}
-	}
-
+	
 
 	private void openIndex() {
 		try {
