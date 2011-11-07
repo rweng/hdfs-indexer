@@ -2,7 +2,6 @@ package com.freshbourne.hdfs.index;
 
 import com.freshbourne.btree.BTree;
 import com.freshbourne.btree.Range;
-import com.freshbourne.io.AutoSaveResourceManager;
 import com.freshbourne.io.ResourceManager;
 import com.freshbourne.io.ResourceManagerBuilder;
 import com.freshbourne.serializer.FixLengthSerializer;
@@ -74,12 +73,11 @@ public class BTreeIndex<K> implements Index<K, String> {
 		this.indexRootFolder = b.getIndexFolder();
 		this.keyExtractor = b.getKeyExtractor();
 		this.propertiesFile = new File(getIndexFolder() + "/properties.xml");
-
+		this.keySerializer = b.getKeySerializer();
+		this.comparator = b.getComparator();
 		/*
 		this.indexRootFolder = b.indexFolder;
 		this.indexId = b.indexId;
-		this.keySerializer = b.keySerializer;
-		this.comparator = b.comparater;
 		this.defaultSearchRanges = b.defaultSearchRanges;
 		this.keyExtractor = b.keyExtractor;
 		*/

@@ -10,6 +10,16 @@ import java.util.List;
 import static com.google.common.base.Preconditions.*;
 
 public class BTreeIndexBuilder {
+
+	private int cacheSize = 1000;
+	private File indexFolder;
+	private String indexId;
+	private FixLengthSerializer keySerializer;
+	private Comparator  comparator;
+	private List<Range> defaultSearchRanges;
+
+
+
 	int getCacheSize() {
 		return cacheSize;
 	}
@@ -22,12 +32,14 @@ public class BTreeIndexBuilder {
 		return indexFolder;
 	}
 
-	private int cacheSize = 1000;
-	private File indexFolder;
-	String              indexId;
-	FixLengthSerializer keySerializer;
-	Comparator          comparater;
-	List<Range>         defaultSearchRanges;
+	public Comparator getComparator() {
+		return comparator;
+	}
+
+	public BTreeIndexBuilder comparator(Comparator comparator) {
+		this.comparator = comparator;
+		return this;
+	}
 
 	public BTreeIndexBuilder keyExtractor(KeyExtractor keyExtractor) {
 		this.keyExtractor = keyExtractor;
@@ -38,8 +50,8 @@ public class BTreeIndexBuilder {
 		return keyExtractor;
 	}
 
-	public KeyExtractor keyExtractor;
-	private String hdfsPath;
+	public  KeyExtractor keyExtractor;
+	private String       hdfsPath;
 
 	public BTreeIndexBuilder cacheSize(int cacheSize) {
 		checkArgument(cacheSize > 0, "cacheSize must be > 0");
@@ -66,13 +78,27 @@ public class BTreeIndexBuilder {
 	}
 
 
-	public BTreeIndex build(){
-		checkState(hdfsPath != null && hdfsPath.startsWith("/"), "hdfsPath must start with /");
-		checkState(keyExtractor != null, "keyExtractor must be set.");
+	public BTreeIndex build() {
+		checkNotNull(hdfsPath);
+		checkNotNull(keyExtractor);
+		checkNotNull(keySerializer);
+		checkNotNull(comparator);
+
+		checkState(hdfsPath.startsWith("/"), "hdfsPath must start with /");
+
 		return new BTreeIndex(this);
 	}
 
 	public BTreeIndexBuilder indexFolder(String path) {
 		return indexFolder(new File(path));
+	}
+
+	public BTreeIndexBuilder keySerializer(FixLengthSerializer ks) {
+		this.keySerializer = ks;
+		return this;
+	}
+
+	public FixLengthSerializer getKeySerializer() {
+		return keySerializer;
 	}
 }

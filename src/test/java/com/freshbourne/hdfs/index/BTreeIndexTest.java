@@ -1,5 +1,7 @@
 package com.freshbourne.hdfs.index;
 
+import com.freshbourne.comparator.IntegerComparator;
+import com.freshbourne.serializer.IntegerSerializer;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
@@ -7,6 +9,7 @@ import org.apache.commons.logging.LogFactory;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.print.attribute.IntegerSyntax;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -58,7 +61,9 @@ public class BTreeIndexTest {
 		return new BTreeIndexBuilder()
 				.indexFolder(indexRootFolder)
 				.hdfsFilePath(hdfsFile)
-				.keyExtractor(new IntegerCSVExtractor(0, "( |\\t)+"));
+				.keyExtractor(new IntegerCSVExtractor(0, "( |\\t)+"))
+				.keySerializer(IntegerSerializer.INSTANCE)
+				.comparator(IntegerComparator.INSTANCE);
 	}
 
 
