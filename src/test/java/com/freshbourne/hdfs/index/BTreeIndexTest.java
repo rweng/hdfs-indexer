@@ -109,63 +109,39 @@ public class BTreeIndexTest {
 		assertThat(i.hasNext()).isFalse();
 		assertThat(i.next()).isNull();
 
-
 		// ensure lock if is deleted after close
 		index.close();
 		assertThat(index.getLockFile()).doesNotExist();
-	}
-
-/*
-
-
-
-	/*
-
-	@Test
-	public void cache() throws IOException {
-		index.open();
-		fillIndex(index, CACHE_SIZE + 1);
-		index.close();
-
-		String[] files = new File(indexRootFolder + hdfsFile).list();
-		assertEquals(3, files.length);
-		index.open();
-		Iterator<String> iterator = index.getIterator(false);
-		for (int i = 0; i < (CACHE_SIZE + 1); i++) {
-			assertNotNull(iterator.next());
-		}
-		assertNull(iterator.next());
-	}
-
-	/**
-	@Test
-	public void secondIndex() throws Exception {
-		addingStuffToIndex();
-		List<String> list = new LinkedList<String>();
-		list.add("1    Robin  25");
-		list.add("2    Fritz   55");
-
-		index.close();
-		createInjector();
-		StringCSVIndex index2 = injector.getInstance(StringCSVIndex.class);
-
-		assertNotSame(index, index2);
-
-		index2.open();
-		Iterator<String> i = index2.getIterator(false);
-		assertTrue(i.hasNext());
-		assertTrue(list.contains(i.next()));
-		assertTrue(list.contains(i.next()));
-		assertFalse(i.hasNext());
-		assertNull(i.next());
 	}
 
 	@Test
 	public void maxPos() throws IOException {
 		addingStuffToIndex();
 		index.open();
-		assertEquals(10, index.getMaxPos());
+		assertThat(index.getMaxPos()).isEqualTo(10);
 	}
+
+	@Test(dependsOnMethods = "addingStuffToIndex")
+	public void secondIndex() throws Exception {
+		addingStuffToIndex();
+		List<String> list = Lists.newArrayList();
+		list.add("1    Robin  25");
+		list.add("2    Fritz   55");
+		index.close();
+
+		BTreeIndex index2 = setUpBuilder().build();
+		assertThat(index).isNotSameAs(index2);
+
+		index2.open();
+		Iterator<String> i = index2.getIterator(false);
+		assertThat(i.hasNext()).isTrue();
+		assertThat(list.contains(i.next())).isTrue();
+		assertThat(list.contains(i.next())).isTrue();
+		assertThat(i.hasNext()).isFalse();
+		assertThat(i.next()).isNull();
+	}
+
+	/*
 
 	@Test
 	public void testRange() throws IOException {
