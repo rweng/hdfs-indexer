@@ -1,14 +1,7 @@
-package com.freshbourne.hdfs.index;
-
-import com.freshbourne.io.MustBeOpened;
-import org.apache.hadoop.io.Text;
+package de.rwhq.hdfs.index;
 
 import java.io.IOException;
-import java.io.Serializable;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
 
 
 /**

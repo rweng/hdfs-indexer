@@ -1,8 +1,8 @@
-package com.freshbourne.hdfs.index;
+package de.rwhq.hdfs.index;
 
-import com.freshbourne.btree.Range;
-import com.freshbourne.serializer.FixLengthSerializer;
 import com.google.common.collect.Lists;
+import de.rwhq.btree.Range;
+import de.rwhq.serializer.FixLengthSerializer;
 
 import java.io.File;
 import java.util.Comparator;

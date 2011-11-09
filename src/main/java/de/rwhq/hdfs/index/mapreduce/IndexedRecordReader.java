@@ -1,15 +1,15 @@
-package com.freshbourne.hdfs.index.mapreduce;
+package de.rwhq.hdfs.index.mapreduce;
 
-import java.io.IOException;
-import java.util.Iterator;
-
-import com.freshbourne.hdfs.index.Index;
-import com.freshbourne.hdfs.index.IndexBuildHelper;
+import de.rwhq.hdfs.index.Index;
+import de.rwhq.hdfs.index.IndexBuildHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 public class IndexedRecordReader extends LineRecordReader {
 	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);

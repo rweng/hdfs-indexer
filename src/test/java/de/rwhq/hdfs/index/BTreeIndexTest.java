@@ -1,16 +1,15 @@
-package com.freshbourne.hdfs.index;
+package de.rwhq.hdfs.index;
 
-import com.freshbourne.btree.Range;
-import com.freshbourne.comparator.IntegerComparator;
-import com.freshbourne.serializer.IntegerSerializer;
 import com.google.common.collect.Lists;
+import de.rwhq.btree.Range;
+import de.rwhq.comparator.IntegerComparator;
+import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.print.attribute.IntegerSyntax;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;

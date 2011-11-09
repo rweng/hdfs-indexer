@@ -1,17 +1,20 @@
-package com.freshbourne.hdfs.index;
+package de.rwhq.hdfs.index;
 
-import com.freshbourne.btree.BTree;
-import com.freshbourne.btree.Range;
-import com.freshbourne.io.ResourceManager;
-import com.freshbourne.io.ResourceManagerBuilder;
-import com.freshbourne.serializer.FixLengthSerializer;
-import com.freshbourne.serializer.FixedStringSerializer;
 import com.google.common.annotations.VisibleForTesting;
+import de.rwhq.btree.BTree;
+import de.rwhq.btree.Range;
+import de.rwhq.io.rm.ResourceManager;
+import de.rwhq.io.rm.ResourceManagerBuilder;
+import de.rwhq.serializer.FixLengthSerializer;
+import de.rwhq.serializer.FixedStringSerializer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.*;
 
 /**

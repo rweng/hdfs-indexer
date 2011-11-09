@@ -1,4 +1,4 @@
-package com.freshbourne.hdfs.index;
+package de.rwhq.hdfs.index;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Comparator;

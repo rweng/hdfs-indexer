@@ -1,13 +1,14 @@
-package com.freshbourne.hdfs.index;
+package de.rwhq.hdfs.index;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public class IntegerCSVExtractor implements KeyExtractor<Integer> {
 
 	private String delimiter;
 	private int    column;
 
-	private static Logger LOG = Logger.getLogger(IntegerCSVExtractor.class);
+	private static Log LOG = LogFactory.getLog(IntegerCSVExtractor.class);
 
 
 	public IntegerCSVExtractor(int column,

@@ -1,10 +1,6 @@
-package com.freshbourne.hdfs.index;
+package de.rwhq.hdfs.index;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.freshbourne.hdfs.index.mapreduce.IndexedRecordReader;
+import de.rwhq.hdfs.index.mapreduce.IndexedRecordReader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.BlockLocation;
@@ -21,6 +17,10 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class IndexedInputFormat extends
 		FileInputFormat<LongWritable, Text> {

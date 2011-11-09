@@ -10,44 +10,33 @@ repositories {
 }
 
 dependencies {
-    compile "org.apache.hadoop:hadoop-core:0.20.2@jar"
-    
-    compile "commons-logging:commons-logging:1.0.4@jar"
-    compile "commons-logging:commons-logging-api:1.0.4@jar"
-
-    compile "commons-io:commons-io:1.3.2@jar"
-
-    compile "log4j:log4j:1.2.16@jar"
-
-    compile group: 'com.google.guava', name: 'guava', version: '10.0.1'
-
-    compile('jb-tree:jb-tree:0.0.2') {
+    compile "org.apache.hadoop:hadoop-core:0.20.2"
+    compile "commons-logging:commons-logging:1.1.1"
+    compile "commons-io:commons-io:1.3.2"
+    compile 'com.google.guava:guava:10.0.1'
+    compile('jb-tree:jb-tree:0.0.3') {
         artifact {
             name = 'jb-tree'
             extension = 'jar'
-            url = 'http://dl.dropbox.com/u/456244/jb-tree-0.0.2.jar'
+            url = 'http://dl.dropbox.com/u/456244/jb-tree-0.0.3.jar'
             type = "jar"
         }
     }
 
+    testCompile "log4j:log4j:1.2.16"
     testCompile "org.testng:testng:6.2.1"
     testCompile "org.easytesting:fest-assert:1.4"
-
-    // index dependencies
-    // compile "com.google.inject:guice:3.0@jar"
-    // compile "javax.inject:javax.inject:1@jar" // dependency needed by guice
-    // compile "aopalliance:aopalliance:1.0@jar"
 }
 
 //************* java plugin configuration ********************
 sourceCompatibility = 1.6
-version = '0.01'
+version = '0.0.2'
 jar {
     // include all dependency jars in this jars lib/ folder
     from configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }
 
     manifest {
-        // attributes("Main-Class": "com.freshbourne.hdfs.index.run.Main")
+        // attributes("Main-Class": "de.rwhq.hdfs.index.run.Main")
         attributes 'Implementation-Title': 'hdfs-indexer', 'Implementation-Version': version
     }
 }
@@ -73,7 +62,7 @@ test {
 //************* OWN TASKS ********************
 
 task publishJar(dependsOn: jar) << {
-    run("cp -f " + jar.archivePath + " /Users/robin/Dropbox/public/hdfs-indexer-0.0.1.jar")
+    run("cp -f " + jar.archivePath + " /Users/robin/Dropbox/public/hdfs-indexer-0.0.2.jar")
 }
 
 //************* HELPER METHODS ********************

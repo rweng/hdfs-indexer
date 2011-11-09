@@ -1,5 +1,7 @@
-package com.freshbourne.hdfs.index;
+package de.rwhq.hdfs.index;
 
+import de.rwhq.comparator.IntegerComparator;
+import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -18,7 +20,7 @@ public class BTreeIndexBuilderTest {
 		indexFolder.mkdir();
 	}
 
-	@Test(expectedExceptions = IllegalStateException.class)
+	@Test(expectedExceptions = NullPointerException.class)
 	public void exceptionIfNoHdfsPath(){
 		new BTreeIndexBuilder().build();
 	}
@@ -33,7 +35,9 @@ public class BTreeIndexBuilderTest {
 		return new BTreeIndexBuilder()
 				.indexFolder("/tmp/index")
 				.hdfsFilePath("hdfs://localhost/test/bla")
-				.keyExtractor(new IntegerCSVExtractor(0, "( |\\t)+"));
+				.keyExtractor(new IntegerCSVExtractor(0, "( |\\t)+"))
+				.keySerializer(IntegerSerializer.INSTANCE)
+				.comparator(IntegerComparator.INSTANCE);
 	}
 
 	@Test
