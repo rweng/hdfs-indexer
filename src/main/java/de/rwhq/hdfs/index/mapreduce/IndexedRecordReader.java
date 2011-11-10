@@ -1,15 +1,18 @@
 package de.rwhq.hdfs.index.mapreduce;
 
+import de.rwhq.hdfs.index.BTreeIndexBuilder;
 import de.rwhq.hdfs.index.Index;
-import de.rwhq.hdfs.index.IndexBuildHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
 import java.util.Iterator;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class IndexedRecordReader extends LineRecordReader {
 	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
@@ -24,9 +27,16 @@ public class IndexedRecordReader extends LineRecordReader {
 		super.initialize(genericSplit, context);
 
 		// get conf
-		// get implementation of Index
+		Class<?> builderClass = context.getConfiguration().getClass("builder", null);
+		checkNotNull(builderClass, "in your job configuration, you must set 'builder' to the class which should be used to build the Index");
 
-		index = new IndexBuildHelper().build(genericSplit, context);
+		try {
+			BTreeIndexBuilder builder = (BTreeIndexBuilder) builderClass.getConstructor().newInstance();
+			index = builder.hdfsFilePath(inputToFileSplit(genericSplit).getPath().toString()).build();
+		} catch (Exception e) {
+			LOG.error("could not create BTreeIndexBuilder", e);
+		}
+
 		value = new Text();
 	}
 
@@ -36,6 +46,17 @@ public class IndexedRecordReader extends LineRecordReader {
 		}
 
 		return indexIterator;
+	}
+
+	private static FileSplit inputToFileSplit(InputSplit inputSplit) {
+		FileSplit split;
+		try {
+			split = (FileSplit) inputSplit;
+		} catch (Exception e) {
+			throw new IllegalArgumentException(
+					"InputSplit must be an instance of FileSplit");
+		}
+		return split;
 	}
 
 	public boolean nextKeyValue() throws IOException {
