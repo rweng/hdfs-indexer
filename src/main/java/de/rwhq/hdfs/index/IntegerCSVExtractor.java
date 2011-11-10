@@ -1,7 +1,11 @@
 package de.rwhq.hdfs.index;
 
+import com.google.common.base.Objects;
+import com.google.common.collect.ObjectArrays;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import java.util.Arrays;
 
 public class IntegerCSVExtractor implements KeyExtractor<Integer> {
 
@@ -25,8 +29,10 @@ public class IntegerCSVExtractor implements KeyExtractor<Integer> {
 	@Override public Integer extract(String line) throws ExtractionException {
 		try{
 		String[] splits = line.split(delimiter);
-		if (LOG.isDebugEnabled())
+		if (LOG.isDebugEnabled()){
 			LOG.debug("trying to transform key: '" + splits[column] + "'");
+			LOG.debug("all splits: " + Arrays.toString(splits));
+		}
 		return Integer.parseInt(splits[column]);
 		} catch (Exception e){
 			throw new ExtractionException(e);

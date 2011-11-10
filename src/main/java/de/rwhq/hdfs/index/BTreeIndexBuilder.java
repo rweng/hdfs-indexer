@@ -80,10 +80,10 @@ public class BTreeIndexBuilder<K,V> {
 
 
 	public BTreeIndex build() {
-		checkNotNull(hdfsPath);
-		checkNotNull(keyExtractor);
-		checkNotNull(keySerializer);
-		checkNotNull(comparator);
+		checkNotNull(hdfsPath, "hdfsPath is null");
+		checkNotNull(keyExtractor, "keyExtractor is null");
+		checkNotNull(keySerializer, "keySerializer is null");
+		checkNotNull(comparator, "comparator is null");
 		
 		checkState(hdfsPath.startsWith("/"), "hdfsPath must start with /");
 

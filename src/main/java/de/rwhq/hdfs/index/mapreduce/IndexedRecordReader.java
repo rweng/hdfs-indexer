@@ -1,7 +1,7 @@
 package de.rwhq.hdfs.index.mapreduce;
 
-import de.rwhq.hdfs.index.BTreeIndexBuilder;
 import de.rwhq.hdfs.index.Index;
+import de.rwhq.hdfs.index.IndexBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.Text;
@@ -14,36 +14,56 @@ import java.util.Iterator;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * Special kind of LineRecordReader.
+ * It tries to create an index over the hdfs-file.
+ * Therefore, 
+ */
 public class IndexedRecordReader extends LineRecordReader {
 	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 
-	private Index index;
+	private Index            index;
 	private Iterator<String> indexIterator;
 	private boolean doneReadingFromIndex = false;
 
 
+	/** {@inheritDoc} */
+	@Override
 	public void initialize(InputSplit genericSplit, TaskAttemptContext context)
 			throws IOException {
 		super.initialize(genericSplit, context);
 
 		// get conf
-		Class<?> builderClass = context.getConfiguration().getClass("builder", null);
-		checkNotNull(builderClass, "in your job configuration, you must set 'builder' to the class which should be used to build the Index");
+		Class<?> builderClass = context.getConfiguration().getClass("indexBuilder", null);
+		checkNotNull(builderClass,
+				"in your job configuration, you must set 'indexBuilder' to the class which should be used to build the Index");
 
 		try {
-			BTreeIndexBuilder builder = (BTreeIndexBuilder) builderClass.getConstructor().newInstance();
+			IndexBuilder builder = (IndexBuilder) builderClass.getConstructor().newInstance();
 			index = builder.hdfsFilePath(inputToFileSplit(genericSplit).getPath().toString()).build();
 		} catch (Exception e) {
 			LOG.error("could not create index", e);
 		}
 
-		if(index != null && !index.isOpen())
+		if (index != null && !index.isOpen())
 			index.open();
+
+		try {
+			LOG.info("generic Split length: " + genericSplit.getLength());
+		} catch (InterruptedException e) {
+			LOG.warn("error when fetching genericSplit length", e);
+		}
+
+		try {
+			LOG.info("genericSplit locations: " + genericSplit.getLocations());
+		} catch (InterruptedException e) {
+			LOG.warn("error when fetching genericSplit locations", e);
+		}
 
 		value = new Text();
 	}
 
-	public Iterator<String> getIndexIterator() {
+	private Iterator<String> getIndexIterator() {
 		if (indexIterator == null && index != null) {
 			indexIterator = index.getIterator();
 		}
@@ -74,7 +94,7 @@ public class IndexedRecordReader extends LineRecordReader {
 			boolean result = super.nextKeyValue();
 
 			if (result) {
-				index.addLine(this.getCurrentValue().toString(), pos);
+				index.addLine(getCurrentValue().toString(), pos);
 			} else {
 				index.close();
 			}
