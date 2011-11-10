@@ -2,6 +2,7 @@ package de.rwhq.hdfs.index;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import com.google.common.collect.ObjectArrays;
 import de.rwhq.btree.BTree;
 import de.rwhq.btree.Range;
 import de.rwhq.io.rm.ResourceManager;
@@ -49,8 +50,7 @@ import java.util.*;
  */
 public class BTreeIndex<K> implements Index<K, String> {
 
-	private static final long serialVersionUID = 1L;
-	private static       Log  LOG              = LogFactory.getLog(BTreeIndex.class);
+	private static Log LOG = LogFactory.getLog(BTreeIndex.class);
 
 	private String     hdfsFile;
 	private File       indexRootFolder;
@@ -68,6 +68,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 	private KeyExtractor<K> keyExtractor;
 	private File            propertiesFile;
 
+	/* if an exception occured during key extraction */
 	private boolean extractorException = false;
 
 	/** {@inheritDoc} */
@@ -84,7 +85,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 
 		loadOrCreateProperties();
 
-		this.cache = new AbstractMap.SimpleEntry[cacheSize];
+		this.cache = ObjectArrays.newArray(AbstractMap.SimpleEntry.class, cacheSize);
 		isOpen = true;
 	}
 
@@ -156,7 +157,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 			saveWriteTree();
 		}
 
-		K key = null;
+		K key;
 
 		try {
 			key = keyExtractor.extract(line);
@@ -175,6 +176,8 @@ public class BTreeIndex<K> implements Index<K, String> {
 		cache[cachePointer++] = new AbstractMap.SimpleEntry<K, String>(key, line);
 	}
 
+	/** {@inheritDoc} */
+	@Override
 	public String toString() {
 		return Objects.toStringHelper(this)
 				.add("locked", isLocked())
@@ -183,14 +186,12 @@ public class BTreeIndex<K> implements Index<K, String> {
 				.toString();
 	}
 
-	@VisibleForTesting
-	Iterator<String> getIterator(List<Range<K>> searchRange) {
+	@VisibleForTesting Iterator<String> getIterator(List<Range<K>> searchRange) {
 		ensureOpen();
 		return new BTreeIndexIterator(searchRange);
 	}
 
-	@VisibleForTesting
-	Iterator<String> getIterator(boolean useDefaultSearchRanges) {
+	@VisibleForTesting Iterator<String> getIterator(boolean useDefaultSearchRanges) {
 		ensureOpen();
 		if (useDefaultSearchRanges)
 			return new BTreeIndexIterator(defaultSearchRanges);
@@ -203,12 +204,11 @@ public class BTreeIndex<K> implements Index<K, String> {
 		return new File(indexRootFolder.getPath() + hdfsFile);
 	}
 
-	@VisibleForTesting
-	File getLockFile() {
+	@VisibleForTesting File getLockFile() {
 		return new File(getIndexFolder() + "/lock");
 	}
 
-	public class PropertyEntry {
+	class PropertyEntry {
 		private Long start = null;
 		private Long end   = null;
 
@@ -395,7 +395,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 	}
 
 	private BTree<K, String> getTree(File file) {
-		BTree<K, String> result = null;
+		BTree<K, String> result;
 		try {
 			ResourceManager manager =
 					new ResourceManagerBuilder().file(file).useLock(false).build();
@@ -429,7 +429,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 		if (LOG.isDebugEnabled())
 			LOG.debug("bulkInitializing tree");
 
-		BTree<K, String> tree = null;
+		BTree<K, String> tree;
 
 		try {
 			tree = createWritingTree();
