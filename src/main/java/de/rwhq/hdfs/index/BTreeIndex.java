@@ -52,19 +52,6 @@ public class BTreeIndex<K> implements Index<K, String> {
 	private static final long serialVersionUID = 1L;
 	private static       Log  LOG              = LogFactory.getLog(BTreeIndex.class);
 
-	private static int fSLEEP_INTERVAL = 100;
-
-	private static void collectGarbage() {
-		try {
-			System.gc();
-			Thread.currentThread().sleep(fSLEEP_INTERVAL);
-			System.runFinalization();
-			Thread.currentThread().sleep(fSLEEP_INTERVAL);
-		} catch (InterruptedException ex) {
-			ex.printStackTrace();
-		}
-	}
-
 	private String     hdfsFile;
 	private File       indexRootFolder;
 	private Properties properties;
@@ -465,21 +452,6 @@ public class BTreeIndex<K> implements Index<K, String> {
 
 		cachePointer = 0;
 		writingTreePropertyEntry.start = writingTreePropertyEntry.end = null;
-	}
-
-	private boolean isEnoughMemory() {
-		long free = Runtime.getRuntime().freeMemory() / 1024 / 1024;
-		if (free < 3) {
-			LOG.info("collecting garbarge");
-			collectGarbage();
-			collectGarbage();
-		}
-
-		if (free < 5) {
-			return false;
-		} else {
-			return true;
-		}
 	}
 
 	private boolean isLocked() {
