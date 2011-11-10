@@ -1,6 +1,7 @@
 package de.rwhq.hdfs.index;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Objects;
 import de.rwhq.btree.BTree;
 import de.rwhq.btree.Range;
 import de.rwhq.io.rm.ResourceManager;
@@ -19,8 +20,6 @@ import java.util.*;
 
 /**
  * This is the base class for all Indexes using the multimap bTreeWriting.
- * <p/>
- * Instances should be created through Guice. Reason for this are manifold.
  * <p/>
  * The folder structure and files are not created when creating an instance of this class. Rather, you need to open the
  * class explicitly through the open() method.
@@ -53,7 +52,19 @@ public class BTreeIndex<K> implements Index<K, String> {
 	private static final long serialVersionUID = 1L;
 	private static       Log  LOG              = LogFactory.getLog(BTreeIndex.class);
 
-	private String     indexId;
+	private static int fSLEEP_INTERVAL = 100;
+
+	private static void collectGarbage() {
+		try {
+			System.gc();
+			Thread.currentThread().sleep(fSLEEP_INTERVAL);
+			System.runFinalization();
+			Thread.currentThread().sleep(fSLEEP_INTERVAL);
+		} catch (InterruptedException ex) {
+			ex.printStackTrace();
+		}
+	}
+
 	private String     hdfsFile;
 	private File       indexRootFolder;
 	private Properties properties;
@@ -62,29 +73,24 @@ public class BTreeIndex<K> implements Index<K, String> {
 	private boolean ourLock = false;
 	private Comparator<K>                        comparator;
 	private FixLengthSerializer<K, byte[]>       keySerializer;
-	private List<Range<K>> defaultSearchRanges;
+	private List<Range<K>>                       defaultSearchRanges;
 	private AbstractMap.SimpleEntry<K, String>[] cache;
 	private PropertyEntry writingTreePropertyEntry = new PropertyEntry();
 	private int cacheSize;
 	private int cachePointer = 0;
 	private KeyExtractor<K> keyExtractor;
-	private File propertiesFile;
+	private File            propertiesFile;
 
-	protected BTreeIndex(BTreeIndexBuilder b) {
-		this.cacheSize = b.getCacheSize();
-		this.hdfsFile = b.getHdfsPath();
-		this.indexRootFolder = b.getIndexFolder();
-		this.keyExtractor = b.getKeyExtractor();
-		this.propertiesFile = new File(getIndexFolder() + "/properties.xml");
-		this.keySerializer = b.getKeySerializer();
-		this.comparator = b.getComparator();
-		this.defaultSearchRanges = b.getDefaultSearchRanges();
-	}
+	private boolean extractorException = false;
 
+	/** {@inheritDoc} */
+	@Override
 	public boolean isOpen() {
 		return isOpen;
 	}
 
+	/** {@inheritDoc} */
+	@Override
 	public void open() throws IOException {
 		File indexDir = getIndexFolder();
 		indexDir.mkdirs();
@@ -95,9 +101,11 @@ public class BTreeIndex<K> implements Index<K, String> {
 		isOpen = true;
 	}
 
-
+	/** {@inheritDoc} */
 	@Override
 	public void close() {
+		LOG.info("closing index");
+		LOG.info(this);
 		if (!isOpen())
 			return;
 
@@ -105,101 +113,27 @@ public class BTreeIndex<K> implements Index<K, String> {
 
 		if (ourLock)
 			unlock();
+
 		isOpen = false;
 	}
 
-
-	protected void ensureOpen() {
-		if (!isOpen())
-			throw new IllegalStateException("index must be opened before it is used");
-	}
-
-	private void saveProperties() throws IOException {
-		if (LOG.isDebugEnabled())
-			LOG.debug("saving properties:\n " + properties);
-
-		properties.storeToXML(new FileOutputStream(propertiesFile), "comment");
-
-		int x = 1;
-	}
-
-	private Properties loadOrCreateProperties() throws IOException {
-		properties = new Properties();
-
-		try {
-			properties.loadFromXML(new FileInputStream(propertiesFile));
-		} catch (IOException e) {
-			saveProperties();
-		}
-
-		return properties;
-	}
-
-	private Properties getProperties() {
-		if (properties != null) {
-			return properties;
-		}
-
-		properties = new Properties();
-		if (propertiesFile.exists()) {
-			try {
-				FileInputStream fis = new FileInputStream(propertiesFile);
-				properties.loadFromXML(fis);
-			} catch (Exception e) {
-				LOG.warn("deleting properties file");
-				propertiesFile.delete();
-			}
-		}
-
-		return properties;
-	}
-
-	/** @return directory of the index-files for the current hdfs file */
-	@VisibleForTesting
-	File getIndexFolder() {
-		return new File(indexRootFolder.getPath() + hdfsFile);
-	}
-
-	private File getIndexRootFolder(){
-		return indexRootFolder;
-	}
-
-	private String getHdfsFile() {
-		return hdfsFile;
-	}
-
-
-	private List<BTree<K, String>> getTreeList() {
-		List<BTree<K, String>> list = new LinkedList<BTree<K, String>>();
-
-		// add trees from properties
-		for (String filename : getProperties().stringPropertyNames()) {
-			list.add(getTree(new File(getIndexFolder() + "/" + filename)));
-		}
-
-		return list;
-	}
-
+	/** {@inheritDoc} */
 	@Override
 	public Iterator<String> getIterator() {
 		return getIterator(true);
 	}
 
-	public Iterator<String> getIterator(List<Range<K>> searchRange) {
-		ensureOpen();
-		return new BTreeIndexIterator(searchRange);
-	}
 
-	public Iterator<String> getIterator(boolean useDefaultSearchRanges) {
-		ensureOpen();
-		if (useDefaultSearchRanges)
-			return new BTreeIndexIterator(defaultSearchRanges);
-		else
-			return new BTreeIndexIterator();
+	/** {@inheritDoc} */
+	@Override
+	public boolean exists() {
+		throw new UnsupportedOperationException("todo: check if directory and properties file exists");
 	}
 
 
-	@Override public long getMaxPos() {
+	/** {@inheritDoc} */
+	@Override
+	public long getMaxPos() {
 		long largest = 0;
 
 		for (String filename : getProperties().stringPropertyNames()) {
@@ -217,40 +151,14 @@ public class BTreeIndex<K> implements Index<K, String> {
 		return largest;
 	}
 
-	private BTree<K, String> getTree(File file) {
-		BTree<K, String> result = null;
-		try {
-			ResourceManager manager =
-							new ResourceManagerBuilder().file(file).useLock(false).build();
-
-			result = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
-					comparator);
-			result.loadOrInitialize();
-
-			// checkStructure is very expensive, so do not do this usually
-			if (LOG.isDebugEnabled())
-				result.checkStructure();
-
-		} catch (IOException e) {
-			throw new RuntimeException("error occured while trying to get btree: " + file.getAbsolutePath(), e);
-		}
-		return result;
-	}
-
-	File getLockFile() {
-		return new File(getIndexFolder() + "/lock");
-	}
-
-	private void unlock() {
-		if (ourLock) {
-			getLockFile().delete();
-			ourLock = false;
-		}
-	}
-
+	/** {@inheritDoc} */
 	@Override
 	public void addLine(String line, long pos) {
 		ensureOpen();
+
+		if (extractorException)
+			return;
+
 		if (!ourLock && isLocked()) {
 			return;
 		} else {
@@ -261,7 +169,18 @@ public class BTreeIndex<K> implements Index<K, String> {
 			saveWriteTree();
 		}
 
-		K key = keyExtractor.extract(line);
+		K key = null;
+
+		try {
+			key = keyExtractor.extract(line);
+		} catch (ExtractionException e) {
+			LOG.warn(e);
+			writingTreePropertyEntry = null;
+			cachePointer = 0;
+			extractorException = true;
+			return;
+		}
+
 		if (writingTreePropertyEntry.start == null)
 			writingTreePropertyEntry.start = pos;
 
@@ -269,115 +188,37 @@ public class BTreeIndex<K> implements Index<K, String> {
 		cache[cachePointer++] = new AbstractMap.SimpleEntry<K, String>(key, line);
 	}
 
-	private void saveWriteTree() {
-
-		if (cachePointer == 0)
-			return;
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("bulkInitializing tree");
-
-		BTree<K, String> tree = null;
-
-		try {
-			tree = createWritingTree();
-			tree.bulkInitialize(cache, 0, cachePointer - 1, false);
-
-			String filename = new File(tree.getPath()).getName();
-
-			if (LOG.isDebugEnabled())
-				LOG.debug("new trees filename: " + filename);
-
-			getProperties().setProperty(filename, writingTreePropertyEntry.toString());
-			saveProperties();
-
-			tree.close();
-		} catch (IOException e) {
-			LOG.error("error when saving index");
-			LOG.error(e.getStackTrace());
-			// reset cache and properties next, maybe we can save this index partial next time
-		}
-
-		cachePointer = 0;
-		writingTreePropertyEntry.start = writingTreePropertyEntry.end = null;
+	public String toString() {
+		return Objects.toStringHelper(this)
+				.add("locked", isLocked())
+				.add("ourLock", ourLock)
+				.add("defaultSearchRanges", defaultSearchRanges)
+				.toString();
 	}
 
-	private boolean isEnoughMemory() {
-		long free = Runtime.getRuntime().freeMemory() / 1024 / 1024;
-		if (free < 3) {
-			LOG.info("collecting garbarge");
-			collectGarbage();
-			collectGarbage();
-		}
-
-		if (free < 5) {
-			return false;
-		} else {
-			return true;
-		}
+	@VisibleForTesting
+	Iterator<String> getIterator(List<Range<K>> searchRange) {
+		ensureOpen();
+		return new BTreeIndexIterator(searchRange);
 	}
 
-	private static int fSLEEP_INTERVAL = 100;
-
-	private static void collectGarbage() {
-		try {
-			System.gc();
-			Thread.currentThread().sleep(fSLEEP_INTERVAL);
-			System.runFinalization();
-			Thread.currentThread().sleep(fSLEEP_INTERVAL);
-		} catch (InterruptedException ex) {
-			ex.printStackTrace();
-		}
+	@VisibleForTesting
+	Iterator<String> getIterator(boolean useDefaultSearchRanges) {
+		ensureOpen();
+		if (useDefaultSearchRanges)
+			return new BTreeIndexIterator(defaultSearchRanges);
+		else
+			return new BTreeIndexIterator();
 	}
 
-	private boolean isLocked() {
-		return getLockFile().exists();
+	/** @return directory of the index-files for the current hdfs file */
+	@VisibleForTesting File getIndexFolder() {
+		return new File(indexRootFolder.getPath() + hdfsFile);
 	}
 
-	private void lock() {
-		if (ourLock)
-			return;
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("locking file: " + getLockFile());
-		try {
-			FileUtils.touch(getLockFile());
-			ourLock = true;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected void finalize() throws Throwable {
-		try {
-			unlock();
-			close();
-		} finally {
-			super.finalize();
-		}
-	}
-
-	private BTree<K, String> createWritingTree() throws IOException {
-		String file = getIndexFolder() + "/" + indexId + "_" + System.currentTimeMillis();
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("trying to build btree: " + file);
-
-		ResourceManager manager =
-				new ResourceManagerBuilder().file(file).build();
-		BTree<K, String> tree = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
-				comparator);
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("creeated btree for writing: " + tree.getPath());
-
-		return tree;
-	}
-
-
-	@Override
-	public boolean exists() {
-		throw new UnsupportedOperationException("todo: check if directory and properties file exists");
+	@VisibleForTesting
+	File getLockFile() {
+		return new File(getIndexFolder() + "/lock");
 	}
 
 	public class PropertyEntry {
@@ -416,16 +257,6 @@ public class BTreeIndex<K> implements Index<K, String> {
 		private BTree<K, String>       currentTree;
 		private Iterator<String>       currentIterator;
 		private List<Range<K>>         searchRanges;
-
-
-		private BTreeIndexIterator() {
-			this.trees = getTreeList();
-		}
-
-		public BTreeIndexIterator(List<Range<K>> searchRange) {
-			this.searchRanges = searchRange;
-			this.trees = getTreeList();
-		}
 
 		@Override
 		public boolean hasNext() {
@@ -493,5 +324,204 @@ public class BTreeIndex<K> implements Index<K, String> {
 		public void remove() {
 			throw new UnsupportedOperationException();
 		}
+
+		public BTreeIndexIterator(List<Range<K>> searchRange) {
+			this.searchRanges = searchRange;
+			this.trees = getTreeList();
+		}
+
+
+		private BTreeIndexIterator() {
+			this.trees = getTreeList();
+		}
+	}
+
+	/**
+	 * Constructor does not check values, this should be done in the BTreeIndexBuilder
+	 *
+	 * @param b
+	 * 		BTreeIndexBuilder
+	 */
+	protected BTreeIndex(BTreeIndexBuilder b) {
+		this.cacheSize = b.getCacheSize();
+		this.hdfsFile = b.getHdfsPath();
+		this.indexRootFolder = b.getIndexFolder();
+		this.keyExtractor = b.getKeyExtractor();
+		this.propertiesFile = new File(getIndexFolder() + "/properties.xml");
+		this.keySerializer = b.getKeySerializer();
+		this.comparator = b.getComparator();
+		this.defaultSearchRanges = b.getDefaultSearchRanges();
+	}
+
+	protected void ensureOpen() {
+		if (!isOpen())
+			throw new IllegalStateException("index must be opened before it is used");
+	}
+
+	private void saveProperties() throws IOException {
+		if (LOG.isDebugEnabled())
+			LOG.debug("saving properties:\n " + properties);
+
+		properties.storeToXML(new FileOutputStream(propertiesFile), "comment");
+	}
+
+	private Properties loadOrCreateProperties() throws IOException {
+		properties = new Properties();
+
+		try {
+			properties.loadFromXML(new FileInputStream(propertiesFile));
+		} catch (IOException e) {
+			saveProperties();
+		}
+
+		return properties;
+	}
+
+	private Properties getProperties() {
+		if (properties != null) {
+			return properties;
+		}
+
+		properties = new Properties();
+		if (propertiesFile.exists()) {
+			try {
+				FileInputStream fis = new FileInputStream(propertiesFile);
+				properties.loadFromXML(fis);
+			} catch (Exception e) {
+				LOG.warn("deleting properties file");
+				propertiesFile.delete();
+			}
+		}
+
+		return properties;
+	}
+
+	private List<BTree<K, String>> getTreeList() {
+		List<BTree<K, String>> list = new LinkedList<BTree<K, String>>();
+
+		// add trees from properties
+		for (String filename : getProperties().stringPropertyNames()) {
+			list.add(getTree(new File(getIndexFolder() + "/" + filename)));
+		}
+
+		return list;
+	}
+
+	private BTree<K, String> getTree(File file) {
+		BTree<K, String> result = null;
+		try {
+			ResourceManager manager =
+					new ResourceManagerBuilder().file(file).useLock(false).build();
+
+			result = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
+					comparator);
+			result.loadOrInitialize();
+
+			// checkStructure is very expensive, so do not do this usually
+			if (LOG.isDebugEnabled())
+				result.checkStructure();
+
+		} catch (IOException e) {
+			throw new RuntimeException("error occured while trying to get btree: " + file.getAbsolutePath(), e);
+		}
+		return result;
+	}
+
+	private void unlock() {
+		if (ourLock) {
+			getLockFile().delete();
+			ourLock = false;
+		}
+	}
+
+	private void saveWriteTree() {
+
+		if (cachePointer == 0)
+			return;
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("bulkInitializing tree");
+
+		BTree<K, String> tree = null;
+
+		try {
+			tree = createWritingTree();
+			tree.bulkInitialize(cache, 0, cachePointer - 1, false);
+
+			String filename = new File(tree.getPath()).getName();
+
+			if (LOG.isDebugEnabled())
+				LOG.debug("new trees filename: " + filename);
+
+			getProperties().setProperty(filename, writingTreePropertyEntry.toString());
+			saveProperties();
+
+			tree.close();
+		} catch (IOException e) {
+			LOG.error("error when saving index");
+			LOG.error(e.getStackTrace());
+			// reset cache and properties next, maybe we can save this index partial next time
+		}
+
+		cachePointer = 0;
+		writingTreePropertyEntry.start = writingTreePropertyEntry.end = null;
+	}
+
+	private boolean isEnoughMemory() {
+		long free = Runtime.getRuntime().freeMemory() / 1024 / 1024;
+		if (free < 3) {
+			LOG.info("collecting garbarge");
+			collectGarbage();
+			collectGarbage();
+		}
+
+		if (free < 5) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+
+	private boolean isLocked() {
+		return getLockFile().exists();
+	}
+
+	private void lock() {
+		if (ourLock)
+			return;
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("locking file: " + getLockFile());
+		try {
+			FileUtils.touch(getLockFile());
+			ourLock = true;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected void finalize() throws Throwable {
+		try {
+			close();
+		} finally {
+			super.finalize();
+		}
+	}
+
+	private BTree<K, String> createWritingTree() throws IOException {
+		String file = getIndexFolder() + "/" + keyExtractor.getId() + "_" + System.currentTimeMillis();
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("trying to build btree: " + file);
+
+		ResourceManager manager =
+				new ResourceManagerBuilder().file(file).build();
+		BTree<K, String> tree = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
+				comparator);
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("creeated btree for writing: " + tree.getPath());
+
+		return tree;
 	}
 }

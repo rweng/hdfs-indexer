@@ -34,8 +34,11 @@ public class IndexedRecordReader extends LineRecordReader {
 			BTreeIndexBuilder builder = (BTreeIndexBuilder) builderClass.getConstructor().newInstance();
 			index = builder.hdfsFilePath(inputToFileSplit(genericSplit).getPath().toString()).build();
 		} catch (Exception e) {
-			LOG.error("could not create BTreeIndexBuilder", e);
+			LOG.error("could not create index", e);
 		}
+
+		if(index != null && !index.isOpen())
+			index.open();
 
 		value = new Text();
 	}
@@ -63,8 +66,6 @@ public class IndexedRecordReader extends LineRecordReader {
 		// if no index is set, return the value of the super method since
 		// all code after this depends on index
 		if (index == null) {
-			if (LOG.isDebugEnabled())
-				LOG.debug("index is null, returning nextKeyValue()");
 			return super.nextKeyValue();
 		}
 
@@ -73,11 +74,10 @@ public class IndexedRecordReader extends LineRecordReader {
 			boolean result = super.nextKeyValue();
 
 			if (result) {
-				if (LOG.isDebugEnabled())
-					LOG.debug("adding to index:" + this.getCurrentValue().toString());
 				index.addLine(this.getCurrentValue().toString(), pos);
-			} else
+			} else {
 				index.close();
+			}
 			return result;
 		}
 

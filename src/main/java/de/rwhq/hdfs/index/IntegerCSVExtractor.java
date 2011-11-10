@@ -22,10 +22,18 @@ public class IntegerCSVExtractor implements KeyExtractor<Integer> {
 		}
 	}
 
-	@Override public Integer extract(String line) {
+	@Override public Integer extract(String line) throws ExtractionException {
+		try{
 		String[] splits = line.split(delimiter);
 		if (LOG.isDebugEnabled())
 			LOG.debug("trying to transform key: '" + splits[column] + "'");
 		return Integer.parseInt(splits[column]);
+		} catch (Exception e){
+			throw new ExtractionException(e);
+		}
+	}
+
+	@Override public String getId() {
+		return String.valueOf(column);
 	}
 }
