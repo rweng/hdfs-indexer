@@ -17,25 +17,12 @@ import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
 
-public class BTreeIndexTest {
+public class PrimaryIndexTest extends AbstractMultiFileIndexTest {
 
-	private BTreeIndex<Integer> index;
+	private PrimaryIndex<Integer> index;
 	private static final File   indexRootFolder = new File("/tmp/BTreeIndexTest");
 	private static       String hdfsFile        = "/path/to/file.csv";
-	private static final int    CACHE_SIZE      = 1000;
-	private static final Log    LOG             = LogFactory.getLog(BTreeIndexTest.class);
-
-	/*
-	private static void createInjector() {
-		module = new CSVModule();
-		module.cacheSize = CACHE_SIZE;
-
-		module.hdfsFile = hdfsFile;
-
-
-	}
-	*/
-
+	
 	@BeforeMethod
 	public void build() throws IOException {
 		if (indexRootFolder.exists())
@@ -87,7 +74,7 @@ public class BTreeIndexTest {
 	}
 
 
-	@Test(dependsOnMethods = "open")
+	@Test //(dependsOnMethods = "open")
 	public void addingStuffToIndex() throws IOException {
 		open();
 
@@ -113,7 +100,7 @@ public class BTreeIndexTest {
 		assertThat(index.getLockFile()).doesNotExist();
 	}
 
-	@Test
+	@Test(dependsOnMethods = "addingStuffToIndex")
 	public void maxPos() throws IOException {
 		addingStuffToIndex();
 		index.open();
@@ -128,7 +115,7 @@ public class BTreeIndexTest {
 		list.add("2    Fritz   55");
 		index.close();
 
-		BTreeIndex index2 = setUpBuilder().build();
+		PrimaryIndex index2 = setUpBuilder().build();
 		assertThat(index).isNotSameAs(index2);
 
 		index2.open();

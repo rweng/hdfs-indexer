@@ -1,4 +1,4 @@
-package de.rwhq.hdfs.index.mapreduce;
+package de.rwhq.hdfs.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -47,12 +47,12 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
   @SuppressWarnings({"FieldCanBeLocal"})
   private CompressionCodecFactory compressionCodecs = null;
   private long start;
-  protected long pos; // made protected !!!
+  long pos; // made package visible for getting and setting in IndexedRecordReader and ..!!!
   private long end;
   private LineReader in;
   private int maxLineLength;
   protected LongWritable key = null;
-  protected Text value = null; // made protected !!!
+  protected Text value = null; // made protected for setting in IndexedRecordReader!!!
 
   public void initialize(InputSplit genericSplit,
                          TaskAttemptContext context) throws IOException {

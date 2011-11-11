@@ -47,15 +47,10 @@ public interface Index<K,V> {
     public boolean isOpen();
 
 
-    /**
-     * @return if the index does alread exist or if it would be created on #open()
-     */
-    public boolean exists();
-
 	/**
-	 * @return iterator over all key/value pairs in the storage
+	 * @return iterator over all lines matching the default search range
 	 */
-	public Iterator<V> getIterator();
+	public Iterator<String> getIterator();
 
 	/**
 	 * closes the index after we are done writing to it

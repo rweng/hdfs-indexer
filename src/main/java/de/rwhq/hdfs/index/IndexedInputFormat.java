@@ -1,6 +1,5 @@
 package de.rwhq.hdfs.index;
 
-import de.rwhq.hdfs.index.mapreduce.IndexedRecordReader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.BlockLocation;

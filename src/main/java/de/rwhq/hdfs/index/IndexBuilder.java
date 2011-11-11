@@ -1,5 +1,7 @@
 package de.rwhq.hdfs.index;
 
+import com.sun.istack.internal.Builder;
+
 /**
  * used by IndexedRecordReader to create an Index.
  * Must have a public no-argument constructor.
@@ -15,10 +17,12 @@ public interface IndexBuilder {
 	 * @param path to the hdfs file
 	 * @return this, for chaining {@code build()}
 	 */
-	public IndexBuilder hdfsFilePath(String path);
+	IndexBuilder hdfsFilePath(String path);
 
 	/**
 	 * @return the index, or null if the index could not be build
 	 */
 	public Index build();
+
+	IndexBuilder recordReader(IndexedRecordReader indexedRecordReader);
 }

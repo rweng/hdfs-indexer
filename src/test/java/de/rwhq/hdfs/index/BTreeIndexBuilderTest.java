@@ -21,17 +21,12 @@ public class BTreeIndexBuilderTest {
 	}
 
 	@Test(expectedExceptions = NullPointerException.class)
-	public void exceptionIfNoHdfsPath(){
+	public void exceptionIfNoHdfsPath() {
 		new BTreeIndexBuilder().build();
 	}
 
-	@Test
-	public void validCase(){
-		BTreeIndex build = setUpBuilder().build();
-		assertThat(build.getIndexFolder().getAbsolutePath()).isEqualTo("/tmp/index/test/bla");
-	}
 
-	private BTreeIndexBuilder setUpBuilder(){
+	private BTreeIndexBuilder setUpBuilder() {
 		return new BTreeIndexBuilder()
 				.indexFolder("/tmp/index")
 				.hdfsFilePath("hdfs://localhost/test/bla")
@@ -40,9 +35,17 @@ public class BTreeIndexBuilderTest {
 				.comparator(IntegerComparator.INSTANCE);
 	}
 
+
 	@Test
-	public void strippingOfProtocol(){
-		BTreeIndex build = setUpBuilder().build();
+	public void validCase() {
+		PrimaryIndex build = setUpBuilder().build();
+		assertThat(build.getIndexFolder().getAbsolutePath()).isEqualTo("/tmp/index/test/bla");
+	}
+
+
+	@Test
+	public void strippingOfProtocol() {
+		PrimaryIndex build = setUpBuilder().build();
 		assertThat(build.getIndexFolder().getAbsolutePath()).isEqualTo("/tmp/index/test/bla");
 
 		build = setUpBuilder().hdfsFilePath("hdfs:///test/bla").build();

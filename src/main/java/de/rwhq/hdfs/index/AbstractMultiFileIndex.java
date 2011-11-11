@@ -8,7 +8,6 @@ import de.rwhq.btree.Range;
 import de.rwhq.io.rm.ResourceManager;
 import de.rwhq.io.rm.ResourceManagerBuilder;
 import de.rwhq.serializer.FixLengthSerializer;
-import de.rwhq.serializer.FixedStringSerializer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,47 +47,63 @@ import java.util.*;
  * is created, it is not possible to store the end position in the file name (assuming we dont want to rename). Thus, a
  * properties file is required.
  */
-public class BTreeIndex<K> implements Index<K, String> {
+public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
+	private static Log LOG = LogFactory.getLog(AbstractMultiFileIndex.class);
 
-	private static Log LOG = LogFactory.getLog(BTreeIndex.class);
+	protected Properties properties;
+	protected File       propertiesFile;
+	protected String     hdfsFile;
+	protected File       indexRootFolder;
+	protected boolean                  isOpen                   = false;
+	protected PrimaryIndex.PropertyEntry writingTreePropertyEntry = new PrimaryIndex.PropertyEntry();
+	protected boolean                  ourLock                  = false;
+	protected AbstractMap.SimpleEntry<K, V>[] cache;
+	protected int                             cacheSize;
+	protected int cachePointer = 0;
+	protected Comparator<K>                  comparator;
+	protected FixLengthSerializer<K, byte[]> keySerializer;
+	protected KeyExtractor<K>                keyExtractor;
 
-	private Comparator<K>                        comparator;
-	private FixLengthSerializer<K, byte[]>       keySerializer;
-	private List<Range<K>>                       defaultSearchRanges;
-	private KeyExtractor<K> keyExtractor;
-	
 	/* if an exception occured during key extraction */
 	private boolean extractorException = false;
-
-
-	/** {@inheritDoc} */
-	@Override
-	public Iterator<String> getIterator() {
-		return getIterator(true);
-	}
-
+	protected List<Range<K>> defaultSearchRanges;
+	private FixLengthSerializer<V, byte[]> valueSerializer;
 
 	/** {@inheritDoc} */
 	@Override
-	public boolean exists() {
-		throw new UnsupportedOperationException("todo: check if directory and properties file exists");
+	public void addLine(String line, long pos) {
+		ensureOpen();
+
+		if (extractorException)
+			return;
+
+		if (!ourLock && isLocked()) {
+			return;
+		} else {
+			lock();
+		}
+
+		if (cachePointer >= cacheSize) {
+			saveWriteTree();
+		}
+
+		if (writingTreePropertyEntry.start == null)
+			writingTreePropertyEntry.start = pos;
+
+		writingTreePropertyEntry.end = pos;
+
+		// only add it if extraction works
+		try {
+			cache[cachePointer++] = extractEntry(line, pos);
+		} catch (ExtractionException e) {
+			LOG.error("exception when extracting '" + line + "' at position " + pos);
+			LOG.warn(e);
+			
+			// writingTreePropertyEntry = null;
+			// c achePointer = 0;
+			// extractorException = true;
+		}
 	}
-
-
-		private Properties properties;
-	private File       propertiesFile;
-	private String     hdfsFile;
-	private File       indexRootFolder;
-	private boolean isOpen  = false;
-	private PropertyEntry writingTreePropertyEntry = new PropertyEntry();
-
-
-	protected boolean ourLock = false;
-	protected AbstractMap.SimpleEntry<K, String>[] cache;
-	protected int cacheSize;
-	protected int cachePointer = 0;
-
-
 
 	/** {@inheritDoc} */
 	@Override
@@ -108,7 +123,6 @@ public class BTreeIndex<K> implements Index<K, String> {
 		isOpen = true;
 	}
 
-
 	/** {@inheritDoc} */
 	@Override
 	public void close() {
@@ -124,41 +138,6 @@ public class BTreeIndex<K> implements Index<K, String> {
 
 		isOpen = false;
 	}
-
-
-	private void saveWriteTree() {
-
-		if (cachePointer == 0)
-			return;
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("bulkInitializing tree");
-
-		BTree<K, String> tree;
-
-		try {
-			tree = createWritingTree();
-			tree.bulkInitialize(cache, 0, cachePointer - 1, false);
-
-			String filename = new File(tree.getPath()).getName();
-
-			if (LOG.isDebugEnabled())
-				LOG.debug("new trees filename: " + filename);
-
-			getProperties().setProperty(filename, writingTreePropertyEntry.toString());
-			saveProperties();
-
-			tree.close();
-		} catch (IOException e) {
-			LOG.error("error when saving index");
-			LOG.error(e.getStackTrace());
-			// reset cache and properties next, maybe we can save this index partial next time
-		}
-
-		cachePointer = 0;
-		writingTreePropertyEntry.start = writingTreePropertyEntry.end = null;
-	}
-
 
 	/** {@inheritDoc} */
 	@Override
@@ -180,7 +159,37 @@ public class BTreeIndex<K> implements Index<K, String> {
 		return largest;
 	}
 
-	@VisibleForTesting File getLockFile() {
+	/**
+	 * Constructor does not check values, this should be done in the BTreeIndexBuilder
+	 *
+	 * @param b
+	 * 		BTreeIndexBuilder
+	 * @param valueSerializer
+	 */
+	public AbstractMultiFileIndex(BTreeIndexBuilder b, FixLengthSerializer<V, byte[]> valueSerializer) {
+		this.valueSerializer = valueSerializer;
+		this.indexRootFolder = b.getIndexFolder();
+		this.hdfsFile = b.getHdfsPath();
+		this.cacheSize = b.getCacheSize();
+		this.comparator = b.getComparator();
+		this.keySerializer = b.getKeySerializer();
+		this.defaultSearchRanges = b.getDefaultSearchRanges();
+		this.propertiesFile = new File(getIndexFolder() + "/properties.xml");
+		this.keyExtractor = b.getKeyExtractor();
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public String toString() {
+		return Objects.toStringHelper(this)
+				.add("locked", isLocked())
+				.add("ourLock", ourLock)
+				.add("defaultSearchRanges", defaultSearchRanges)
+				.toString();
+	}
+
+	@VisibleForTesting
+	File getLockFile() {
 		return new File(getIndexFolder() + "/lock");
 	}
 
@@ -188,6 +197,21 @@ public class BTreeIndex<K> implements Index<K, String> {
 	@VisibleForTesting
 	File getIndexFolder() {
 		return new File(indexRootFolder.getPath() + hdfsFile);
+	}
+
+	@VisibleForTesting
+	Iterator<V> getIterator(List<Range<K>> searchRange) {
+		ensureOpen();
+		return new BTreeIndexIterator(searchRange);
+	}
+
+	@VisibleForTesting
+	Iterator<V> getIterator(boolean useDefaultSearchRanges) {
+		ensureOpen();
+		if (useDefaultSearchRanges)
+			return new BTreeIndexIterator(defaultSearchRanges);
+		else
+			return new BTreeIndexIterator();
 	}
 
 	class PropertyEntry {
@@ -220,140 +244,11 @@ public class BTreeIndex<K> implements Index<K, String> {
 		}
 	}
 
-	protected void saveProperties() throws IOException {
-		if (LOG.isDebugEnabled())
-			LOG.debug("saving properties:\n " + properties);
+	class BTreeIndexIterator implements Iterator<V> {
 
-		properties.storeToXML(new FileOutputStream(propertiesFile), "comment");
-	}
-
-	protected boolean isLocked() {
-		return getLockFile().exists();
-	}
-
-
-
-	private void unlock() {
-		if (ourLock) {
-			getLockFile().delete();
-			ourLock = false;
-		}
-	}
-
-	protected void lock() {
-		if (ourLock)
-			return;
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("locking file: " + getLockFile());
-		try {
-			FileUtils.touch(getLockFile());
-			ourLock = true;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-
-
-	protected Properties loadOrCreateProperties() throws IOException {
-		properties = new Properties();
-
-		try {
-			properties.loadFromXML(new FileInputStream(propertiesFile));
-		} catch (IOException e) {
-			saveProperties();
-		}
-
-		return properties;
-	}
-
-
-	protected Properties getProperties() {
-		if (properties != null) {
-			return properties;
-		}
-
-		properties = new Properties();
-		if (propertiesFile.exists()) {
-			try {
-				FileInputStream fis = new FileInputStream(propertiesFile);
-				properties.loadFromXML(fis);
-			} catch (Exception e) {
-				LOG.warn("deleting properties file");
-				propertiesFile.delete();
-			}
-		}
-
-		return properties;
-	}
-
-	/** {@inheritDoc} */
-	@Override
-	public void addLine(String line, long pos) {
-		ensureOpen();
-
-		if (extractorException)
-			return;
-
-		if (!ourLock && isLocked()) {
-			return;
-		} else {
-			lock();
-		}
-
-		if (cachePointer >= cacheSize) {
-			saveWriteTree();
-		}
-
-		K key;
-
-		try {
-			key = keyExtractor.extract(line);
-		} catch (ExtractionException e) {
-			LOG.error("exception when extracting '" + line + "' at position " + pos);
-			LOG.warn(e);
-			// writingTreePropertyEntry = null;
-			// c achePointer = 0;
-			// extractorException = true;
-			return;
-		}
-
-		if (writingTreePropertyEntry.start == null)
-			writingTreePropertyEntry.start = pos;
-
-		writingTreePropertyEntry.end = pos;
-		cache[cachePointer++] = new AbstractMap.SimpleEntry<K, String>(key, line);
-	}
-
-	/** {@inheritDoc} */
-	@Override
-	public String toString() {
-		return Objects.toStringHelper(this)
-				.add("locked", isLocked())
-				.add("ourLock", ourLock)
-				.add("defaultSearchRanges", defaultSearchRanges)
-				.toString();
-	}
-
-	@VisibleForTesting Iterator<String> getIterator(List<Range<K>> searchRange) {
-		ensureOpen();
-		return new BTreeIndexIterator(searchRange);
-	}
-
-	@VisibleForTesting Iterator<String> getIterator(boolean useDefaultSearchRanges) {
-		ensureOpen();
-		if (useDefaultSearchRanges)
-			return new BTreeIndexIterator(defaultSearchRanges);
-		else
-			return new BTreeIndexIterator();
-	}
-
-	class BTreeIndexIterator implements Iterator<String> {
-
-		private List<BTree<K, String>> trees;
-		private BTree<K, String>       currentTree;
-		private Iterator<String>       currentIterator;
+		private List<BTree<K, V>> trees;
+		private BTree<K, V>       currentTree;
+		private Iterator<V>       currentIterator;
 		private List<Range<K>>         searchRanges;
 
 		@Override
@@ -396,7 +291,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 				}
 
 				String path = currentTree.getPath();
-				String[] splits = path.split("\\/");
+				String[] splits = path.split("/");
 				new File(path).delete();
 				getProperties().remove(splits[splits.length - 1]);
 				try {
@@ -410,7 +305,7 @@ public class BTreeIndex<K> implements Index<K, String> {
 		}
 
 		@Override
-		public String next() {
+		public V next() {
 			if (hasNext()) {
 				return currentIterator.next();
 			}
@@ -434,30 +329,129 @@ public class BTreeIndex<K> implements Index<K, String> {
 		}
 	}
 
-	/**
-	 * Constructor does not check values, this should be done in the BTreeIndexBuilder
-	 *
-	 * @param b
-	 * 		BTreeIndexBuilder
-	 */
-	protected BTreeIndex(BTreeIndexBuilder b) {
-		this.hdfsFile = b.getHdfsPath();
-		this.indexRootFolder = b.getIndexFolder();
-		this.propertiesFile = new File(getIndexFolder() + "/properties.xml");
-		this.cacheSize = b.getCacheSize();
-		this.keyExtractor = b.getKeyExtractor();
-		this.keySerializer = b.getKeySerializer();
-		this.comparator = b.getComparator();
-		this.defaultSearchRanges = b.getDefaultSearchRanges();
-	}
 
 	protected void ensureOpen() {
 		if (!isOpen())
 			throw new IllegalStateException("index must be opened before it is used");
 	}
 
-	private List<BTree<K, String>> getTreeList() {
-		List<BTree<K, String>> list = new LinkedList<BTree<K, String>>();
+	protected abstract AbstractMap.SimpleEntry<K, V> extractEntry(String line, long pos) throws ExtractionException;
+
+	protected void saveWriteTree() {
+
+		if (cachePointer == 0)
+			return;
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("bulkInitializing tree");
+
+		BTree<K, V> tree;
+
+		try {
+			tree = createWritingTree();
+			tree.bulkInitialize(cache, 0, cachePointer - 1, false);
+
+			String filename = new File(tree.getPath()).getName();
+
+			if (LOG.isDebugEnabled())
+				LOG.debug("new trees filename: " + filename);
+
+			getProperties().setProperty(filename, writingTreePropertyEntry.toString());
+			saveProperties();
+
+			tree.close();
+		} catch (IOException e) {
+			LOG.error("error when saving index");
+			LOG.error(e.getStackTrace());
+			// reset cache and properties next, maybe we can save this index partial next time
+		}
+
+		cachePointer = 0;
+		writingTreePropertyEntry.start = writingTreePropertyEntry.end = null;
+	}
+
+	protected void saveProperties() throws IOException {
+		if (LOG.isDebugEnabled())
+			LOG.debug("saving properties:\n " + properties);
+
+		properties.storeToXML(new FileOutputStream(propertiesFile), "comment");
+	}
+
+	protected boolean isLocked() {
+		return getLockFile().exists();
+	}
+
+	private void unlock() {
+		if (ourLock) {
+			getLockFile().delete();
+			ourLock = false;
+		}
+	}
+
+	protected void lock() {
+		if (ourLock)
+			return;
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("locking file: " + getLockFile());
+		try {
+			FileUtils.touch(getLockFile());
+			ourLock = true;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Properties loadOrCreateProperties() throws IOException {
+		properties = new Properties();
+
+		try {
+			properties.loadFromXML(new FileInputStream(propertiesFile));
+		} catch (IOException e) {
+			saveProperties();
+		}
+
+		return properties;
+	}
+
+	protected Properties getProperties() {
+		if (properties != null) {
+			return properties;
+		}
+
+		properties = new Properties();
+		if (propertiesFile.exists()) {
+			try {
+				FileInputStream fis = new FileInputStream(propertiesFile);
+				properties.loadFromXML(fis);
+			} catch (Exception e) {
+				LOG.warn("deleting properties file");
+				propertiesFile.delete();
+			}
+		}
+
+		return properties;
+	}
+
+	private BTree<K, V> createWritingTree() throws IOException {
+		String file = getIndexFolder() + "/" + keyExtractor.getId() + "_" + System.currentTimeMillis();
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("trying to build btree: " + file);
+
+		ResourceManager manager =
+				new ResourceManagerBuilder().file(file).build();
+		BTree<K, V> tree = BTree.create(manager, keySerializer, valueSerializer,
+				comparator);
+
+		if (LOG.isDebugEnabled())
+			LOG.debug("creeated btree for writing: " + tree.getPath());
+
+		return tree;
+	}
+
+	private List<BTree<K, V>> getTreeList() {
+		List<BTree<K, V>> list = new LinkedList<BTree<K, V>>();
 
 		// add trees from properties
 		for (String filename : getProperties().stringPropertyNames()) {
@@ -467,13 +461,13 @@ public class BTreeIndex<K> implements Index<K, String> {
 		return list;
 	}
 
-	private BTree<K, String> getTree(File file) {
-		BTree<K, String> result;
+	private BTree<K, V> getTree(File file) {
+		BTree<K, V> result;
 		try {
 			ResourceManager manager =
 					new ResourceManagerBuilder().file(file).useLock(false).build();
 
-			result = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
+			result = BTree.create(manager, keySerializer, valueSerializer,
 					comparator);
 			result.loadOrInitialize();
 
@@ -493,22 +487,5 @@ public class BTreeIndex<K> implements Index<K, String> {
 		} finally {
 			super.finalize();
 		}
-	}
-
-	private BTree<K, String> createWritingTree() throws IOException {
-		String file = getIndexFolder() + "/" + keyExtractor.getId() + "_" + System.currentTimeMillis();
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("trying to build btree: " + file);
-
-		ResourceManager manager =
-				new ResourceManagerBuilder().file(file).build();
-		BTree<K, String> tree = BTree.create(manager, keySerializer, FixedStringSerializer.INSTANCE_1000,
-				comparator);
-
-		if (LOG.isDebugEnabled())
-			LOG.debug("creeated btree for writing: " + tree.getPath());
-
-		return tree;
 	}
 }

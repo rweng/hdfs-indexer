@@ -1,7 +1,5 @@
-package de.rwhq.hdfs.index.mapreduce;
+package de.rwhq.hdfs.index;
 
-import de.rwhq.hdfs.index.Index;
-import de.rwhq.hdfs.index.IndexBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.Text;
@@ -38,16 +36,22 @@ public class IndexedRecordReader extends LineRecordReader {
 		checkNotNull(builderClass,
 				"in your job configuration, you must set 'indexBuilder' to the class which should be used to build the Index");
 
+		// try to build index
 		try {
 			IndexBuilder builder = (IndexBuilder) builderClass.getConstructor().newInstance();
-			index = builder.hdfsFilePath(inputToFileSplit(genericSplit).getPath().toString()).build();
+			index = builder
+					.hdfsFilePath(inputToFileSplit(genericSplit).getPath().toString())
+					.recordReader(this)
+					.build();
 		} catch (Exception e) {
 			LOG.error("could not create index", e);
 		}
 
+		// try to open index
 		if (index != null && !index.isOpen())
 			index.open();
 
+		// some debugging information
 		try {
 			LOG.info("generic Split length: " + genericSplit.getLength());
 		} catch (InterruptedException e) {
@@ -60,6 +64,7 @@ public class IndexedRecordReader extends LineRecordReader {
 			LOG.warn("error when fetching genericSplit locations", e);
 		}
 
+		// create a text object for efficiency
 		value = new Text();
 	}
 
