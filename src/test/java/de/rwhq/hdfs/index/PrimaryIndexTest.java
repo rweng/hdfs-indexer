@@ -20,8 +20,6 @@ import static org.fest.assertions.Assertions.assertThat;
 public class PrimaryIndexTest extends AbstractMultiFileIndexTest {
 
 	private PrimaryIndex<Integer> index;
-	private static final File   indexRootFolder = new File("/tmp/BTreeIndexTest");
-	private static       String hdfsFile        = "/path/to/file.csv";
 	
 	@BeforeMethod
 	public void build() throws IOException {
@@ -33,37 +31,6 @@ public class PrimaryIndexTest extends AbstractMultiFileIndexTest {
 		assertThat(index).isNotNull();
 	}
 
-	@Test(dependsOnMethods = "open")
-	public void indexFolder() {
-		assertThat(index.getIndexFolder().getAbsolutePath()).isEqualTo(indexRootFolder.getAbsolutePath() + hdfsFile);
-	}
-
-	private BTreeIndexBuilder setUpBuilder() {
-		return new BTreeIndexBuilder()
-				.indexFolder(indexRootFolder)
-				.hdfsFilePath(hdfsFile)
-				.keyExtractor(new IntegerCSVExtractor(0, "( |\\t)+"))
-				.keySerializer(IntegerSerializer.INSTANCE)
-				.comparator(IntegerComparator.INSTANCE)
-				.addDefaultRange(new Range<Integer>(0, 10))
-				.addDefaultRange(new Range<Integer>(-5, 5))
-				.addDefaultRange(new Range<Integer>(50, 55))
-				.addDefaultRange(new Range<Integer>(99, 99))
-				.addDefaultRange(new Range<Integer>(100, 1010));
-	}
-
-
-	@Test
-	public void open() throws IOException {
-		assertThat(index.getIndexFolder()).doesNotExist();
-
-		index.open();
-		assertThat(index.isOpen()).isTrue();
-		assertThat(index.getIndexFolder()).exists();
-
-		File file = new File(index.getIndexFolder().getAbsolutePath() + "/properties.xml");
-		assertThat(file).exists();
-	}
 
 	@Test(dependsOnMethods = "open")
 	public void iteratorOnEmptyIndex() throws IOException {
@@ -74,7 +41,7 @@ public class PrimaryIndexTest extends AbstractMultiFileIndexTest {
 	}
 
 
-	@Test //(dependsOnMethods = "open")
+	@Test(dependsOnMethods = "open")
 	public void addingStuffToIndex() throws IOException {
 		open();
 
@@ -187,5 +154,10 @@ public class PrimaryIndexTest extends AbstractMultiFileIndexTest {
 		for (int i = 0; i < count; i++) {
 			index.addLine("" + i + " col2", i);
 		}
+	}
+
+	@Override
+	protected AbstractMultiFileIndex getIndex() {
+		return index;
 	}
 }
