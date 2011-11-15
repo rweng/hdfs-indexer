@@ -1,5 +1,7 @@
 package de.rwhq.hdfs.index;
 
+import de.rwhq.serializer.LongSerializer;
+
 import java.util.AbstractMap;
 import java.util.Iterator;
 
@@ -7,7 +9,7 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K,Long>{
 	private Iterator<Long> iterator;
 
 	public SecondaryIndex(BTreeIndexBuilder b) {
-		super(b, null);
+		super(b, LongSerializer.INSTANCE);
 	}
 
 	@Override

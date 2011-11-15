@@ -38,17 +38,17 @@ public class BTreeIndexBuilderTest {
 
 	@Test
 	public void validCase() {
-		PrimaryIndex build = setUpBuilder().build();
+		AbstractMultiFileIndex build = (AbstractMultiFileIndex) setUpBuilder().build();
 		assertThat(build.getIndexFolder().getAbsolutePath()).isEqualTo("/tmp/index/test/bla");
 	}
 
 
 	@Test
 	public void strippingOfProtocol() {
-		PrimaryIndex build = setUpBuilder().build();
+		AbstractMultiFileIndex build = (AbstractMultiFileIndex) setUpBuilder().build();
 		assertThat(build.getIndexFolder().getAbsolutePath()).isEqualTo("/tmp/index/test/bla");
 
-		build = setUpBuilder().hdfsFilePath("hdfs:///test/bla").build();
+		build = (AbstractMultiFileIndex) setUpBuilder().hdfsFilePath("hdfs:///test/bla").build();
 		assertThat(build.getIndexFolder().getAbsolutePath()).isEqualTo("/tmp/index/test/bla");
 	}
 }

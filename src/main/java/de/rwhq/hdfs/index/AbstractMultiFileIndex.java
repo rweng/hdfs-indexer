@@ -18,6 +18,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
 /**
  * This is the base class for all Indexes using the multimap bTreeWriting.
  * <p/>
@@ -54,9 +57,9 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	protected File       propertiesFile;
 	protected String     hdfsFile;
 	protected File       indexRootFolder;
-	protected boolean                  isOpen                   = false;
+	protected boolean                    isOpen                   = false;
 	protected PrimaryIndex.PropertyEntry writingTreePropertyEntry = new PrimaryIndex.PropertyEntry();
-	protected boolean                  ourLock                  = false;
+	protected boolean                    ourLock                  = false;
 	protected AbstractMap.SimpleEntry<K, V>[] cache;
 	protected int                             cacheSize;
 	protected int cachePointer = 0;
@@ -66,8 +69,8 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 	/* if an exception occured during key extraction */
 	private boolean extractorException = false;
-	protected List<Range<K>> defaultSearchRanges;
-	private FixLengthSerializer<V, byte[]> valueSerializer;
+	protected List<Range<K>>                 defaultSearchRanges;
+	private   FixLengthSerializer<V, byte[]> valueSerializer;
 
 	/** {@inheritDoc} */
 	@Override
@@ -98,7 +101,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		} catch (ExtractionException e) {
 			LOG.error("exception when extracting '" + line + "' at position " + pos);
 			LOG.warn(e);
-			
+
 			// writingTreePropertyEntry = null;
 			// c achePointer = 0;
 			// extractorException = true;
@@ -167,15 +170,27 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	 * @param valueSerializer
 	 */
 	public AbstractMultiFileIndex(BTreeIndexBuilder b, FixLengthSerializer<V, byte[]> valueSerializer) {
+
+		checkNotNull(b.getHdfsPath(), "hdfsPath is null");
+		checkNotNull(b.getKeyExtractor(), "keyExtractor is null");
+		checkNotNull(b.getKeySerializer(), "keySerializer is null");
+		checkNotNull(b.getComparator(), "comparator is null");
+		checkNotNull(valueSerializer, "valueSerializer must not be null");
+		checkNotNull(b.getIndexFolder(), "index root folder must not be null");
+
+		checkState(b.getHdfsPath().startsWith("/"), "hdfsPath must start with /");
+		checkState(b.getCacheSize() >= 100, "cacheSize must be >= 100");
+		checkState(b.getIndexFolder().exists(), "index folder must exist");
+
+		this.hdfsFile = b.getHdfsPath();
+		this.keyExtractor = b.getKeyExtractor();
+		this.keySerializer = b.getKeySerializer();
+		this.comparator = b.getComparator();
 		this.valueSerializer = valueSerializer;
 		this.indexRootFolder = b.getIndexFolder();
-		this.hdfsFile = b.getHdfsPath();
 		this.cacheSize = b.getCacheSize();
-		this.comparator = b.getComparator();
-		this.keySerializer = b.getKeySerializer();
 		this.defaultSearchRanges = b.getDefaultSearchRanges();
 		this.propertiesFile = new File(getIndexFolder() + "/properties.xml");
-		this.keyExtractor = b.getKeyExtractor();
 	}
 
 	/** {@inheritDoc} */
@@ -249,7 +264,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		private List<BTree<K, V>> trees;
 		private BTree<K, V>       currentTree;
 		private Iterator<V>       currentIterator;
-		private List<Range<K>>         searchRanges;
+		private List<Range<K>>    searchRanges;
 
 		@Override
 		public boolean hasNext() {

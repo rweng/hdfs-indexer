@@ -7,7 +7,11 @@ import org.apache.commons.logging.LogFactory;
 import java.util.AbstractMap;
 import java.util.Iterator;
 
-
+/**
+ * Does not work correctly because we need to save the position, too.
+ * 
+ * @param <K>
+ */
 public class PrimaryIndex<K> extends AbstractMultiFileIndex<K, String> {
 
 	private static Log LOG = LogFactory.getLog(PrimaryIndex.class);

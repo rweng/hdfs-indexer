@@ -79,15 +79,8 @@ public class BTreeIndexBuilder<K,V> {
 	}
 
 
-	public PrimaryIndex build() {
-		checkNotNull(hdfsPath, "hdfsPath is null");
-		checkNotNull(keyExtractor, "keyExtractor is null");
-		checkNotNull(keySerializer, "keySerializer is null");
-		checkNotNull(comparator, "comparator is null");
-		
-		checkState(hdfsPath.startsWith("/"), "hdfsPath must start with /");
-
-		return new PrimaryIndex(this);
+	public Index build() {
+		return new SecondaryIndex(this);
 	}
 
 	public BTreeIndexBuilder indexFolder(String path) {
