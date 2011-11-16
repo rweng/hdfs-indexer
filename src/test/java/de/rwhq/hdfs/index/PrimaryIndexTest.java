@@ -33,16 +33,16 @@ public class PrimaryIndexTest {
 		assertThat(index).isNotNull();
 	}
 
-	@Test(dependsOnMethods = "addingStuffToIndex")
+	@Test(dependsOnMethods = "add2EntriesToIndex")
 	public void maxPos() throws IOException {
-		addingStuffToIndex();
+		add2EntriesToIndex();
 		index.open();
 		assertThat(index.getMaxPos()).isEqualTo(10);
 	}
 
-	@Test(dependsOnMethods = "addingStuffToIndex")
+	@Test(dependsOnMethods = "add2EntriesToIndex")
 	public void secondIndex() throws Exception {
-		addingStuffToIndex();
+		add2EntriesToIndex();
 		List<String> list = Lists.newArrayList();
 		list.add("1    Robin  25");
 		list.add("2    Fritz   55");

@@ -3,16 +3,16 @@ package de.rwhq.hdfs.index;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static java.util.Collections.*;
 import static org.fest.assertions.Assertions.assertThat;
 
 public abstract class IndexTest {
@@ -21,9 +21,12 @@ public abstract class IndexTest {
 
 	@VisibleForTesting
 	static final Map<Long, String> map = new MapMaker().makeMap();
+
 	static {
 		map.put(0L, "1,Robin,25");
 		map.put(10L, "2,Fritz,55");
+		map.put(20L, "3,Roland,75");
+		map.put(30L, "4,Herbert,105");
 	}
 
 	@BeforeMethod
@@ -63,10 +66,13 @@ public abstract class IndexTest {
 	}
 
 	@Test(dependsOnMethods = "close")
-	public void addingStuffToIndex() throws IOException {
+	public void add2EntriesToIndex() throws IOException {
 		open();
 
-		for(Long key : map.keySet()) {
+		List<Long> list = Lists.newArrayList(map.keySet());
+		sort(list);
+		list = list.subList(0, 2);
+		for (Long key : list) {
 			index.addLine(map.get(key), key);
 		}
 
@@ -76,6 +82,32 @@ public abstract class IndexTest {
 		assertThat(index.getMaxPos()).isEqualTo(10);
 		Iterator<String> i = index.getIterator();
 		assertThat(i.hasNext()).isTrue();
+		assertThat(map.values()).contains(i.next());
+		assertThat(map.values()).contains(i.next());
+		assertThat(i.hasNext()).isFalse();
+		assertThat(i.next()).isNull();
+
+	}
+
+	@Test(dependsOnMethods = "add2EntriesToIndex")
+	public void multipleIndexes() throws IOException {
+		add2EntriesToIndex();
+
+		List<Long> list = Lists.newArrayList(map.keySet());
+		sort(list);
+		list = list.subList(2, 4);
+		for (Long key : list) {
+			index.addLine(map.get(key), key);
+		}
+
+		index.close();
+		index.open();
+
+		assertThat(index.getMaxPos()).isEqualTo(30);
+		Iterator<String> i = index.getIterator();
+		assertThat(i.hasNext()).isTrue();
+		assertThat(map.values()).contains(i.next());
+		assertThat(map.values()).contains(i.next());
 		assertThat(map.values()).contains(i.next());
 		assertThat(map.values()).contains(i.next());
 		assertThat(i.hasNext()).isFalse();
