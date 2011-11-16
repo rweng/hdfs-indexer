@@ -54,9 +54,16 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	private static Log LOG = LogFactory.getLog(AbstractMultiFileIndex.class);
 
 	protected Properties properties;
-	protected File       propertiesFile;
-	protected String     hdfsFile;
-	protected File       indexRootFolder;
+
+
+	@VisibleForTesting
+	File getPropertiesFile() {
+		return propertiesFile;
+	}
+
+	protected File   propertiesFile;
+	protected String hdfsFile;
+	protected File   indexRootFolder;
 	protected boolean                    isOpen                   = false;
 	protected PrimaryIndex.PropertyEntry writingTreePropertyEntry = new PrimaryIndex.PropertyEntry();
 	protected boolean                    ourLock                  = false;
@@ -86,6 +93,12 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			lock();
 		}
 
+		if (writingTreePropertyEntry.end != null && writingTreePropertyEntry.end >= pos) {
+			throw new IllegalArgumentException(
+					"expected the current position to be the largest. last pos: " +
+							writingTreePropertyEntry.end + "; current: " + pos);
+		}
+
 		if (cachePointer >= cacheSize) {
 			saveWriteTree();
 		}
@@ -101,10 +114,6 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		} catch (ExtractionException e) {
 			LOG.error("exception when extracting '" + line + "' at position " + pos);
 			LOG.warn(e);
-
-			// writingTreePropertyEntry = null;
-			// c achePointer = 0;
-			// extractorException = true;
 		}
 	}
 

@@ -30,17 +30,32 @@ public abstract class IndexTest {
 		map.put(30L, "4,Herbert,105");
 	}
 
+	static List<Long> getSortedMapKeys() {
+		List<Long> list = Lists.newArrayList(map.keySet());
+		sort(list);
+		return list;
+	}
+
 	@BeforeMethod
-	public void setup() {
-		index = getNewIndex();
+	public void setup() throws IOException {
+		index = resetIndex();
 	}
 
 	/**
+	 * creates a new index but does not completely reset it (delete the index files)
+	 * <p/>
 	 * should be with {@code keyExtractor(new IntegerCSVExtractor(0, ","))}
 	 *
 	 * @return a new created index
 	 */
-	protected abstract AbstractMultiFileIndex getNewIndex();
+	protected abstract Index getNewIndex();
+
+	/**
+	 * creates a new index and resets it.
+	 *
+	 * @return
+	 */
+	protected abstract Index resetIndex() throws IOException;
 
 	@Test
 	public void open() throws IOException {
@@ -70,9 +85,7 @@ public abstract class IndexTest {
 	public void add2EntriesToIndex() throws IOException {
 		open();
 
-		List<Long> list = Lists.newArrayList(map.keySet());
-		sort(list);
-		list = list.subList(0, 2);
+		List<Long> list = getSortedMapKeys().subList(0, 2);
 		for (Long key : list) {
 			index.addLine(map.get(key), key);
 		}
@@ -87,7 +100,6 @@ public abstract class IndexTest {
 		assertThat(map.values()).contains(i.next());
 		assertThat(i.hasNext()).isFalse();
 		assertThat(i.next()).isNull();
-
 	}
 
 	@Test(dependsOnMethods = "add2EntriesToIndex")
@@ -102,6 +114,8 @@ public abstract class IndexTest {
 		}
 
 		index.close();
+
+		index = getNewIndex();
 		index.open();
 
 		assertThat(index.getMaxPos()).isEqualTo(30);

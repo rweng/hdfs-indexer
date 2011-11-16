@@ -35,27 +35,45 @@ public class SecondaryIndexTest {
 		index = (SecondaryIndex) setUpBuilder().build();
 	}
 
+	@Test
+	public void emptyToEnableFactory() {
+
+	}
+
+	private void setUpRecordReader() {
+		when(recordReader.getCurrentValue()).thenAnswer(new Answer<Text>() {
+			@Override
+			public Text answer(InvocationOnMock invocation) throws Throwable {
+				return new Text(IndexTest.map.get(((LineRecordReader) invocation.getMock()).pos));
+			}
+		});
+	}
+
 	@Factory
 	public Object[] createInterfaceTests() {
-		return new Object[]{new IndexTest() {
-			@Override
-			protected AbstractMultiFileIndex getNewIndex() {
-				try {
-					setUp();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-
-				when(recordReader.getCurrentValue()).thenAnswer(new Answer<Text>() {
+		return new Object[]{
+				new IndexTest() {
 					@Override
-					public Text answer(InvocationOnMock invocation) throws Throwable {
-						return new Text(IndexTest.map.get(((LineRecordReader) invocation.getMock()).pos));
+					protected Index getNewIndex() {
+						return (SecondaryIndex) setUpBuilder().build();
 					}
-				});
 
-				return index;
-			}
-		}};
+					@Override
+					protected Index resetIndex() throws IOException {
+						setUp();
+						setUpRecordReader();
+						return index;
+					}
+				},
+
+				new AbstractMultiFileIndexTest() {
+					@Override
+					protected AbstractMultiFileIndex resetIndex() throws IOException {
+						SecondaryIndexTest.this.setUp();
+						setUpRecordReader();
+						return index;
+					}
+				}};
 	}
 
 	private BTreeIndexBuilder setUpBuilder() {
