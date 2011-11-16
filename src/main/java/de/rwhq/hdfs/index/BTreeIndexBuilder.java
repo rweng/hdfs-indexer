@@ -14,11 +14,10 @@ public class BTreeIndexBuilder<K,V> {
 
 	private int cacheSize = 1000;
 	private File indexFolder;
-	private String indexId;
 	private FixLengthSerializer<K,byte[]> keySerializer;
 	private Comparator<K>  comparator;
 	private List<Range<K>> defaultSearchRanges;
-
+	private LineRecordReader recordReader;
 
 
 	int getCacheSize() {
@@ -39,6 +38,17 @@ public class BTreeIndexBuilder<K,V> {
 
 	public BTreeIndexBuilder comparator(Comparator comparator) {
 		this.comparator = comparator;
+		return this;
+	}
+
+	/**
+	 * only required for secondary indexes
+	 * 
+	 * @param reader
+	 * @return
+	 */
+	public BTreeIndexBuilder recordReader(LineRecordReader reader){
+		this.recordReader = reader;
 		return this;
 	}
 
@@ -106,5 +116,9 @@ public class BTreeIndexBuilder<K,V> {
 	public BTreeIndexBuilder addDefaultRange(Range r){
 		getDefaultSearchRanges().add(r);
 		return this;
+	}
+
+	public LineRecordReader getRecordReader() {
+		return recordReader;
 	}
 }

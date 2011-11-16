@@ -26,6 +26,7 @@ dependencies {
     testCompile "log4j:log4j:1.2.16"
     testCompile "org.testng:testng:6.2.1"
     testCompile "org.easytesting:fest-assert:1.4"
+    testCompile "org.mockito:mockito-all:1.8.5"
 }
 
 //************* java plugin configuration ********************
