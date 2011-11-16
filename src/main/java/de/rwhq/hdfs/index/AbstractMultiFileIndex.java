@@ -197,6 +197,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	@Override
 	public String toString() {
 		return Objects.toStringHelper(this)
+				.add("isOpen", isOpen())
 				.add("locked", isLocked())
 				.add("ourLock", ourLock)
 				.add("defaultSearchRanges", defaultSearchRanges)

@@ -4,6 +4,7 @@ import de.rwhq.comparator.IntegerComparator;
 import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -30,11 +31,23 @@ public class SecondaryIndexTest {
 		assertThat(index.isOpen()).isTrue();
 	}
 
+	@Factory
+	public Object[] createInterfaceTests(){
+		return new Object[]{new AbstractMultiFileIndexTest(){
+			@Override
+			protected AbstractMultiFileIndex getNewIndex() {
+				return (AbstractMultiFileIndex) setUpBuilder().build();
+			}
+		}};
+	}
+
+
+
 	private BTreeIndexBuilder setUpBuilder(){
 		return new BTreeIndexBuilder()
 				.hdfsFilePath("/test/secondaryIndexFile")
 				.indexFolder(indexFolder)
-				.keyExtractor(new IntegerCSVExtractor(1, "\t"))
+				.keyExtractor(new IntegerCSVExtractor(0, ","))
 				.keySerializer(IntegerSerializer.INSTANCE)
 				.comparator(IntegerComparator.INSTANCE);
 	}

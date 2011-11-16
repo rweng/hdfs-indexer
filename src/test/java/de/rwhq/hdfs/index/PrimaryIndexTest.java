@@ -33,42 +33,6 @@ public class PrimaryIndexTest {
 		assertThat(index).isNotNull();
 	}
 
-
-	@Test(dependsOnMethods = "open")
-	public void iteratorOnEmptyIndex() throws IOException {
-		open();
-
-		Iterator<String> i = index.getIterator();
-		assertThat(i.hasNext()).isFalse();
-	}
-
-
-	@Test(dependsOnMethods = "open")
-	public void addingStuffToIndex() throws IOException {
-		open();
-
-		List<String> list = Lists.newArrayList();
-		list.add("1    Robin  25");
-		list.add("2    Fritz   55");
-
-		index.addLine(list.get(0), 0);
-		index.addLine(list.get(1), 10);
-		index.close();
-		index.open();
-
-		assertThat(index.getMaxPos()).isEqualTo(10);
-		Iterator<String> i = index.getIterator(false);
-		assertThat(i.hasNext()).isTrue();
-		assertThat(list.contains(i.next())).isTrue();
-		assertThat(list.contains(i.next())).isTrue();
-		assertThat(i.hasNext()).isFalse();
-		assertThat(i.next()).isNull();
-
-		// ensure lock if is deleted after close
-		index.close();
-		assertThat(index.getLockFile()).doesNotExist();
-	}
-
 	@Test(dependsOnMethods = "addingStuffToIndex")
 	public void maxPos() throws IOException {
 		addingStuffToIndex();
