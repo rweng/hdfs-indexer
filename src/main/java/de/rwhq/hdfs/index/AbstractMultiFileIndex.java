@@ -364,6 +364,8 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 	protected void saveWriteTree() {
 
+		LOG.info("saving index: from " + writingTreePropertyEntry.start + " to " + writingTreePropertyEntry.end);
+
 		if (cachePointer == 0)
 			return;
 
