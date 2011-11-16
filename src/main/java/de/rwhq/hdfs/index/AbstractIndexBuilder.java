@@ -7,6 +7,7 @@ package de.rwhq.hdfs.index;
  */
 public abstract class AbstractIndexBuilder implements IndexBuilder {
 	private String hdfsFilePath;
+	private IndexedRecordReader recordReader;
 
 	@Override
 	public IndexBuilder hdfsFilePath(String s) {
@@ -18,9 +19,15 @@ public abstract class AbstractIndexBuilder implements IndexBuilder {
 	public Index build() {
 		return configure(new BTreeIndexBuilder())
 				.hdfsFilePath(hdfsFilePath)
+				.recordReader(recordReader)
 				.build();
 	}
 
+
+	public IndexBuilder recordReader(IndexedRecordReader indexedRecordReader){
+		this.recordReader = indexedRecordReader;
+		return this;
+	}
 
 	public abstract BTreeIndexBuilder configure(BTreeIndexBuilder builder);
 }

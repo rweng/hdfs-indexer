@@ -3,16 +3,17 @@ package de.rwhq.hdfs.index;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
-import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-import static java.util.Collections.*;
+import static java.util.Collections.sort;
 import static org.fest.assertions.Assertions.assertThat;
 
 public abstract class IndexTest {
