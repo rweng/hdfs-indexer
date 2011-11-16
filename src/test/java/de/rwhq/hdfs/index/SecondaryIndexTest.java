@@ -73,6 +73,11 @@ public class SecondaryIndexTest {
 						setUpRecordReader();
 						return index;
 					}
+
+					@Override
+					protected AbstractMultiFileIndex getNewIndex() {
+						return (SecondaryIndex) setUpBuilder().build();
+					}
 				}};
 	}
 

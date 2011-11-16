@@ -4,6 +4,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Properties;
@@ -21,6 +22,8 @@ public abstract class AbstractMultiFileIndexTest {
 
 	protected abstract AbstractMultiFileIndex resetIndex() throws IOException;
 
+	protected abstract AbstractMultiFileIndex getNewIndex();
+
 	@Test
 	public void lockFile() throws IOException {
 		addEntriesToIndex();
@@ -30,6 +33,31 @@ public abstract class AbstractMultiFileIndexTest {
 	@Test
 	public void propertiesFile() throws IOException {
 		addEntriesToIndex();
+		assertProperties();
+	}
+
+	@Test
+	public void ifNotOurLock() throws IOException {
+		index.open();
+		for (Long l : IndexTest.getSortedMapKeys().subList(0, 3)) {
+			index.addLine(IndexTest.map.get(l), l);
+		}
+
+		assertThat(index.getLockFile()).exists();
+
+		// this should be ignored, check later with assertProperties()
+		AbstractMultiFileIndex index2 = getNewIndex();
+		index2.open();
+		Long key = IndexTest.getSortedMapKeys().get(3);
+		index2.addLine(IndexTest.map.get(key), key);
+		index2.close();
+
+		index.close();
+		assertProperties();
+	}
+
+
+	private void assertProperties() throws IOException {
 		assertThat(index.getPropertiesFile()).exists();
 
 		Properties p = new Properties();
@@ -40,12 +68,12 @@ public abstract class AbstractMultiFileIndexTest {
 
 		String value = (String) p.get(i.nextElement());
 		assertThat(i.hasMoreElements()).isFalse();
-		assertThat(value).isEqualTo("0;30");
+		assertThat(value).isEqualTo("0;20");
 	}
 
 	private void addEntriesToIndex() throws IOException {
 		index.open();
-		for(Long l : IndexTest.getSortedMapKeys()){
+		for (Long l : IndexTest.getSortedMapKeys().subList(0, 3)) {
 			index.addLine(IndexTest.map.get(l), l);
 		}
 		index.close();
