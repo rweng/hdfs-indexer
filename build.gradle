@@ -40,6 +40,10 @@ jar {
         // attributes("Main-Class": "de.rwhq.hdfs.index.run.Main")
         attributes 'Implementation-Title': 'hdfs-indexer', 'Implementation-Version': version
     }
+
+
+    // add source code to distribution jar
+    from sourceSets.main.allJava
 }
 
 sourceSets {
