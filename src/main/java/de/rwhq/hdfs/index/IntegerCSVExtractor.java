@@ -29,10 +29,10 @@ public class IntegerCSVExtractor implements KeyExtractor<Integer> {
 	@Override public Integer extract(String line) throws ExtractionException {
 		try{
 		String[] splits = line.split(delimiter);
-		if (LOG.isDebugEnabled()){
-			LOG.debug("trying to transform key: '" + splits[column] + "'");
-			LOG.debug("all splits: " + Arrays.toString(splits));
-		}
+//		if (LOG.isDebugEnabled()){
+//			LOG.debug("trying to transform key: '" + splits[column] + "'");
+//			LOG.debug("all splits: " + Arrays.toString(splits));
+//		}
 		return Integer.parseInt(splits[column]);
 		} catch (Exception e){
 			throw new ExtractionException(e);

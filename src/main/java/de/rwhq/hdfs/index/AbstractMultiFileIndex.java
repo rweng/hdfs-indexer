@@ -2,6 +2,8 @@ package de.rwhq.hdfs.index;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ObjectArrays;
 import de.rwhq.btree.BTree;
 import de.rwhq.btree.Range;
@@ -79,16 +81,42 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	protected List<Range<K>>                 defaultSearchRanges;
 	private   FixLengthSerializer<V, byte[]> valueSerializer;
 
+	private boolean lineMatchesSearchRange(final String line) {
+		final K key;
+		try {
+			key = keyExtractor.extract(line);
+		} catch (ExtractionException e) {
+			LOG.warn("could not extract key from line: " + line, e);
+			return true;
+		}
+
+		return lineMatchesSearchRange(line, key);
+	}
+
+	private boolean lineMatchesSearchRange(final String line, final K key) {
+		Collection<Range<K>> resultCollection = Collections2.filter(defaultSearchRanges, new Predicate<Range<K>>() {
+			@Override
+			public boolean apply(Range<K> input) {
+				return input.contains(key);
+			}
+		});
+
+		return !resultCollection.isEmpty();
+	}
+
 	/** {@inheritDoc} */
 	@Override
-	public void addLine(String line, long pos) {
+	public boolean addLine(String line, long pos) {
+		if (LOG.isDebugEnabled()) {
+			// LOG.debug("addLine: " + line + " (pos: " + pos + ")");
+		}
+
 		ensureOpen();
 
-		if (extractorException)
-			return;
 
 		if (!ourLock && isLocked()) {
-			return;
+			LOG.info("index is locked.");
+			return lineMatchesSearchRange(line);
 		} else {
 			lock();
 		}
@@ -103,6 +131,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			saveWriteTree();
 		}
 
+		// LOG.info("adding tree to cache");
 		if (writingTreePropertyEntry.start == null)
 			writingTreePropertyEntry.start = pos;
 
@@ -110,10 +139,11 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 		// only add it if extraction works
 		try {
-			cache[cachePointer++] = extractEntry(line, pos);
+			cache[cachePointer] = extractEntry(line, pos);
+			return lineMatchesSearchRange(line, cache[cachePointer++].getKey());
 		} catch (ExtractionException e) {
-			LOG.error("exception when extracting '" + line + "' at position " + pos);
-			LOG.warn(e);
+			LOG.error("exception when extracting '" + line + "' at position " + pos, e);
+			return true;
 		}
 	}
 
@@ -186,6 +216,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		checkNotNull(b.getComparator(), "comparator is null");
 		checkNotNull(valueSerializer, "valueSerializer must not be null");
 		checkNotNull(b.getIndexFolder(), "index root folder must not be null");
+		checkNotNull(b.getKeyExtractor(), "keyExtractor must not be null");
 
 		checkState(b.getHdfsPath().startsWith("/"), "hdfsPath must start with /");
 		checkState(b.getCacheSize() >= 100, "cacheSize must be >= 100");
@@ -198,8 +229,13 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		this.valueSerializer = valueSerializer;
 		this.indexRootFolder = b.getIndexFolder();
 		this.cacheSize = b.getCacheSize();
-		this.defaultSearchRanges = b.getDefaultSearchRanges();
 		this.propertiesFile = new File(getIndexFolder() + "/properties.xml");
+		this.keyExtractor = b.getKeyExtractor();
+
+		if (b.getDefaultSearchRanges() != null) {
+			this.defaultSearchRanges = b.getDefaultSearchRanges();
+			Range.merge(defaultSearchRanges, comparator);
+		}
 	}
 
 	/** {@inheritDoc} */
@@ -209,6 +245,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 				.add("isOpen", isOpen())
 				.add("locked", isLocked())
 				.add("ourLock", ourLock)
+				.add("cacheSize", cacheSize)
 				.add("defaultSearchRanges", defaultSearchRanges)
 				.toString();
 	}

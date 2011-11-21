@@ -24,4 +24,12 @@ public class IntegerCSVExtractorTest {
 	public void testGetId() throws Exception {
 		assertThat(extractor.getId()).isEqualTo("1");
 	}
+
+	@Test
+	public void tpch() throws ExtractionException {
+		extractor = new IntegerCSVExtractor(0, "\\|");
+		String test =
+				"196|135052|79|1|19|20653.95|0.03|0.02|R|F|1993-04-17|1993-05-27|1993-04-30|NONE|SHIP|sts maintain foxes. furiously regular p|";
+		assertThat(extractor.extract(test)).isEqualTo(196);
+	}
 }

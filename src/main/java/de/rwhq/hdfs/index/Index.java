@@ -66,10 +66,12 @@ public interface Index<K,V> {
      * and the hole line (in case of a primary index) or the position (in case of a secondary index)
      * to the storage.
      *
+     *
      * @param line extracted from the hdfs file
      * @param pos in the hdfs file
+     * @return whether the line matches the default search range
      */
-    void addLine(String line, long pos);
+    boolean addLine(String line, long pos);
 
 	/**
 	 * @return max position of the index
