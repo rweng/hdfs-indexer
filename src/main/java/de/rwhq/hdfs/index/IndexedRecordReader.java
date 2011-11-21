@@ -12,11 +12,7 @@ import java.util.Iterator;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * Special kind of LineRecordReader.
- * It tries to create an index over the hdfs-file.
- * Therefore, 
- */
+/** Special kind of LineRecordReader. It tries to create an index over the hdfs-file. Therefore, */
 public class IndexedRecordReader extends LineRecordReader {
 	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 
@@ -96,14 +92,20 @@ public class IndexedRecordReader extends LineRecordReader {
 
 		// if we finished reading from index, start writing to it
 		if (doneReadingFromIndex) {
-			boolean result = super.nextKeyValue();
+			do {
+				boolean result = super.nextKeyValue();
 
-			if (result) {
-				index.addLine(getCurrentValue().toString(), pos);
-			} else {
-				index.close();
-			}
-			return result;
+				if (result) {
+					if (index.addLine(getCurrentValue().toString(), pos)) {
+						return result;
+					} else {
+						// next iteration
+					}
+				} else {
+					index.close();
+					return result;
+				}
+			} while (true);
 		}
 
 		// get next value from index as long as we have
