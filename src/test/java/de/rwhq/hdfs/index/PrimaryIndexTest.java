@@ -22,7 +22,7 @@ public class PrimaryIndexTest {
 	protected final String hdfsFile        = "/path/to/file.csv";
 
 	@BeforeMethod
-	public void build() throws IOException {
+	public void setUp() throws IOException {
 		if (indexRootFolder.exists())
 			FileUtils.deleteDirectory(indexRootFolder);
 		indexRootFolder.mkdir();
@@ -66,11 +66,11 @@ public class PrimaryIndexTest {
 		ArrayList<Range<Integer>> ranges = Lists.newArrayList();
 		ranges.add(new Range(0, 10));
 		ranges.add(new Range(50, 55));
-		ranges.add(new Range(99,null));
+		ranges.add(new Range(99, null));
 
 		index = (PrimaryIndex<Integer>) setUpBuilder().defaultSearchRanges(ranges).build();
 		index.open();
-		
+
 		Iterator<String> iterator = index.getIterator();
 
 		for (int i = 0; i <= 10; i++) {
@@ -80,14 +80,14 @@ public class PrimaryIndexTest {
 
 		for (int i = 50; i <= 55; i++)
 			assertThat(iterator.next()).startsWith("" + i);
-		
+
 		assertThat(iterator.next()).startsWith("99");
 		assertThat(iterator.hasNext()).isFalse();
 	}
 
 	private void fillIndex(Index index, int count) {
-		for(int i=0;i<count;i++) {
-			index.addLine("" + i + ",blaa,"+System.currentTimeMillis(), i*10L);
+		for (int i = 0; i < count; i++) {
+			index.addLine("" + i + ",blaa," + System.currentTimeMillis(), i * 10L);
 		}
 	}
 
@@ -123,9 +123,10 @@ public class PrimaryIndexTest {
 	}
 
 	@Test(dependsOnMethods = "open")
-		public void indexFolder() {
-			assertThat(getIndex().getIndexFolder().getAbsolutePath()).isEqualTo(indexRootFolder.getAbsolutePath() + hdfsFile);
-		}
+	public void indexFolder() {
+		assertThat(getIndex().getIndexFolder().getAbsolutePath()).isEqualTo(
+				indexRootFolder.getAbsolutePath() + hdfsFile);
+	}
 
 	private void addEntriesToIndex() throws IOException {
 		index.open();
@@ -133,5 +134,22 @@ public class PrimaryIndexTest {
 			index.addLine(IndexTest.map.get(l), l);
 		}
 		index.close();
+	}
+
+	@Factory
+	public Object[] interfaces() {
+		return new Object[]{
+				new AbstractMultiFileIndexTest() {
+					@Override
+					protected AbstractMultiFileIndex resetIndex() throws IOException {
+						PrimaryIndexTest.this.setUp();
+						return index;
+					}
+
+					@Override
+					protected AbstractMultiFileIndex getNewIndex() {
+						return (SecondaryIndex) setUpBuilder().build();
+					}
+				}};
 	}
 }

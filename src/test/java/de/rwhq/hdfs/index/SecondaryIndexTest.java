@@ -21,7 +21,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.when;
 
 public class SecondaryIndexTest {
-	/*
+
 	@Mock private FSDataInputStream inputStream;
 
 	private SecondaryIndex index;
@@ -43,33 +43,19 @@ public class SecondaryIndexTest {
 	}
 
 	private void setUpInputStream() {
-
+/*
 		when(inputStream.read(anyInt())).thenAnswer(new Answer<Text>() {
 			@Override
 			public Text answer(InvocationOnMock invocation) throws Throwable {
 				return new Text(IndexTest.map.get(((LineRecordReader) invocation.getMock()).pos));
 			}
 		});
-
+*/
 	}
 
 	@Factory
 	public Object[] createInterfaceTests() {
 		return new Object[]{
-				new IndexTest() {
-					@Override
-					protected Index getNewIndex() {
-						return (SecondaryIndex) setUpBuilder().build();
-					}
-
-					@Override
-					protected Index resetIndex() throws IOException {
-						setUp();
-						setUpInputStream();
-						return index;
-					}
-				},
-
 				new AbstractMultiFileIndexTest() {
 					@Override
 					protected AbstractMultiFileIndex resetIndex() throws IOException {
@@ -93,5 +79,5 @@ public class SecondaryIndexTest {
 				.keySerializer(IntegerSerializer.INSTANCE)
 				.comparator(IntegerComparator.INSTANCE);
 	}
-	*/
+	
 }

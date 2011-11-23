@@ -1,6 +1,7 @@
 package de.rwhq.hdfs.index;
 
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 import java.io.FileInputStream;
@@ -54,6 +55,21 @@ public abstract class AbstractMultiFileIndexTest {
 
 		index.close();
 		assertProperties();
+	}
+
+	@Factory
+	public Object[] interfaces(){
+		return new Object[]{new IndexTest() {
+			@Override
+			protected Index getNewIndex() {
+				return AbstractMultiFileIndexTest.this.getNewIndex();
+			}
+
+			@Override
+			protected Index resetIndex() throws IOException {
+				return AbstractMultiFileIndexTest.this.resetIndex();
+			}
+		}};
 	}
 
 
