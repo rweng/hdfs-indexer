@@ -90,14 +90,14 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			return true;
 		}
 
-		return lineMatchesSearchRange(line, key);
+		return lineMatchesSearchRange(key);
 	}
 
-	private boolean lineMatchesSearchRange(final String line, final K key) {
+	private boolean lineMatchesSearchRange(final K key) {
 		Collection<Range<K>> resultCollection = Collections2.filter(defaultSearchRanges, new Predicate<Range<K>>() {
 			@Override
 			public boolean apply(Range<K> input) {
-				return input.contains(key);
+				return input.contains(key, comparator);
 			}
 		});
 
@@ -139,8 +139,8 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 		// only add it if extraction works
 		try {
-			cache[cachePointer] = extractEntry(line, pos);
-			return lineMatchesSearchRange(line, cache[cachePointer++].getKey());
+			cache[cachePointer++] = extractEntry(line, pos);
+			return lineMatchesSearchRange(cache[cachePointer - 1].getKey());
 		} catch (ExtractionException e) {
 			LOG.error("exception when extracting '" + line + "' at position " + pos, e);
 			return true;

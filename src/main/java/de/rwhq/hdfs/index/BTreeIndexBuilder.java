@@ -3,12 +3,15 @@ package de.rwhq.hdfs.index;
 import com.google.common.collect.Lists;
 import de.rwhq.btree.Range;
 import de.rwhq.serializer.FixLengthSerializer;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 
 import java.io.File;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.*;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class BTreeIndexBuilder<K,V> {
 
@@ -17,19 +20,26 @@ public class BTreeIndexBuilder<K,V> {
 	private FixLengthSerializer<K,byte[]> keySerializer;
 	private Comparator<K>  comparator;
 	private List<Range<K>> defaultSearchRanges;
-	private LineRecordReader recordReader;
+	private FSDataInputStream inputStream;
 
+	public  KeyExtractor keyExtractor;
+	private String       hdfsPath;
+	private Configuration jobConfiguration;
 
-	int getCacheSize() {
-		return cacheSize;
+	private int secondaryIndexReadBufferSize = 500;
+
+	public Configuration getJobConfiguration() {
+		return jobConfiguration;
 	}
 
-	String getHdfsPath() {
-		return hdfsPath;
+	public BTreeIndexBuilder<K, V> jobConfiguration(Configuration jobConfiguration) {
+		this.jobConfiguration = jobConfiguration;
+		return this;
 	}
 
-	File getIndexFolder() {
-		return indexFolder;
+	public BTreeIndexBuilder secondaryIndexReadBufferSize(int secondaryIndexReadBufferSize) {
+		this.secondaryIndexReadBufferSize = secondaryIndexReadBufferSize;
+		return this;
 	}
 
 	public Comparator getComparator() {
@@ -41,17 +51,6 @@ public class BTreeIndexBuilder<K,V> {
 		return this;
 	}
 
-	/**
-	 * only required for secondary indexes
-	 * 
-	 * @param reader
-	 * @return
-	 */
-	public BTreeIndexBuilder recordReader(LineRecordReader reader){
-		this.recordReader = reader;
-		return this;
-	}
-
 	public BTreeIndexBuilder keyExtractor(KeyExtractor keyExtractor) {
 		this.keyExtractor = keyExtractor;
 		return this;
@@ -60,9 +59,6 @@ public class BTreeIndexBuilder<K,V> {
 	public KeyExtractor getKeyExtractor() {
 		return keyExtractor;
 	}
-
-	public  KeyExtractor keyExtractor;
-	private String       hdfsPath;
 
 	public BTreeIndexBuilder cacheSize(int cacheSize) {
 		checkArgument(cacheSize > 0, "cacheSize must be > 0");
@@ -79,6 +75,10 @@ public class BTreeIndexBuilder<K,V> {
 		return this;
 	}
 
+	public BTreeIndexBuilder indexFolder(String path) {
+		return indexFolder(new File(path));
+	}
+
 	public BTreeIndexBuilder hdfsFilePath(String path) {
 		checkNotNull(path);
 
@@ -91,10 +91,6 @@ public class BTreeIndexBuilder<K,V> {
 
 	public Index build() {
 		return new SecondaryIndex(this);
-	}
-
-	public BTreeIndexBuilder indexFolder(String path) {
-		return indexFolder(new File(path));
 	}
 
 	public BTreeIndexBuilder keySerializer(FixLengthSerializer ks) {
@@ -118,7 +114,29 @@ public class BTreeIndexBuilder<K,V> {
 		return this;
 	}
 
-	public LineRecordReader getRecordReader() {
-		return recordReader;
+	public FSDataInputStream getInputStream() {
+		return inputStream;
+	}
+
+	public BTreeIndexBuilder inputStream(FSDataInputStream inputStream) {
+		this.inputStream = inputStream;
+		return this;
+	}
+
+	public int getSecondaryIndexReadBufferSize() {
+		return secondaryIndexReadBufferSize;
+	}
+
+
+	int getCacheSize() {
+		return cacheSize;
+	}
+
+	String getHdfsPath() {
+		return hdfsPath;
+	}
+
+	File getIndexFolder() {
+		return indexFolder;
 	}
 }

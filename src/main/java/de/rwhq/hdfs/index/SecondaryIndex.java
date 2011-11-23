@@ -1,19 +1,37 @@
 package de.rwhq.hdfs.index;
 
+import com.google.common.collect.ObjectArrays;
+import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Chars;
 import de.rwhq.serializer.LongSerializer;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.util.LineReader;
 
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Iterator;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
-	private LineRecordReader recordReader;
+
+	private FSDataInputStream inputStream;
+	private LineReader        lineReader;
+	private Configuration     jobConf;
+	private int maxLineLength;
+	private Text text;
 
 	public SecondaryIndex(BTreeIndexBuilder b) {
 		super(b, LongSerializer.INSTANCE);
-		this.recordReader = b.getRecordReader();
+
+		checkArgument(b.getSecondaryIndexReadBufferSize() > 0, "secondary index read buffer size must be > 0");
+
+		this.inputStream = b.getInputStream();
+		this.jobConf = b.getJobConfiguration();
+		this.text = new Text();
 	}
 
 	@Override
@@ -23,7 +41,20 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 
 	@Override
 	public Iterator<String> getIterator() {
-		checkNotNull(recordReader, "recordReader must not be null when iterating over a secondary index");
+		checkNotNull(inputStream, "inputStream must not be null for iterating over a secondary index");
+		checkNotNull(jobConf, "job configuration must not be null for iterating over a secondary index");
+
+		if (lineReader == null) {
+			try {
+				lineReader = new LineReader(inputStream, jobConf);
+			} catch (IOException e) {
+				throw new RuntimeException("could not create LineReader", e);
+			}
+		}
+
+		maxLineLength = jobConf.getInt("mapred.linerecordreader.maxlength",
+				Integer.MAX_VALUE);
+		
 		return new SecondaryIndexIterator(getIterator(true));
 	}
 
@@ -44,21 +75,19 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 		public String next() {
 			Long nextLong = iterator.next();
 
-			if(nextLong == null)
+			if (nextLong == null)
 				return null;
 
-			long oldPos = recordReader.pos;
-			recordReader.pos = nextLong;
 			try {
-				recordReader.nextKeyValue();
+				long oldPos = inputStream.getPos();
+				inputStream.seek(nextLong);
+				lineReader.readLine(text, maxLineLength);
+				inputStream.seek(oldPos);
 			} catch (IOException e) {
-				throw new RuntimeException("error when reading entry from hdfs", e);
+				throw new RuntimeException("error when reading from inputStream", e);
 			}
 
-			String result = recordReader.getCurrentValue().toString();
-			recordReader.pos = oldPos;
-
-			return result;
+			return text.toString();
 		}
 
 		@Override

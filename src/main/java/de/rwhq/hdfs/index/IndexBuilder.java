@@ -1,6 +1,8 @@
 package de.rwhq.hdfs.index;
 
 import com.sun.istack.internal.Builder;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 
 /**
  * used by IndexedRecordReader to create an Index.
@@ -24,5 +26,6 @@ public interface IndexBuilder {
 	 */
 	public Index build();
 
-	IndexBuilder recordReader(IndexedRecordReader indexedRecordReader);
+	public IndexBuilder jobConfiguration(Configuration conf);
+	public IndexBuilder inputStream(FSDataInputStream inputStream);
 }

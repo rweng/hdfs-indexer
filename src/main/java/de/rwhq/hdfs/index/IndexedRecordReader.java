@@ -16,6 +16,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class IndexedRecordReader extends LineRecordReader {
 	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 
+	private static FileSplit inputToFileSplit(InputSplit inputSplit) {
+		FileSplit split;
+		try {
+			split = (FileSplit) inputSplit;
+		} catch (Exception e) {
+			throw new IllegalArgumentException(
+					"InputSplit must be an instance of FileSplit");
+		}
+		return split;
+	}
+
 	private Index            index;
 	private Iterator<String> indexIterator;
 	private boolean doneReadingFromIndex = false;
@@ -37,7 +48,8 @@ public class IndexedRecordReader extends LineRecordReader {
 			IndexBuilder builder = (IndexBuilder) builderClass.getConstructor().newInstance();
 			index = builder
 					.hdfsFilePath(inputToFileSplit(genericSplit).getPath().toString())
-					.recordReader(this)
+					.jobConfiguration(context.getConfiguration())
+					.inputStream(fileIn)
 					.build();
 		} catch (Exception e) {
 			LOG.error("could not create index", e);
@@ -62,25 +74,6 @@ public class IndexedRecordReader extends LineRecordReader {
 
 		// create a text object for efficiency
 		value = new Text();
-	}
-
-	private Iterator<String> getIndexIterator() {
-		if (indexIterator == null && index != null) {
-			indexIterator = index.getIterator();
-		}
-
-		return indexIterator;
-	}
-
-	private static FileSplit inputToFileSplit(InputSplit inputSplit) {
-		FileSplit split;
-		try {
-			split = (FileSplit) inputSplit;
-		} catch (Exception e) {
-			throw new IllegalArgumentException(
-					"InputSplit must be an instance of FileSplit");
-		}
-		return split;
 	}
 
 	public boolean nextKeyValue() throws IOException {
@@ -130,5 +123,13 @@ public class IndexedRecordReader extends LineRecordReader {
 			doneReadingFromIndex = true;
 			return nextKeyValue();
 		}
+	}
+
+	private Iterator<String> getIndexIterator() {
+		if (indexIterator == null && index != null) {
+			indexIterator = index.getIterator();
+		}
+
+		return indexIterator;
 	}
 }

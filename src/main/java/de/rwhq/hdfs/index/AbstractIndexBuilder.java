@@ -1,5 +1,8 @@
 package de.rwhq.hdfs.index;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+
 /**
  * An abstract class for inheritance by the user.
  * It already defines the methods build() and hdfsFilePath() so the user only has to implement
@@ -7,7 +10,8 @@ package de.rwhq.hdfs.index;
  */
 public abstract class AbstractIndexBuilder implements IndexBuilder {
 	private String hdfsFilePath;
-	private IndexedRecordReader recordReader;
+	private Configuration conf;
+	private FSDataInputStream inputStream;
 
 	@Override
 	public IndexBuilder hdfsFilePath(String s) {
@@ -19,13 +23,18 @@ public abstract class AbstractIndexBuilder implements IndexBuilder {
 	public Index build() {
 		return configure(new BTreeIndexBuilder())
 				.hdfsFilePath(hdfsFilePath)
-				.recordReader(recordReader)
+				.jobConfiguration(conf)
+				.inputStream(inputStream)
 				.build();
 	}
 
+	public IndexBuilder jobConfiguration(Configuration conf){
+		this.conf = conf;
+		return this;
+	}
 
-	public IndexBuilder recordReader(IndexedRecordReader indexedRecordReader){
-		this.recordReader = indexedRecordReader;
+	public IndexBuilder inputStream(FSDataInputStream inputStream){
+		this.inputStream = inputStream;
 		return this;
 	}
 
