@@ -26,10 +26,16 @@ public class BTreeIndexBuilder<K,V> {
 	private String       hdfsPath;
 	private Configuration jobConfiguration;
 
+	private boolean primaryIndex = false;
 	private int secondaryIndexReadBufferSize = 500;
 
 	public Configuration getJobConfiguration() {
 		return jobConfiguration;
+	}
+
+	public BTreeIndexBuilder<K, V> defaultSearchRanges(List<Range<K>> ranges){
+		this.defaultSearchRanges = ranges;
+		return this;
 	}
 
 	public BTreeIndexBuilder<K, V> jobConfiguration(Configuration jobConfiguration) {
@@ -90,7 +96,10 @@ public class BTreeIndexBuilder<K,V> {
 
 
 	public Index build() {
-		return new SecondaryIndex(this);
+		if(primaryIndex)
+			return new PrimaryIndex(this);
+		else
+			return new SecondaryIndex(this);
 	}
 
 	public BTreeIndexBuilder keySerializer(FixLengthSerializer ks) {
@@ -138,5 +147,19 @@ public class BTreeIndexBuilder<K,V> {
 
 	File getIndexFolder() {
 		return indexFolder;
+	}
+
+	public boolean isPrimaryIndex() {
+		return primaryIndex;
+	}
+
+	public BTreeIndexBuilder<K, V> primaryIndex() {
+		this.primaryIndex = true;
+		return this;
+	}
+
+	public BTreeIndexBuilder<K, V> secondaryIndex() {
+		this.primaryIndex = false;
+		return this;
 	}
 }

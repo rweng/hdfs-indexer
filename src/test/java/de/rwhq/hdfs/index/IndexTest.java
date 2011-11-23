@@ -12,13 +12,13 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import static java.util.Collections.sort;
 import static org.fest.assertions.Assertions.assertThat;
 
 public abstract class IndexTest {
 	private static Log LOG = LogFactory.getLog(IndexTest.class);
-	private Index index;
 
 	@VisibleForTesting
 	static final Map<Long, String> map = new MapMaker().makeMap();
@@ -30,32 +30,34 @@ public abstract class IndexTest {
 		map.put(30L, "4,Herbert,105");
 	}
 
+	static Map<Long, String> createEntriesMap(int count, long seed) {
+		LOG.info("creating map with seed: " + seed);
+
+		Random rand = new Random(seed);
+		Map<Long, String> entries = new MapMaker().makeMap();
+
+		int i = 0;
+		while (i < count) {
+			int val = rand.nextInt();
+			entries.put(i * 10L, "" + val + ",Name," + i);
+			i++;
+		}
+
+		return entries;
+	}
+
 	static List<Long> getSortedMapKeys() {
 		List<Long> list = Lists.newArrayList(map.keySet());
 		sort(list);
 		return list;
 	}
 
+	private Index index;
+
 	@BeforeMethod
 	public void setup() throws IOException {
 		index = resetIndex();
 	}
-
-	/**
-	 * creates a new index but does not completely reset it (delete the index files)
-	 * <p/>
-	 * should be with {@code keyExtractor(new IntegerCSVExtractor(0, ","))}
-	 *
-	 * @return a new created index
-	 */
-	protected abstract Index getNewIndex();
-
-	/**
-	 * creates a new index and resets it.
-	 *
-	 * @return
-	 */
-	protected abstract Index resetIndex() throws IOException;
 
 	@Test
 	public void open() throws IOException {
@@ -128,4 +130,20 @@ public abstract class IndexTest {
 		assertThat(i.hasNext()).isFalse();
 		assertThat(i.next()).isNull();
 	}
+
+	/**
+	 * creates a new index but does not completely reset it (delete the index files)
+	 * <p/>
+	 * should be with {@code keyExtractor(new IntegerCSVExtractor(0, ","))}
+	 *
+	 * @return a new created index
+	 */
+	protected abstract Index getNewIndex();
+
+	/**
+	 * creates a new index and resets it.
+	 *
+	 * @return
+	 */
+	protected abstract Index resetIndex() throws IOException;
 }

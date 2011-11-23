@@ -57,12 +57,6 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 	protected Properties properties;
 
-
-	@VisibleForTesting
-	File getPropertiesFile() {
-		return propertiesFile;
-	}
-
 	protected File   propertiesFile;
 	protected String hdfsFile;
 	protected File   indexRootFolder;
@@ -80,29 +74,6 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	private boolean extractorException = false;
 	protected List<Range<K>>                 defaultSearchRanges;
 	private   FixLengthSerializer<V, byte[]> valueSerializer;
-
-	private boolean lineMatchesSearchRange(final String line) {
-		final K key;
-		try {
-			key = keyExtractor.extract(line);
-		} catch (ExtractionException e) {
-			LOG.warn("could not extract key from line: " + line, e);
-			return true;
-		}
-
-		return lineMatchesSearchRange(key);
-	}
-
-	private boolean lineMatchesSearchRange(final K key) {
-		Collection<Range<K>> resultCollection = Collections2.filter(defaultSearchRanges, new Predicate<Range<K>>() {
-			@Override
-			public boolean apply(Range<K> input) {
-				return input.contains(key, comparator);
-			}
-		});
-
-		return !resultCollection.isEmpty();
-	}
 
 	/** {@inheritDoc} */
 	@Override
@@ -250,6 +221,12 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 				.toString();
 	}
 
+
+	@VisibleForTesting
+	File getPropertiesFile() {
+		return propertiesFile;
+	}
+
 	@VisibleForTesting
 	File getLockFile() {
 		return new File(getIndexFolder() + "/lock");
@@ -312,6 +289,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		private BTree<K, V>       currentTree;
 		private Iterator<V>       currentIterator;
 		private List<Range<K>>    searchRanges;
+		private int exceptionCount = 0;
 
 		@Override
 		public boolean hasNext() {
@@ -325,7 +303,10 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 					currentTree = trees.get(0);
 
 				if (currentIterator == null) {
-					currentIterator = currentTree.getIterator(searchRanges);
+					if(searchRanges == null)
+						currentIterator = currentTree.getIterator();
+					else
+						currentIterator = currentTree.getIterator(searchRanges);
 				}
 
 				if (currentIterator.hasNext()) {
@@ -338,13 +319,17 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 					return false;
 				} else {
 					currentTree = trees.get(nextTree);
-					currentIterator = currentTree.getIterator(searchRanges);
+					if(searchRanges != null)
+						currentIterator = currentTree.getIterator(searchRanges);
+					else
+						currentIterator = currentTree.getIterator();
 				}
 
 				return hasNext();
 			} catch (Exception e) {
 				// if anything went wrong, log and remove tree
 				LOG.error("Error in BTreeIndexIterator#hasNext()", e);
+				exceptionCount++;
 
 				try {
 					currentTree.close();
@@ -362,7 +347,10 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 					LOG.error("error saving properties after deleting not-working tree", e);
 				}
 
-				return hasNext();
+				if (exceptionCount <= 5)
+					return hasNext();
+				else
+					return false;
 			}
 		}
 
@@ -389,6 +377,29 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		private BTreeIndexIterator() {
 			this.trees = getTreeList();
 		}
+	}
+
+	private boolean lineMatchesSearchRange(final String line) {
+		final K key;
+		try {
+			key = keyExtractor.extract(line);
+		} catch (ExtractionException e) {
+			LOG.warn("could not extract key from line: " + line, e);
+			return true;
+		}
+
+		return lineMatchesSearchRange(key);
+	}
+
+	private boolean lineMatchesSearchRange(final K key) {
+		Collection<Range<K>> resultCollection = Collections2.filter(defaultSearchRanges, new Predicate<Range<K>>() {
+			@Override
+			public boolean apply(Range<K> input) {
+				return input.contains(key, comparator);
+			}
+		});
+
+		return !resultCollection.isEmpty();
 	}
 
 
