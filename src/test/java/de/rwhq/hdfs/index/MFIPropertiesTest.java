@@ -11,7 +11,6 @@ import static org.fest.assertions.Assertions.assertThat;
 public class MFIPropertiesTest {
 	private MFIProperties properties;
 
-
 	@BeforeMethod
 	public void setUp(){
 		properties = new MFIProperties("/tmp/mfipropertiestest");

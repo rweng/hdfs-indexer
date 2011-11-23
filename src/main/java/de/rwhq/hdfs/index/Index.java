@@ -40,6 +40,11 @@ public interface Index<K,V> {
      */
     public void open() throws IOException;
 
+	/**
+	 * forces anything cached to storage (basically like calling {@code close()} and then {@code open()}
+	 */
+	public void sync();
+
 
     /**
      * @return if the index was opened

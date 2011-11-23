@@ -28,18 +28,20 @@ public class PrimaryIndexTest {
 		indexRootFolder.mkdir();
 
 		index = (PrimaryIndex<Integer>) setUpBuilder().build();
-		assertThat(index).isNotNull();
+		index.open();
 	}
 
 	@Test
 	public void maxPos() throws IOException {
-		addEntriesToIndex();
-		assertThat(index.getMaxPos()).isEqualTo(20L);
+		IndexTest.fillIndex(index, 10);
+		index.sync();
+		
+		assertThat(index.getMaxPos()).isEqualTo(90L);
 	}
 
 	@Test
 	public void secondIndex() throws Exception {
-		addEntriesToIndex();
+		//addEntriesToIndex();
 		index.close();
 
 		PrimaryIndex index2 = (PrimaryIndex) setUpBuilder().build();
@@ -59,7 +61,7 @@ public class PrimaryIndexTest {
 	public void testRange() throws IOException {
 		index.open();
 
-		fillIndex(index, 100);
+		IndexTest.fillIndex(index, 100);
 
 		index.close();
 
@@ -85,26 +87,44 @@ public class PrimaryIndexTest {
 		assertThat(iterator.hasNext()).isFalse();
 	}
 
-	private void fillIndex(Index index, int count) {
-		for (int i = 0; i < count; i++) {
-			index.addLine("" + i + ",blaa," + System.currentTimeMillis(), i * 10L);
-		}
+	@Test
+	public void indexFolderPath() {
+		assertThat(getIndex().getIndexFolder().getAbsolutePath()).isEqualTo(
+				indexRootFolder.getAbsolutePath() + hdfsFile);
+	}
+
+	@Factory
+	public Object[] interfaces() {
+		return new Object[]{
+				new IndexTest() {
+					@Override
+					protected Index getNewIndex() {
+						return setUpBuilder().build();
+
+					}
+
+					@Override
+					protected Index resetIndex() throws IOException {
+						PrimaryIndexTest.this.setUp();
+						return index;
+					}
+				},
+				new AbstractMultiFileIndexTest() {
+					@Override
+					protected AbstractMultiFileIndex resetIndex() throws IOException {
+						PrimaryIndexTest.this.setUp();
+						return index;
+					}
+
+					@Override
+					protected AbstractMultiFileIndex getNewIndex() {
+						return (SecondaryIndex) setUpBuilder().build();
+					}
+				}};
 	}
 
 	protected AbstractMultiFileIndex getIndex() {
 		return index;
-	}
-
-	@Test
-	public void open() throws IOException {
-		assertThat(getIndex().getIndexFolder()).doesNotExist();
-
-		getIndex().open();
-		assertThat(getIndex().isOpen()).isTrue();
-		assertThat(getIndex().getIndexFolder()).exists();
-
-		File file = new File(getIndex().getIndexFolder().getAbsolutePath() + "/properties.xml");
-		assertThat(file).exists();
 	}
 
 	protected BTreeIndexBuilder setUpBuilder() {
@@ -120,36 +140,5 @@ public class PrimaryIndexTest {
 				.addDefaultRange(new Range<Integer>(50, 55))
 				.addDefaultRange(new Range<Integer>(99, 99))
 				.addDefaultRange(new Range<Integer>(100, 1010));
-	}
-
-	@Test(dependsOnMethods = "open")
-	public void indexFolder() {
-		assertThat(getIndex().getIndexFolder().getAbsolutePath()).isEqualTo(
-				indexRootFolder.getAbsolutePath() + hdfsFile);
-	}
-
-	private void addEntriesToIndex() throws IOException {
-		index.open();
-		for (Long l : IndexTest.getSortedMapKeys().subList(0, 3)) {
-			index.addLine(IndexTest.map.get(l), l);
-		}
-		index.close();
-	}
-
-	@Factory
-	public Object[] interfaces() {
-		return new Object[]{
-				new AbstractMultiFileIndexTest() {
-					@Override
-					protected AbstractMultiFileIndex resetIndex() throws IOException {
-						PrimaryIndexTest.this.setUp();
-						return index;
-					}
-
-					@Override
-					protected AbstractMultiFileIndex getNewIndex() {
-						return (SecondaryIndex) setUpBuilder().build();
-					}
-				}};
 	}
 }

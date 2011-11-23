@@ -30,6 +30,13 @@ public abstract class IndexTest {
 		map.put(30L, "4,Herbert,105");
 	}
 
+
+	static void fillIndex(Index index, int count) {
+		for (int i = 0; i < count; i++) {
+			index.addLine("" + i + ",blaa," + System.currentTimeMillis(), i * 10L);
+		}
+	}
+
 	static Map<Long, String> createEntriesMap(int count, long seed) {
 		LOG.info("creating map with seed: " + seed);
 
@@ -84,7 +91,7 @@ public abstract class IndexTest {
 	}
 
 	@Test(dependsOnMethods = "close")
-	public void add2EntriesToIndex() throws IOException {
+	public void addEntriesToIndex() throws IOException {
 		open();
 
 		List<Long> list = getSortedMapKeys().subList(0, 2);
@@ -96,6 +103,7 @@ public abstract class IndexTest {
 		index.open();
 
 		assertThat(index.getMaxPos()).isEqualTo(10);
+		
 		Iterator<String> i = index.getIterator();
 		assertThat(i.hasNext()).isTrue();
 		assertThat(map.values()).contains(i.next());
@@ -104,9 +112,9 @@ public abstract class IndexTest {
 		assertThat(i.next()).isNull();
 	}
 
-	@Test(dependsOnMethods = "add2EntriesToIndex")
+	@Test(dependsOnMethods = "addEntriesToIndex")
 	public void multipleIndexes() throws IOException {
-		add2EntriesToIndex();
+		addEntriesToIndex();
 
 		List<Long> list = Lists.newArrayList(map.keySet());
 		sort(list);

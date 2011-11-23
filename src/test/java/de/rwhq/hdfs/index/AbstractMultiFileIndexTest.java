@@ -32,12 +32,6 @@ public abstract class AbstractMultiFileIndexTest {
 	}
 
 	@Test
-	public void propertiesFile() throws IOException {
-		addEntriesToIndex();
-		assertProperties();
-	}
-
-	@Test
 	public void ifNotOurLock() throws IOException {
 		index.open();
 		for (Long l : IndexTest.getSortedMapKeys().subList(0, 3)) {
@@ -54,37 +48,6 @@ public abstract class AbstractMultiFileIndexTest {
 		index2.close();
 
 		index.close();
-		assertProperties();
-	}
-
-	@Factory
-	public Object[] interfaces(){
-		return new Object[]{new IndexTest() {
-			@Override
-			protected Index getNewIndex() {
-				return AbstractMultiFileIndexTest.this.getNewIndex();
-			}
-
-			@Override
-			protected Index resetIndex() throws IOException {
-				return AbstractMultiFileIndexTest.this.resetIndex();
-			}
-		}};
-	}
-
-
-	private void assertProperties() throws IOException {
-		assertThat(index.getPropertiesFile()).exists();
-
-		Properties p = new Properties();
-		p.loadFromXML(new FileInputStream(index.getPropertiesFile()));
-
-		Enumeration<?> i = p.propertyNames();
-		assertThat(i.hasMoreElements()).isTrue();
-
-		String value = (String) p.get(i.nextElement());
-		assertThat(i.hasMoreElements()).isFalse();
-		assertThat(value).isEqualTo("0;20");
 	}
 
 	private void addEntriesToIndex() throws IOException {
