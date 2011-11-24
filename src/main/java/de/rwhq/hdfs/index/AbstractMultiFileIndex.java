@@ -15,6 +15,7 @@ import de.rwhq.serializer.FixLengthSerializer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -58,24 +59,25 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 	protected String hdfsFile;
 	protected File   indexRootFolder;
-	protected boolean                    isOpen                   = false;
-	protected boolean                    ourLock                  = false;
+	protected boolean isOpen  = false;
+	protected boolean ourLock = false;
 	protected AbstractMap.SimpleEntry<K, V>[] cache;
-	protected int cachePointer;
-	protected Comparator<K>                  comparator;
-	protected FixLengthSerializer<K, byte[]> keySerializer;
-	protected KeyExtractor<K>                keyExtractor;
+	protected int                             cachePointer;
+	protected Comparator<K>                   comparator;
+	protected FixLengthSerializer<K, byte[]>  keySerializer;
+	protected KeyExtractor<K>                 keyExtractor;
 
 	/* if an exception occured during key extraction */
 	private boolean extractorException = false;
-	protected TreeSet<Range<K>> defaultSearchRanges;
+	protected TreeSet<Range<K>>              defaultSearchRanges;
 	private   FixLengthSerializer<V, byte[]> valueSerializer;
-	private MFIProperties properties;
-	private MFIProperties.MFIProperty writingTreePropertyEntry;
+	private   MFIProperties                  properties;
+	private   MFIProperties.MFIProperty      writingTreePropertyEntry;
+	private   FileSplit                      fileSplit;
 
 	/** {@inheritDoc} */
 	@Override
-	public boolean addLine(String line, long pos) {
+	public boolean addLine(String line, long startPos, long endPos) {
 		if (LOG.isDebugEnabled()) {
 			// LOG.debug("addLine: " + line + " (pos: " + pos + ")");
 		}
@@ -90,10 +92,10 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			lock();
 		}
 
-		if (writingTreePropertyEntry.endPos != null && writingTreePropertyEntry.endPos >= pos) {
+		if (writingTreePropertyEntry.endPos != null && writingTreePropertyEntry.endPos >= startPos) {
 			throw new IllegalArgumentException(
 					"expected the current position to be the largest. last pos: " +
-							writingTreePropertyEntry.endPos + "; current: " + pos);
+							writingTreePropertyEntry.endPos + "; current: " + startPos);
 		}
 
 		if (cachePointer >= cache.length) {
@@ -102,16 +104,16 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 		// LOG.info("adding tree to cache");
 		if (writingTreePropertyEntry.startPos == null)
-			writingTreePropertyEntry.startPos = pos;
+			writingTreePropertyEntry.startPos = startPos;
 
-		writingTreePropertyEntry.endPos = pos;
+		writingTreePropertyEntry.endPos = endPos;
 
 		// only add it if extraction works
 		try {
-			cache[cachePointer++] = extractEntry(line, pos);
+			cache[cachePointer++] = extractEntry(line, startPos);
 			return lineMatchesSearchRange(cache[cachePointer - 1].getKey());
 		} catch (ExtractionException e) {
-			LOG.error("exception when extracting '" + line + "' at position " + pos, e);
+			LOG.error("exception when extracting '" + line + "' at position " + startPos, e);
 			return true;
 		}
 	}
@@ -133,11 +135,11 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 		isOpen = true;
 	}
-	
+
 	@Override
 	public void sync() {
 		ensureOpen();
-		
+
 		saveWriteTree();
 	}
 
@@ -162,7 +164,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	public long getMaxPos() {
 		return properties.getMaxPos();
 	}
-	
+
 	/**
 	 * Constructor does not check values, this should be done in the BTreeIndexBuilder
 	 *
@@ -179,6 +181,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		checkNotNull(valueSerializer, "valueSerializer must not be null");
 		checkNotNull(b.getIndexRootFolder(), "index root folder must not be null");
 		checkNotNull(b.getKeyExtractor(), "keyExtractor must not be null");
+		checkNotNull(b.getFileSplit(), "FileSplit must not be null");
 
 		checkState(b.getHdfsPath().startsWith("/"), "hdfsPath must start with /");
 		checkState(b.getCacheSize() >= 100, "cacheSize must be >= 100");
@@ -192,6 +195,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		this.indexRootFolder = b.getIndexRootFolder();
 		this.properties = new MFIProperties(getIndexFolder() + "/properties");
 		this.keyExtractor = b.getKeyExtractor();
+		this.fileSplit = b.getFileSplit();
 
 		if (b.getDefaultSearchRanges() != null) {
 			this.defaultSearchRanges = Range.merge(b.getDefaultSearchRanges(), comparator);
@@ -240,9 +244,9 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 	class BTreeIndexIterator implements Iterator<V> {
 
-		private List<BTree<K, V>> trees;
-		private BTree<K, V>       currentTree;
-		private Iterator<V>       currentIterator;
+		private List<BTree<K, V>>    trees;
+		private BTree<K, V>          currentTree;
+		private Iterator<V>          currentIterator;
 		private Collection<Range<K>> searchRanges;
 		private int exceptionCount = 0;
 
@@ -254,12 +258,12 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 				}
 
 				// initial tree
-				if (currentTree == null){
+				if (currentTree == null) {
 					currentTree = trees.get(0);
 				}
 
 				if (currentIterator == null) {
-					if(searchRanges == null)
+					if (searchRanges == null)
 						currentIterator = currentTree.getIterator();
 					else
 						currentIterator = currentTree.getIterator(searchRanges);
@@ -275,7 +279,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 					return false;
 				} else {
 					currentTree = trees.get(nextTree);
-					if(searchRanges != null)
+					if (searchRanges != null)
 						currentIterator = currentTree.getIterator(searchRanges);
 					else
 						currentIterator = currentTree.getIterator();
@@ -384,11 +388,11 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			if (LOG.isDebugEnabled())
 				LOG.debug("new trees path: " + tree.getPath());
 
-			if(properties.exists())
+			if (properties.exists())
 				properties.read();
 			properties.asList().add(writingTreePropertyEntry);
 			properties.write();
-			
+
 			writingTreePropertyEntry = new MFIProperties.MFIProperty();
 
 			tree.close();
@@ -452,11 +456,41 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			LOG.error("Could not load properties, operating on old instance.", e);
 		}
 
+		// filter trees not in split range
+		Collection<MFIProperties.MFIProperty> filted =
+				Collections2.filter(properties.asList(), new Predicate<MFIProperties.MFIProperty>() {
+					@Override
+					public boolean apply(@Nullable MFIProperties.MFIProperty input) {
+						if(input.endPos > fileSplit.getStart() + fileSplit.getLength() - 1){
+							return false;
+						} else if (input.startPos >= fileSplit.getStart()) {
+							if (input.endPos > fileSplit.getStart() + fileSplit.getLength() - 1) {
+								throw new RuntimeException(
+										"property must not start within filesplit range and go over it. " +
+												"property: " + input + "\n" +
+												"fileSplit: start = " + fileSplit.getStart() + ", end = " + (fileSplit.getStart() + fileSplit.getLength() - 1));
+							} else {
+								return true;
+							}
+						} else {
+							if (input.endPos >= fileSplit.getStart()) {
+								throw new RuntimeException(
+										"property must not start before fileSplit.getStart() and go over it. \n" +
+												"property: " + input + "\n" +
+												"fileSplit: start = " + fileSplit.getStart() + ", end = " + (fileSplit.getStart() + fileSplit.getLength() - 1));
+							} else {
+								return false;
+							}
+						}
+					}
+				});
+
 		// put the transformed list in a new ArrayList because Lists.transfrom returns a
 		// RandomAccessList which returns different instances when calling list.get(). This results in
 		// list.get(0) != list.get(0)
-		return Lists.newArrayList(
-				Lists.transform(properties.asList(), new Function<MFIProperties.MFIProperty, BTree<K, V>>() {
+
+		Collection<BTree<K, V>> trees =
+				Collections2.transform(filted, new Function<MFIProperties.MFIProperty, BTree<K, V>>() {
 					@Override
 					public BTree<K, V> apply(@Nullable MFIProperties.MFIProperty input) {
 						ResourceManager rm =
@@ -472,7 +506,9 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 						return null;
 					}
-				}));
+				});
+
+		return Lists.newArrayList(trees);
 	}
 
 	private BTree<K, V> getTree(File file) {

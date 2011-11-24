@@ -5,6 +5,7 @@ import de.rwhq.btree.Range;
 import de.rwhq.serializer.FixLengthSerializer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.File;
 import java.util.Comparator;
@@ -21,13 +22,17 @@ public class BTreeIndexBuilder<K,V> {
 	private Comparator<K>  comparator;
 	private List<Range<K>> defaultSearchRanges;
 	private FSDataInputStream inputStream;
-
-	public  KeyExtractor keyExtractor;
+	private KeyExtractor keyExtractor;
 	private String       hdfsPath;
 	private Configuration jobConfiguration;
+	private FileSplit fileSplit;
 
 	private boolean primaryIndex = false;
 	private int secondaryIndexReadBufferSize = 500;
+
+	public FileSplit getFileSplit() {
+		return fileSplit;
+	}
 
 	public Configuration getJobConfiguration() {
 		return jobConfiguration;
@@ -136,19 +141,6 @@ public class BTreeIndexBuilder<K,V> {
 		return secondaryIndexReadBufferSize;
 	}
 
-
-	int getCacheSize() {
-		return cacheSize;
-	}
-
-	String getHdfsPath() {
-		return hdfsPath;
-	}
-
-	File getIndexRootFolder() {
-		return indexRootFolder;
-	}
-
 	public boolean isPrimaryIndex() {
 		return primaryIndex;
 	}
@@ -161,5 +153,23 @@ public class BTreeIndexBuilder<K,V> {
 	public BTreeIndexBuilder<K, V> secondaryIndex() {
 		this.primaryIndex = false;
 		return this;
+	}
+
+	public BTreeIndexBuilder<K, V> fileSplit(FileSplit fileSplit) {
+		this.fileSplit = fileSplit;
+		return this;
+	}
+
+
+	int getCacheSize() {
+		return cacheSize;
+	}
+
+	String getHdfsPath() {
+		return hdfsPath;
+	}
+
+	File getIndexRootFolder() {
+		return indexRootFolder;
 	}
 }

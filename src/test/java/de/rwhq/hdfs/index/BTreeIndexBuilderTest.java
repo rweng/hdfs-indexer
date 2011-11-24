@@ -3,8 +3,11 @@ package de.rwhq.hdfs.index;
 import de.rwhq.comparator.IntegerComparator;
 import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,9 +16,11 @@ import static org.fest.assertions.Assertions.assertThat;
 
 public class BTreeIndexBuilderTest {
 	private static final File indexFolder = new File("/tmp/index");
+	@Mock private FileSplit fileSplit;
 
 	@Before
 	public void setUp() throws IOException {
+		MockitoAnnotations.initMocks(this);
 		FileUtils.deleteDirectory(indexFolder);
 		indexFolder.mkdir();
 	}
@@ -32,7 +37,9 @@ public class BTreeIndexBuilderTest {
 				.hdfsFilePath("hdfs://localhost/test/bla")
 				.keyExtractor(new IntegerCSVExtractor(0, "( |\\t)+"))
 				.keySerializer(IntegerSerializer.INSTANCE)
+				.fileSplit(fileSplit)
 				.comparator(IntegerComparator.INSTANCE);
+
 	}
 
 

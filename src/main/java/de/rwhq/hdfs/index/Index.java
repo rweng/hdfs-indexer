@@ -73,10 +73,11 @@ public interface Index<K,V> {
      *
      *
      * @param line extracted from the hdfs file
-     * @param pos in the hdfs file
+     * @param startPos in the hdfs file
+     * @param endPos in the hdfs file
      * @return whether the line matches the default search range
      */
-    boolean addLine(String line, long pos);
+    boolean addLine(String line, long startPos, long endPos);
 
 	/**
 	 * @return max position of the index

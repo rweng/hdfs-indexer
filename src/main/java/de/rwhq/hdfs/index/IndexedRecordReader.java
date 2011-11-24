@@ -8,6 +8,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -38,10 +39,18 @@ public class IndexedRecordReader extends LineRecordReader {
 			throws IOException {
 		super.initialize(genericSplit, context);
 
+		try {
+			LOG.info("genericSplit.getLocations(): " + Arrays.toString(genericSplit.getLocations()));
+			LOG.info("generic Split length: " + genericSplit.getLength());
+		} catch (InterruptedException e) {
+				LOG.warn("error when fetching genericSplit", e);
+		}
+
 		// get conf
 		Class<?> builderClass = context.getConfiguration().getClass("indexBuilder", null);
 		checkNotNull(builderClass,
 				"in your job configuration, you must set 'indexBuilder' to the class which should be used to build the Index");
+
 
 		// try to build index
 		try {
@@ -50,6 +59,7 @@ public class IndexedRecordReader extends LineRecordReader {
 					.hdfsFilePath(inputToFileSplit(genericSplit).getPath().toString())
 					.jobConfiguration(context.getConfiguration())
 					.inputStream(fileIn)
+					.fileSplit(inputToFileSplit(genericSplit))
 					.build();
 		} catch (Exception e) {
 			LOG.error("could not create index", e);
@@ -58,19 +68,6 @@ public class IndexedRecordReader extends LineRecordReader {
 		// try to open index
 		if (index != null && !index.isOpen())
 			index.open();
-
-		// some debugging information
-		try {
-			LOG.info("generic Split length: " + genericSplit.getLength());
-		} catch (InterruptedException e) {
-			LOG.warn("error when fetching genericSplit length", e);
-		}
-
-		try {
-			LOG.info("genericSplit locations: " + genericSplit.getLocations());
-		} catch (InterruptedException e) {
-			LOG.warn("error when fetching genericSplit locations", e);
-		}
 
 		// create a text object for efficiency
 		value = new Text();
@@ -86,10 +83,11 @@ public class IndexedRecordReader extends LineRecordReader {
 		// if we finished reading from index, start writing to it
 		if (doneReadingFromIndex) {
 			do {
+				long startPos = pos;
 				boolean result = super.nextKeyValue();
 
 				if (result) {
-					if (index.addLine(getCurrentValue().toString(), pos)) {
+					if (index.addLine(getCurrentValue().toString(), startPos, pos - 1)) {
 						return result;
 					} else {
 						// next iteration

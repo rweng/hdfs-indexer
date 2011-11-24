@@ -3,6 +3,7 @@ package de.rwhq.hdfs.index;
 import com.sun.istack.internal.Builder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 /**
  * used by IndexedRecordReader to create an Index.
@@ -28,4 +29,6 @@ public interface IndexBuilder {
 
 	public IndexBuilder jobConfiguration(Configuration conf);
 	public IndexBuilder inputStream(FSDataInputStream inputStream);
+
+	public IndexBuilder fileSplit(FileSplit fileSplit);
 }
