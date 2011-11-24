@@ -1,14 +1,14 @@
 package de.rwhq.hdfs.index;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.fest.assertions.Assertions.assertThat;
 
 public class IntegerCSVExtractorTest {
 	private IntegerCSVExtractor extractor;
 
-	@BeforeMethod
+	@Before
 	public void setUp() throws Exception {
 		extractor = new IntegerCSVExtractor(1, "[ \t|]+");
 	}

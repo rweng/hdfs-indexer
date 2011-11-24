@@ -66,6 +66,8 @@ public class MFIProperties implements Serializable {
 			this.endPos = endPos;
 		}
 
+
+
 		@Override
 		public boolean equals(Object other){
 			if(other instanceof MFIProperty){
@@ -90,6 +92,10 @@ public class MFIProperties implements Serializable {
 		@Override
 		public int hashCode(){
 			return Objects.hashCode(filePath, startPos, endPos);
+		}
+
+		public File getFile() {
+			return new File(filePath);
 		}
 	}
 

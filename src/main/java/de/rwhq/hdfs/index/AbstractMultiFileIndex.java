@@ -18,8 +18,6 @@ import org.apache.commons.logging.LogFactory;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -179,19 +177,19 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		checkNotNull(b.getKeySerializer(), "keySerializer is null");
 		checkNotNull(b.getComparator(), "comparator is null");
 		checkNotNull(valueSerializer, "valueSerializer must not be null");
-		checkNotNull(b.getIndexFolder(), "index root folder must not be null");
+		checkNotNull(b.getIndexRootFolder(), "index root folder must not be null");
 		checkNotNull(b.getKeyExtractor(), "keyExtractor must not be null");
 
 		checkState(b.getHdfsPath().startsWith("/"), "hdfsPath must start with /");
 		checkState(b.getCacheSize() >= 100, "cacheSize must be >= 100");
-		checkState(b.getIndexFolder().exists(), "index folder must exist");
+		checkState(b.getIndexRootFolder().exists(), "index folder must exist");
 
 		this.hdfsFile = b.getHdfsPath();
 		this.keyExtractor = b.getKeyExtractor();
 		this.keySerializer = b.getKeySerializer();
 		this.comparator = b.getComparator();
 		this.valueSerializer = valueSerializer;
-		this.indexRootFolder = b.getIndexFolder();
+		this.indexRootFolder = b.getIndexRootFolder();
 		this.properties = new MFIProperties(getIndexFolder() + "/properties");
 		this.keyExtractor = b.getKeyExtractor();
 
@@ -383,14 +381,13 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			tree = createWritingTree();
 			tree.bulkInitialize(cache, 0, cachePointer - 1, false);
 
-			String filename = new File(tree.getPath()).getName();
-			writingTreePropertyEntry.filePath = filename;
+			writingTreePropertyEntry.filePath = tree.getPath();
 
 			if (LOG.isDebugEnabled())
-				LOG.debug("new trees filename: " + filename);
+				LOG.debug("new trees path: " + tree.getPath());
 
 			if(properties.exists())
-			properties.read();
+				properties.read();
 			properties.asList().add(writingTreePropertyEntry);
 			properties.write();
 			
@@ -403,6 +400,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			// reset cache and properties next, maybe we can save this index partial next time
 		}
 
+		unlock();
 		cachePointer = 0;
 		writingTreePropertyEntry.startPos = writingTreePropertyEntry.endPos = null;
 	}

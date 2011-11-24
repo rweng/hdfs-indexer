@@ -1,7 +1,7 @@
 package de.rwhq.hdfs.index;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
@@ -11,7 +11,7 @@ import static org.fest.assertions.Assertions.assertThat;
 public class MFIPropertiesTest {
 	private MFIProperties properties;
 
-	@BeforeMethod
+	@Before
 	public void setUp(){
 		properties = new MFIProperties("/tmp/mfipropertiestest");
 		List<MFIProperties.MFIProperty> list = properties.asList();

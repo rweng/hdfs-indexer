@@ -1,144 +1,121 @@
 package de.rwhq.hdfs.index;
 
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Lists;
-import de.rwhq.btree.Range;
 import de.rwhq.comparator.IntegerComparator;
 import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Factory;
-import org.testng.annotations.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
 
 import static org.fest.assertions.Assertions.assertThat;
 
 public class PrimaryIndexTest {
-	private PrimaryIndex<Integer> index;
-	protected final File   indexRootFolder = new File("/tmp/BTreeIndexTest");
-	protected final String hdfsFile        = "/path/to/file.csv";
+	private PrimaryIndex index;
+	private KeyExtractor extractor       = new IntegerCSVExtractor(0, ",");
+	private File         indexRootFolder = new File("/tmp/primaryIndexTest");
+	private String       hdfsFilePath    = "/path/to/hdfs/file.csv";
 
-	@BeforeMethod
+	@Before
 	public void setUp() throws IOException {
-		if (indexRootFolder.exists())
-			FileUtils.deleteDirectory(indexRootFolder);
+		FileUtils.deleteDirectory(indexRootFolder);
 		indexRootFolder.mkdir();
-
-		index = (PrimaryIndex<Integer>) setUpBuilder().build();
+		index = (PrimaryIndex) setupBuilder().build();
 		index.open();
 	}
 
 	@Test
-	public void maxPos() throws IOException {
-		IndexTest.fillIndex(index, 10);
+	public void indexFolder() {
+		assertThat(index.getIndexFolder().getAbsolutePath()).isEqualTo(
+				indexRootFolder.getAbsolutePath() + hdfsFilePath);
+	}
+
+	@Test
+	public void sync() throws IOException {
+		assertThat(index.getLockFile()).doesNotExist();
+
+		fillIndex(10);
 		index.sync();
-		
-		assertThat(index.getMaxPos()).isEqualTo(90L);
+
+		assertThat(index.isOpen()).isTrue();
+		afterSyncTests();
 	}
 
 	@Test
-	public void secondIndex() throws Exception {
-		//addEntriesToIndex();
+	public void close() throws IOException {
+		fillIndex(10);
 		index.close();
 
-		PrimaryIndex index2 = (PrimaryIndex) setUpBuilder().build();
-		assertThat(index).isNotSameAs(index2);
-
-		index2.open();
-		Iterator<String> i = index2.getIterator(false);
-		assertThat(i.hasNext()).isTrue();
-		assertThat(i.next()).isNotNull();
-		assertThat(i.next()).isNotNull();
-		assertThat(i.next()).isNotNull();
-		assertThat(i.hasNext()).isFalse();
-		assertThat(i.next()).isNull();
+		assertThat(index.isOpen()).isFalse();
+		afterSyncTests();
 	}
 
-	@Test(dependsOnMethods = "secondIndex")
-	public void testRange() throws IOException {
-		index.open();
+	@Test
+	public void maxPos() {
+		fillIndex(10);
+		index.sync();
 
-		IndexTest.fillIndex(index, 100);
+		assertThat(index.getMaxPos()).isEqualTo(90);
+	}
 
-		index.close();
+	private void afterSyncTests() throws IOException {
+		// ensure folder is created
+		assertThat(index.getIndexFolder()).exists();
 
-		ArrayList<Range<Integer>> ranges = Lists.newArrayList();
-		ranges.add(new Range(0, 10));
-		ranges.add(new Range(50, 55));
-		ranges.add(new Range(99, null));
+		// ensure properties file is created
+		File propertiesFile = new File(index.getIndexFolder().getAbsolutePath() + "/properties");
+		assertThat(propertiesFile).exists();
 
-		index = (PrimaryIndex<Integer>) setUpBuilder().defaultSearchRanges(ranges).build();
-		index.open();
+		// ensure properties can be read
+		MFIProperties properties = new MFIProperties(propertiesFile.getAbsolutePath());
+		properties.read();
+		assertThat(properties.asList().size()).isEqualTo(1);
 
-		Iterator<String> iterator = index.getIterator();
+		// ensure properties are correct and tree exists
+		MFIProperties.MFIProperty property = properties.asList().get(0);
+		assertThat(property.startPos).isEqualTo(0L);
+		assertThat(property.endPos).isEqualTo(90);
+		assertThat(property.getFile()).isAbsolute().exists();
 
-		for (int i = 0; i <= 10; i++) {
-			assertThat(iterator.next()).startsWith("" + i);
+		// ensure that there is no lockfile
+		assertThat(index.getLockFile()).doesNotExist();
+		assertThat(index.isLocked()).isFalse();
+	}
+
+	@Test
+	public void iterator(){
+		int count = 10;
+		fillIndex(count);
+		index.sync();
+
+		// check iterator without default search range
+		Iterator iterator = index.getIterator();
+		for(int i = 0; i<count;i++){
+			assertThat(iterator.hasNext()).isTrue();
+			assertThat(iterator.next()).isNotNull();
 		}
 
-
-		for (int i = 50; i <= 55; i++)
-			assertThat(iterator.next()).startsWith("" + i);
-
-		assertThat(iterator.next()).startsWith("99");
 		assertThat(iterator.hasNext()).isFalse();
+		assertThat(iterator.next()).isNull();
 	}
 
-	@Test
-	public void indexFolderPath() {
-		assertThat(getIndex().getIndexFolder().getAbsolutePath()).isEqualTo(
-				indexRootFolder.getAbsolutePath() + hdfsFile);
+	private void fillIndex(int count) {
+		for (int i = 0; i < count; i++) {
+			index.addLine("" + i + ",name," + System.currentTimeMillis(), i * 10L);
+		}
 	}
 
-	@Factory
-	public Object[] interfaces() {
-		return new Object[]{
-				new IndexTest() {
-					@Override
-					protected Index getNewIndex() {
-						return setUpBuilder().build();
-
-					}
-
-					@Override
-					protected Index resetIndex() throws IOException {
-						PrimaryIndexTest.this.setUp();
-						return index;
-					}
-				},
-				new AbstractMultiFileIndexTest() {
-					@Override
-					protected AbstractMultiFileIndex resetIndex() throws IOException {
-						PrimaryIndexTest.this.setUp();
-						return index;
-					}
-
-					@Override
-					protected AbstractMultiFileIndex getNewIndex() {
-						return (SecondaryIndex) setUpBuilder().build();
-					}
-				}};
-	}
-
-	protected AbstractMultiFileIndex getIndex() {
-		return index;
-	}
-
-	protected BTreeIndexBuilder setUpBuilder() {
+	private BTreeIndexBuilder setupBuilder() {
 		return new BTreeIndexBuilder()
 				.primaryIndex()
-				.indexFolder(indexRootFolder)
-				.hdfsFilePath(hdfsFile)
-				.keyExtractor(new IntegerCSVExtractor(0, ","))
-				.keySerializer(IntegerSerializer.INSTANCE)
+				.indexRootFolder(indexRootFolder)
+				.hdfsFilePath(hdfsFilePath)
 				.comparator(IntegerComparator.INSTANCE)
-				.addDefaultRange(new Range<Integer>(0, 10))
-				.addDefaultRange(new Range<Integer>(-5, 5))
-				.addDefaultRange(new Range<Integer>(50, 55))
-				.addDefaultRange(new Range<Integer>(99, 99))
-				.addDefaultRange(new Range<Integer>(100, 1010));
+				.keyExtractor(extractor)
+				.keySerializer(IntegerSerializer.INSTANCE);
 	}
+
+
 }

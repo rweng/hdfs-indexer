@@ -3,8 +3,8 @@ package de.rwhq.hdfs.index;
 import de.rwhq.comparator.IntegerComparator;
 import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,13 +14,13 @@ import static org.fest.assertions.Assertions.assertThat;
 public class BTreeIndexBuilderTest {
 	private static final File indexFolder = new File("/tmp/index");
 
-	@BeforeMethod
+	@Before
 	public void setUp() throws IOException {
 		FileUtils.deleteDirectory(indexFolder);
 		indexFolder.mkdir();
 	}
 
-	@Test(expectedExceptions = NullPointerException.class)
+	@Test(expected = NullPointerException.class)
 	public void exceptionIfNoHdfsPath() {
 		new BTreeIndexBuilder().build();
 	}

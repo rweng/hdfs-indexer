@@ -16,7 +16,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class BTreeIndexBuilder<K,V> {
 
 	private int cacheSize = 1000;
-	private File indexFolder;
+	private File indexRootFolder;
 	private FixLengthSerializer<K,byte[]> keySerializer;
 	private Comparator<K>  comparator;
 	private List<Range<K>> defaultSearchRanges;
@@ -72,17 +72,17 @@ public class BTreeIndexBuilder<K,V> {
 		return this;
 	}
 
-	public BTreeIndexBuilder indexFolder(File folder) {
+	public BTreeIndexBuilder indexRootFolder(File folder) {
 		checkNotNull(folder);
-		checkArgument(folder.exists(), "indexFolder must exist");
+		checkArgument(folder.exists(), "indexRootFolder must exist");
 
-		this.indexFolder = folder;
+		this.indexRootFolder = folder;
 
 		return this;
 	}
 
 	public BTreeIndexBuilder indexFolder(String path) {
-		return indexFolder(new File(path));
+		return indexRootFolder(new File(path));
 	}
 
 	public BTreeIndexBuilder hdfsFilePath(String path) {
@@ -145,8 +145,8 @@ public class BTreeIndexBuilder<K,V> {
 		return hdfsPath;
 	}
 
-	File getIndexFolder() {
-		return indexFolder;
+	File getIndexRootFolder() {
+		return indexRootFolder;
 	}
 
 	public boolean isPrimaryIndex() {
