@@ -83,4 +83,11 @@ public interface Index<K,V> {
 	 * @return max position of the index
 	 */
 	long getMaxPos();
+
+	/**
+	 *
+	 * @param pos
+	 * @return -1 if pos is not covered by the index, otherwise the end pos of this partial index
+	 */
+	public long partialEndForPos(long pos);
 }

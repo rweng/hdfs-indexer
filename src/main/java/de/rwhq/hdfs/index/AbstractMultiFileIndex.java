@@ -124,6 +124,16 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		return isOpen;
 	}
 
+
+	/** {@inheritDoc} */
+	@Override
+	public long partialEndForPos(long pos) {
+		ensureOpen();
+
+		MFIProperties.MFIProperty property = properties.propertyForPos(pos);
+		return property == null ? -1L : property.endPos;
+	}
+
 	/** {@inheritDoc} */
 	@Override
 	public void open() throws IOException {
@@ -132,6 +142,9 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 		writingTreePropertyEntry = new MFIProperties.MFIProperty();
 		cachePointer = 0;
+
+		if(properties.exists())
+			properties.read();
 
 		isOpen = true;
 	}

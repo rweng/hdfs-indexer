@@ -80,6 +80,8 @@ public class IndexedRecordReader extends LineRecordReader {
 			return super.nextKeyValue();
 		}
 
+		
+
 		// if we finished reading from index, start writing to it
 		if (doneReadingFromIndex) {
 			do {

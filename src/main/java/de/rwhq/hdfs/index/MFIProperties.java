@@ -14,14 +14,14 @@ import static com.google.common.base.Preconditions.checkState;
 public class MFIProperties implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	private String path;
+	private String            path;
 	private List<MFIProperty> properties;
 
 	public long getMaxPos() {
 		long pos = -1;
 
-		for(MFIProperty p : properties){
-			if(p.endPos > pos)
+		for (MFIProperty p : properties) {
+			if (p.endPos > pos)
 				pos = p.endPos;
 		}
 
@@ -34,9 +34,9 @@ public class MFIProperties implements Serializable {
 		int removed = 0;
 
 		Iterator<MFIProperty> iterator = properties.iterator();
-		while(iterator.hasNext()){
+		while (iterator.hasNext()) {
 			MFIProperty next = iterator.next();
-			if(path.equals(next.filePath)){
+			if (path.equals(next.filePath)) {
 				iterator.remove();
 				removed++;
 			}
@@ -49,28 +49,37 @@ public class MFIProperties implements Serializable {
 		return new File(path).exists();
 	}
 
-	public static class MFIProperty implements Serializable{
+	public MFIProperty propertyForPos(long pos) {
+		for(MFIProperty p : properties) {
+			if (p.startPos <= pos && p.endPos >= pos) {
+				return p;
+			}
+		}
+
+		return null;
+	}
+
+	public static class MFIProperty implements Serializable {
 		private static final long serialVersionUID = 1L;
 
 		public String filePath;
-		public Long startPos;
-		public Long endPos;
+		public Long   startPos;
+		public Long   endPos;
 
-		/**
-		 * for serialization only
-		 */
-		public MFIProperty(){}
-		public MFIProperty(String filePath, Long startPos, Long endPos){
+		/** for serialization only */
+		public MFIProperty() {
+		}
+
+		public MFIProperty(String filePath, Long startPos, Long endPos) {
 			this.filePath = filePath;
 			this.startPos = startPos;
 			this.endPos = endPos;
 		}
 
 
-
 		@Override
-		public boolean equals(Object other){
-			if(other instanceof MFIProperty){
+		public boolean equals(Object other) {
+			if (other instanceof MFIProperty) {
 				MFIProperty p2 = (MFIProperty) other;
 				return Objects.equal(filePath, p2.filePath)
 						&& Objects.equal(startPos, p2.startPos)
@@ -81,7 +90,7 @@ public class MFIProperties implements Serializable {
 		}
 
 		@Override
-		public String toString(){
+		public String toString() {
 			return Objects.toStringHelper(this)
 					.add("filePath", filePath)
 					.add("startPos", startPos)
@@ -90,33 +99,35 @@ public class MFIProperties implements Serializable {
 		}
 
 		@Override
-		public int hashCode(){
+		public int hashCode() {
 			return Objects.hashCode(filePath, startPos, endPos);
 		}
 
 		public File getFile() {
 			return new File(filePath);
 		}
+
 	}
 
-	public MFIProperties(String path){
+	public MFIProperties(String path) {
 		this.path = path;
 		this.properties = Lists.newArrayList();
 	}
 
-	public List<MFIProperty> asList(){
+	public List<MFIProperty> asList() {
 		return properties;
 	}
 
 	public void write() throws IOException {
 
 		// ensure all MFIProperties have all values set
-		for(MFIProperty p : properties){
+		for (MFIProperty p : properties) {
 			checkNotNull(p.filePath, "All attributes of MFIProperty must be set for writing %s", toString());
 			checkNotNull(p.startPos, "All attributes of MFIProperty must be set for writing %s", toString());
 			checkNotNull(p.endPos, "All attributes of MFIProperty must be set for writing %s", toString());
 
-			checkState(p.startPos < p.endPos, "MFIProperty.startPos must be < MFIProperty.endPos for writing %s", toString());
+			checkState(p.startPos < p.endPos, "MFIProperty.startPos must be < MFIProperty.endPos for writing %s",
+					toString());
 		}
 
 		FileOutputStream stream = new FileOutputStream(path);
@@ -128,7 +139,7 @@ public class MFIProperties implements Serializable {
 	}
 
 	@Override
-	public String toString(){
+	public String toString() {
 		return Objects.toStringHelper(this)
 				.add("path", path)
 				.add("properties", properties)
@@ -141,7 +152,7 @@ public class MFIProperties implements Serializable {
 
 
 		MFIProperties loaded;
-		
+
 		try {
 			loaded = (MFIProperties) oStream.readObject();
 		} catch (ClassNotFoundException e) {

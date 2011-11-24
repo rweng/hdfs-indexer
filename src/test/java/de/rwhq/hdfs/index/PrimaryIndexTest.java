@@ -70,6 +70,27 @@ public class PrimaryIndexTest {
 		assertThat(index.getMaxPos()).isEqualTo(99);
 	}
 
+	@Test
+	public void containsPos() throws IOException {
+		fillIndex(50, 10);
+		index.sync();
+
+		fillIndex(70, 40);
+		index.close();
+
+		when(fileSplit.getStart()).thenReturn(500L);
+		when(fileSplit.getLength()).thenReturn(100L);
+
+		index = (PrimaryIndex) setupBuilder().build();
+		index.open();
+
+		assertThat(index.partialEndForPos(0L)).isEqualTo(-1);
+		assertThat(index.partialEndForPos(500)).isEqualTo(599);
+		assertThat(index.partialEndForPos(599)).isEqualTo(599);
+		assertThat(index.partialEndForPos(600)).isEqualTo(-1);
+		assertThat(index.partialEndForPos(733)).isEqualTo(1099);
+	}
+
 	private void afterSyncTests() throws IOException {
 		// ensure folder is created
 		assertThat(index.getIndexFolder()).exists();
