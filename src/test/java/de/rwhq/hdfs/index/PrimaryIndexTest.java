@@ -1,9 +1,11 @@
 package de.rwhq.hdfs.index;
 
+import de.rwhq.btree.Range;
 import de.rwhq.comparator.IntegerComparator;
 import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -85,7 +87,7 @@ public class PrimaryIndexTest {
 	}
 
 	@Test
-	public void iterator(){
+	public void iteratorWithoutSearchRange(){
 		int count = 10;
 		fillIndex(count);
 		index.sync();
@@ -100,6 +102,34 @@ public class PrimaryIndexTest {
 		assertThat(iterator.hasNext()).isFalse();
 		assertThat(iterator.next()).isNull();
 	}
+
+	@Test
+	public void iteratorWithSearchRange() throws IOException {
+		int count = 10;
+		fillIndex(count);
+		index.close();
+
+		index = (PrimaryIndex) setupBuilder()
+				.addDefaultRange(new Range(1,2))
+				.addDefaultRange(new Range(1,3))
+				.addDefaultRange(new Range(9,10))
+				.build();
+		index.open();
+		String matchString = "(1|2|3|9),.+";
+		Iterator<String> iterator = index.getIterator();
+
+		assertThat(iterator.next()).matches(matchString);
+		assertThat(iterator.next()).matches(matchString);
+		assertThat(iterator.next()).matches(matchString);
+		assertThat(iterator.next()).matches(matchString);
+
+		assertThat(iterator.next()).isEqualTo(null);
+		
+	}
+
+	@Test
+	@Ignore
+	public void iteratorShouldOnlyIterateToSplitEnd(){}
 
 	private void fillIndex(int count) {
 		for (int i = 0; i < count; i++) {

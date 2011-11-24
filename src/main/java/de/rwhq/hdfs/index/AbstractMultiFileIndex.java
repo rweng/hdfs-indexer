@@ -68,7 +68,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 	/* if an exception occured during key extraction */
 	private boolean extractorException = false;
-	protected List<Range<K>>                 defaultSearchRanges;
+	protected TreeSet<Range<K>> defaultSearchRanges;
 	private   FixLengthSerializer<V, byte[]> valueSerializer;
 	private MFIProperties properties;
 	private MFIProperties.MFIProperty writingTreePropertyEntry;
@@ -194,8 +194,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		this.keyExtractor = b.getKeyExtractor();
 
 		if (b.getDefaultSearchRanges() != null) {
-			this.defaultSearchRanges = b.getDefaultSearchRanges();
-			Range.merge(defaultSearchRanges, comparator);
+			this.defaultSearchRanges = Range.merge(b.getDefaultSearchRanges(), comparator);
 		}
 
 		this.cache = ObjectArrays.newArray(AbstractMap.SimpleEntry.class, b.getCacheSize());
@@ -244,7 +243,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		private List<BTree<K, V>> trees;
 		private BTree<K, V>       currentTree;
 		private Iterator<V>       currentIterator;
-		private List<Range<K>>    searchRanges;
+		private Collection<Range<K>> searchRanges;
 		private int exceptionCount = 0;
 
 		@Override
@@ -257,7 +256,6 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 				// initial tree
 				if (currentTree == null){
 					currentTree = trees.get(0);
-					currentTree.load();
 				}
 
 				if (currentIterator == null) {
@@ -326,7 +324,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			throw new UnsupportedOperationException();
 		}
 
-		public BTreeIndexIterator(List<Range<K>> searchRange) {
+		public BTreeIndexIterator(Collection<Range<K>> searchRange) {
 			this.searchRanges = searchRange;
 			this.trees = getTreeList();
 		}
@@ -454,20 +452,27 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			LOG.error("Could not load properties, operating on old instance.", e);
 		}
 
-		return Lists.transform(properties.asList(), new Function<MFIProperties.MFIProperty, BTree<K, V>>() {
-			@Override
-			public BTree<K, V> apply(@Nullable MFIProperties.MFIProperty input) {
-				ResourceManager rm = new ResourceManagerBuilder().file(input.filePath).build();
+		// put the transformed list in a new ArrayList because Lists.transfrom returns a
+		// RandomAccessList which returns different instances when calling list.get(). This results in
+		// list.get(0) != list.get(0)
+		return Lists.newArrayList(
+				Lists.transform(properties.asList(), new Function<MFIProperties.MFIProperty, BTree<K, V>>() {
+					@Override
+					public BTree<K, V> apply(@Nullable MFIProperties.MFIProperty input) {
+						ResourceManager rm =
+								new ResourceManagerBuilder().file(input.filePath).open().useLock(false).build();
 
-				try {
-					return BTree.create(rm, keySerializer, valueSerializer, comparator);
-				} catch (IOException e) {
-					LOG.error("error creating btree " + input.filePath, e);
-				}
-				
-				return null;
-			}
-		});
+						try {
+							BTree<K, V> tree = BTree.create(rm, keySerializer, valueSerializer, comparator);
+							tree.load();
+							return tree;
+						} catch (IOException e) {
+							LOG.error("error creating btree " + input.filePath, e);
+						}
+
+						return null;
+					}
+				}));
 	}
 
 	private BTree<K, V> getTree(File file) {
