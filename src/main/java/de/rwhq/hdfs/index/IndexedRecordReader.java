@@ -75,7 +75,8 @@ public class IndexedRecordReader extends LineRecordReader {
 
 			// initialize ranges and iterator
 			rangesIterator = index.toRanges().iterator();
-			currentRange = rangesIterator.next();
+			if(rangesIterator.hasNext())
+				currentRange = rangesIterator.next();
 			if(currentRange != null)
 				currentIterator = index.getIterator(currentRange);
 		}
@@ -128,9 +129,9 @@ public class IndexedRecordReader extends LineRecordReader {
 		// if the current iterator does not have any more values, set to next range
 		if(!currentIterator.hasNext()){
 			// reset pos
-			pos = currentRange.getTo();
-			
-			currentRange = rangesIterator.next();
+			pos = currentRange.getTo() + 1;
+
+			currentRange = rangesIterator.hasNext() ? rangesIterator.next() : null;
 			currentIterator = currentRange == null ? null : index.getIterator(currentRange);
 			return nextFromIndex();
 		}

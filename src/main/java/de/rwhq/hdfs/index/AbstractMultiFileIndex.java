@@ -185,7 +185,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 
 	@Override
 	public Iterator<V> getIterator(Range<Long> range) throws IOException {
-		return loadTree(properties.getPropertyForRange(range).filePath).getIterator();
+		return loadTree(properties.getPropertyForRange(range).filePath).getIterator(defaultSearchRanges);
 	}
 
 	/**
@@ -206,8 +206,8 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 		checkNotNull(b.getKeyExtractor(), "keyExtractor must not be null");
 		checkNotNull(b.getFileSplit(), "FileSplit must not be null");
 
-		checkState(b.getHdfsPath().startsWith("/"), "hdfsPath must start with /");
-		checkState(b.getCacheSize() >= 100, "cacheSize must be >= 100");
+		checkState(b.getHdfsPath().startsWith("/"), "hdfsPath must start with /. Is: %s", b.getHdfsPath());
+		checkState(b.getCacheSize() >= 10, "cacheSize must be >= 10");
 		checkState(b.getIndexRootFolder().exists(), "index folder must exist");
 
 		this.hdfsFile = b.getHdfsPath();

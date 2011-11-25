@@ -213,11 +213,6 @@ public class PrimaryIndexTest {
 		assertThat(iterator.next()).isEqualTo(null);
 	}
 
-	@Test
-	@Ignore
-	public void iteratorShouldOnlyIterateToSplitEnd() {
-	}
-
 	private void afterSyncTests() throws IOException {
 		// ensure folder is created
 		assertThat(index.getIndexFolder()).exists();

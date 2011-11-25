@@ -94,7 +94,8 @@ public class BTreeIndexBuilder<K,V> {
 		checkNotNull(path);
 
 		// if hdfsFile doesn't start with /, the server name is before the path
-		this.hdfsPath = path.replaceAll("^hdfs://[^/]*", "");
+		this.hdfsPath = path.replaceAll("^(hdfs://|file:)[^/]*", "");
+
 
 		return this;
 	}
@@ -171,5 +172,10 @@ public class BTreeIndexBuilder<K,V> {
 
 	File getIndexRootFolder() {
 		return indexRootFolder;
+	}
+
+	public BTreeIndexBuilder indexFolder(File indexDir) {
+		indexRootFolder = indexDir;
+		return this;
 	}
 }
