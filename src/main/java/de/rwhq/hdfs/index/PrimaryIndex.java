@@ -1,5 +1,6 @@
 package de.rwhq.hdfs.index;
 
+import de.rwhq.btree.Range;
 import de.rwhq.serializer.StringCutSerializer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

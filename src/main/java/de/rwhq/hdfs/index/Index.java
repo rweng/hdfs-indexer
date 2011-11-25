@@ -1,7 +1,10 @@
 package de.rwhq.hdfs.index;
 
+import de.rwhq.btree.Range;
+
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.SortedSet;
 
 
 /**
@@ -90,4 +93,8 @@ public interface Index<K,V> {
 	 * @return -1 if pos is not covered by the index, otherwise the end pos of this partial index
 	 */
 	public long partialEndForPos(long pos);
+
+	public SortedSet<Range<Long>> toRanges();
+
+	Iterator<V> getIterator(Range<Long> range) throws IOException;
 }

@@ -1,11 +1,13 @@
 package de.rwhq.hdfs.index;
 
+import de.rwhq.btree.Range;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.hsqldb.index.RowIterator;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -15,7 +17,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /** Special kind of LineRecordReader. It tries to create an index over the hdfs-file. Therefore, */
 public class IndexedRecordReader extends LineRecordReader {
-	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
+	private static final Log                   LOG            = LogFactory.getLog(IndexedRecordReader.class);
 
 	private static FileSplit inputToFileSplit(InputSplit inputSplit) {
 		FileSplit split;
@@ -27,11 +29,12 @@ public class IndexedRecordReader extends LineRecordReader {
 		}
 		return split;
 	}
-
+	
+	private              Iterator<Range<Long>> rangesIterator;
+	private Range<Long>      currentRange;
+	private Iterator<String> currentIterator;
 	private Index            index;
-	private Iterator<String> indexIterator;
-	private boolean doneReadingFromIndex = false;
-
+	
 
 	/** {@inheritDoc} */
 	@Override
@@ -43,7 +46,7 @@ public class IndexedRecordReader extends LineRecordReader {
 			LOG.info("genericSplit.getLocations(): " + Arrays.toString(genericSplit.getLocations()));
 			LOG.info("generic Split length: " + genericSplit.getLength());
 		} catch (InterruptedException e) {
-				LOG.warn("error when fetching genericSplit", e);
+			LOG.warn("error when fetching genericSplit", e);
 		}
 
 		// get conf
@@ -66,9 +69,16 @@ public class IndexedRecordReader extends LineRecordReader {
 		}
 
 		// try to open index
-		if (index != null && !index.isOpen())
-			index.open();
+		if (index != null) {
+			if (!index.isOpen())
+				index.open();
 
+			// initialize ranges and iterator
+			rangesIterator = index.toRanges().iterator();
+			currentRange = rangesIterator.next();
+			if(currentRange != null)
+				currentIterator = index.getIterator(currentRange);
+		}
 		// create a text object for efficiency
 		value = new Text();
 	}
@@ -80,10 +90,10 @@ public class IndexedRecordReader extends LineRecordReader {
 			return super.nextKeyValue();
 		}
 
-		
+		// if we cant read from the index
+		String next = nextFromIndex();
 
-		// if we finished reading from index, start writing to it
-		if (doneReadingFromIndex) {
+		if(next == null){ // read from hdfs
 			do {
 				long startPos = pos;
 				boolean result = super.nextKeyValue();
@@ -101,35 +111,31 @@ public class IndexedRecordReader extends LineRecordReader {
 			} while (true);
 		}
 
-		// get next value from index as long as we have
-		if (getIndexIterator().hasNext()) {
-
-			// get index for file if not set
-			// read from index
-			String next = getIndexIterator().next();
-			if (LOG.isDebugEnabled())
-				LOG.debug("got next: " + next);
-			if (next != null) {
-				value.set(next);
-				return true;
-			} else {
-				return false;
-			}
-		} else {
-			if (LOG.isDebugEnabled())
-				LOG.debug("Replacing current pos (" + pos + ") with index.getMaxPos(" + index.getMaxPos() + ")");
-			pos = index.getMaxPos();
-
-			doneReadingFromIndex = true;
-			return nextKeyValue();
-		}
+		// next is set
+		value.set(next);
+		return true;
 	}
 
-	private Iterator<String> getIndexIterator() {
-		if (indexIterator == null && index != null) {
-			indexIterator = index.getIterator();
+	private String nextFromIndex() throws IOException {
+		// if we can no longer read from index, currentRange gets null
+		if(currentRange == null)
+			return null;
+
+		// if the currentRange did not yet start
+		if(pos < currentRange.getFrom())
+			return null;
+
+		// if the current iterator does not have any more values, set to next range
+		if(!currentIterator.hasNext()){
+			// reset pos
+			pos = currentRange.getTo();
+			
+			currentRange = rangesIterator.next();
+			currentIterator = currentRange == null ? null : index.getIterator(currentRange);
+			return nextFromIndex();
 		}
 
-		return indexIterator;
+		// if the currentIterator has more values
+		return currentIterator.next();
 	}
 }

@@ -54,7 +54,7 @@ import static com.google.common.base.Preconditions.checkState;
  * is created, it is not possible to store the end position in the file name (assuming we dont want to rename). Thus, a
  * properties file is required.
  */
-public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
+public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 	private static Log LOG = LogFactory.getLog(AbstractMultiFileIndex.class);
 
 	protected String hdfsFile;
@@ -86,7 +86,6 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 
 		if (!ourLock && isLocked()) {
-			LOG.info("index is locked.");
 			return lineMatchesSearchRange(line);
 		} else {
 			lock();
@@ -143,7 +142,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		writingTreePropertyEntry = new MFIProperties.MFIProperty();
 		cachePointer = 0;
 
-		if(properties.exists())
+		if (properties.exists())
 			properties.read();
 
 		isOpen = true;
@@ -176,6 +175,17 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	@Override
 	public long getMaxPos() {
 		return properties.getMaxPos();
+	}
+
+	@Override
+	public SortedSet<Range<Long>> toRanges() {
+		return properties.toRanges(fileSplit.getStart(), fileSplit.getStart() + fileSplit.getLength() - 1);
+	}
+
+
+	@Override
+	public Iterator<V> getIterator(Range<Long> range) throws IOException {
+		return loadTree(properties.getPropertyForRange(range).filePath).getIterator();
 	}
 
 	/**
@@ -474,7 +484,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 				Collections2.filter(properties.asList(), new Predicate<MFIProperties.MFIProperty>() {
 					@Override
 					public boolean apply(@Nullable MFIProperties.MFIProperty input) {
-						if(input.endPos > fileSplit.getStart() + fileSplit.getLength() - 1){
+						if (input.endPos > fileSplit.getStart() + fileSplit.getLength() - 1) {
 							return false;
 						} else if (input.startPos >= fileSplit.getStart()) {
 							if (input.endPos > fileSplit.getStart() + fileSplit.getLength() - 1) {
@@ -505,14 +515,9 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		Collection<BTree<K, V>> trees =
 				Collections2.transform(filted, new Function<MFIProperties.MFIProperty, BTree<K, V>>() {
 					@Override
-					public BTree<K, V> apply(@Nullable MFIProperties.MFIProperty input) {
-						ResourceManager rm =
-								new ResourceManagerBuilder().file(input.filePath).open().useLock(false).build();
-
+					public BTree<K, V> apply(MFIProperties.MFIProperty input) {
 						try {
-							BTree<K, V> tree = BTree.create(rm, keySerializer, valueSerializer, comparator);
-							tree.load();
-							return tree;
+							return loadTree(input.filePath);
 						} catch (IOException e) {
 							LOG.error("error creating btree " + input.filePath, e);
 						}
@@ -521,27 +526,19 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 					}
 				});
 
+
 		return Lists.newArrayList(trees);
 	}
 
-	private BTree<K, V> getTree(File file) {
-		BTree<K, V> result;
-		try {
-			ResourceManager manager =
-					new ResourceManagerBuilder().file(file).useLock(false).build();
+	private BTree<K, V> loadTree(String filePath) throws IOException {
 
-			result = BTree.create(manager, keySerializer, valueSerializer,
-					comparator);
-			result.loadOrInitialize();
+		ResourceManager rm =
+				new ResourceManagerBuilder().file(filePath).open().useLock(false).build();
 
-			// checkStructure is very expensive, so do not do this usually
-			if (LOG.isDebugEnabled())
-				result.checkStructure();
+		BTree<K, V> tree = BTree.create(rm, keySerializer, valueSerializer, comparator);
+		tree.load();
 
-		} catch (IOException e) {
-			throw new RuntimeException("error occured while trying to get btree: " + file.getAbsolutePath(), e);
-		}
-		return result;
+		return tree;
 	}
 
 	protected void finalize() throws Throwable {

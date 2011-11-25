@@ -14,6 +14,7 @@ import org.mockito.MockitoAnnotations;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.SortedSet;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -29,7 +30,7 @@ public class PrimaryIndexTest {
 	public void setUp() throws IOException {
 		MockitoAnnotations.initMocks(this);
 		when(fileSplit.getStart()).thenReturn(0L);
-		
+
 		FileUtils.deleteDirectory(indexRootFolder);
 		indexRootFolder.mkdir();
 		index = (PrimaryIndex) setupBuilder().build();
@@ -71,6 +72,32 @@ public class PrimaryIndexTest {
 	}
 
 	@Test
+	public void toRanges() throws IOException {
+		fillIndex(70, 40);
+		index.sync();
+
+		// this should not be returned when asking for ranges because it doesnt concern our split
+		fillIndex(0, 10);
+		index.sync();
+
+		fillIndex(50, 10);
+		index.close();
+
+		index = (PrimaryIndex) setupBuilder()
+				.fileSplit(fileSplit)
+				.build();
+		when(fileSplit.getStart()).thenReturn(300L);
+		when(fileSplit.getLength()).thenReturn(1000L);
+
+		index.open();
+		SortedSet<Range<Long>> ranges = index.toRanges();
+
+		assertThat(ranges).hasSize(2);
+		assertThat(ranges.first()).isEqualTo(new Range(500L, 599L));
+		assertThat(ranges.last()).isEqualTo(new Range(700L, 1099L));
+	}
+
+	@Test
 	public void containsPos() throws IOException {
 		fillIndex(50, 10);
 		index.sync();
@@ -91,40 +118,41 @@ public class PrimaryIndexTest {
 		assertThat(index.partialEndForPos(733)).isEqualTo(1099);
 	}
 
-	private void afterSyncTests() throws IOException {
-		// ensure folder is created
-		assertThat(index.getIndexFolder()).exists();
+	@Test
+	public void iteratorForRange() throws IOException {
+		fillIndex(50, 10);
+		index.sync();
 
-		// ensure properties file is created
-		File propertiesFile = new File(index.getIndexFolder().getAbsolutePath() + "/properties");
-		assertThat(propertiesFile).exists();
+		fillIndex(70, 40);
+		index.close();
 
-		// ensure properties can be read
-		MFIProperties properties = new MFIProperties(propertiesFile.getAbsolutePath());
-		properties.read();
-		assertThat(properties.asList().size()).isEqualTo(1);
+		when(fileSplit.getStart()).thenReturn(500L);
+		when(fileSplit.getLength()).thenReturn(100L);
 
-		// ensure properties are correct and tree exists
-		MFIProperties.MFIProperty property = properties.asList().get(0);
-		assertThat(property.startPos).isEqualTo(0L);
-		assertThat(property.endPos).isEqualTo(99);
-		assertThat(property.getFile()).isAbsolute().exists();
+		index = (PrimaryIndex) setupBuilder().build();
+		index.open();
 
-		// ensure that there is no lockfile
-		assertThat(index.getLockFile()).doesNotExist();
-		assertThat(index.isLocked()).isFalse();
+		SortedSet<Range<Long>> sortedSet = index.toRanges();
+		Range<Long> range = sortedSet.first();
+		Iterator iterator = index.getIterator(range);
+
+		for(int i = 50; i < 60;i++){
+			assertThat(iterator.next()).isNotNull();
+		}
+
+		assertThat(iterator.next()).isNull();
 	}
 
 	@Test
-	public void iteratorWithoutSearchRange(){
+	public void iteratorWithoutSearchRange() {
 		int count = 10;
 		fillIndex(0, count);
 		when(fileSplit.getLength()).thenReturn(count * 10L);
 		index.sync();
-		
+
 		// check iterator without default search range
 		Iterator iterator = index.getIterator();
-		for(int i = 0; i<count;i++){
+		for (int i = 0; i < count; i++) {
 			assertThat(iterator.hasNext()).isTrue();
 			assertThat(iterator.next()).isNotNull();
 		}
@@ -141,9 +169,9 @@ public class PrimaryIndexTest {
 		index.close();
 
 		index = (PrimaryIndex) setupBuilder()
-				.addDefaultRange(new Range(1,2))
-				.addDefaultRange(new Range(1,3))
-				.addDefaultRange(new Range(9,10))
+				.addDefaultRange(new Range(1, 2))
+				.addDefaultRange(new Range(1, 3))
+				.addDefaultRange(new Range(9, 10))
 				.build();
 		index.open();
 		String matchString = "(1|2|3|9),.+";
@@ -187,7 +215,32 @@ public class PrimaryIndexTest {
 
 	@Test
 	@Ignore
-	public void iteratorShouldOnlyIterateToSplitEnd(){}
+	public void iteratorShouldOnlyIterateToSplitEnd() {
+	}
+
+	private void afterSyncTests() throws IOException {
+		// ensure folder is created
+		assertThat(index.getIndexFolder()).exists();
+
+		// ensure properties file is created
+		File propertiesFile = new File(index.getIndexFolder().getAbsolutePath() + "/properties");
+		assertThat(propertiesFile).exists();
+
+		// ensure properties can be read
+		MFIProperties properties = new MFIProperties(propertiesFile.getAbsolutePath());
+		properties.read();
+		assertThat(properties.asList().size()).isEqualTo(1);
+
+		// ensure properties are correct and tree exists
+		MFIProperties.MFIProperty property = properties.asList().get(0);
+		assertThat(property.startPos).isEqualTo(0L);
+		assertThat(property.endPos).isEqualTo(99);
+		assertThat(property.getFile()).isAbsolute().exists();
+
+		// ensure that there is no lockfile
+		assertThat(index.getLockFile()).doesNotExist();
+		assertThat(index.isLocked()).isFalse();
+	}
 
 	private void fillIndex(int from, int count) {
 		for (int i = from; i < from + count; i++) {

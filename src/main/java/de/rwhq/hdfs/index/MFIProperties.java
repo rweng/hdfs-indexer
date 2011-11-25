@@ -1,12 +1,17 @@
 package de.rwhq.hdfs.index;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import de.rwhq.btree.Range;
+import de.rwhq.comparator.LongComparator;
 
+import javax.annotation.Nullable;
 import java.io.*;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -59,6 +64,41 @@ public class MFIProperties implements Serializable {
 		return null;
 	}
 
+	public SortedSet<Range<Long>> toRanges() {
+		return toRanges(null, null);
+	}
+
+	public SortedSet<Range<Long>> toRanges(final Long min, final Long max) {
+		final TreeSet<Range<Long>> result = Sets.newTreeSet(Range.createRangeComparator(LongComparator.INSTANCE));
+
+		Collection<Range<Long>> transformed =
+				Collections2.transform(properties, new Function<MFIProperty, Range<Long>>() {
+					@Override
+					public Range<Long> apply(MFIProperty input) {
+						if (min == null || input.startPos >= min) {
+							if (max == null || input.endPos <= max)
+								return input.toRange();
+						}
+
+						return null;
+					}
+				});
+
+		
+		result.addAll(Collections2.filter(transformed, Predicates.notNull()));
+		return result;
+	}
+
+	public MFIProperty getPropertyForRange(Range<Long> range) {
+		for(MFIProperty p : properties){
+			if(p.toRange().equals(range))
+				return p;
+		}
+
+		return null;
+	}
+
+
 	public static class MFIProperty implements Serializable {
 		private static final long serialVersionUID = 1L;
 
@@ -107,6 +147,9 @@ public class MFIProperties implements Serializable {
 			return new File(filePath);
 		}
 
+		public Range<Long> toRange() {
+			return new Range<Long>(startPos, endPos);
+		}
 	}
 
 	public MFIProperties(String path) {
