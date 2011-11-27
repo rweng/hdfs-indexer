@@ -1,15 +1,15 @@
 package de.rwhq.hdfs.index;
 
-import com.google.common.collect.ObjectArrays;
-import com.google.common.primitives.Bytes;
-import com.google.common.primitives.Chars;
+import com.google.common.annotations.VisibleForTesting;
 import de.rwhq.serializer.LongSerializer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.util.LineReader;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.AbstractMap;
 import java.util.Iterator;
 
@@ -18,11 +18,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 
-	private FSDataInputStream inputStream;
-	private LineReader        lineReader;
+	@VisibleForTesting
+	FSDataInputStream inputStream;
+	
 	private Configuration     jobConf;
 	private int maxLineLength;
 	private Text text;
+	private DataInputStream dataStream;
+
+	@VisibleForTesting
+	InputStreamReader inReader;
 
 	public SecondaryIndex(BTreeIndexBuilder b) {
 		super(b, LongSerializer.INSTANCE);
@@ -44,13 +49,7 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 		checkNotNull(inputStream, "inputStream must not be null for iterating over a secondary index");
 		checkNotNull(jobConf, "job configuration must not be null for iterating over a secondary index");
 
-		if (lineReader == null) {
-			try {
-				lineReader = new LineReader(inputStream, jobConf);
-			} catch (IOException e) {
-				throw new RuntimeException("could not create LineReader", e);
-			}
-		}
+		inReader = new InputStreamReader(inputStream);
 
 		maxLineLength = jobConf.getInt("mapred.linerecordreader.maxlength",
 				Integer.MAX_VALUE);
@@ -78,10 +77,11 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 			if (nextLong == null)
 				return null;
 
+
 			try {
 				long oldPos = inputStream.getPos();
 				inputStream.seek(nextLong);
-				lineReader.readLine(text, maxLineLength);
+				text.set(new BufferedReader(inReader).readLine());
 				inputStream.seek(oldPos);
 			} catch (IOException e) {
 				throw new RuntimeException("error when reading from inputStream", e);

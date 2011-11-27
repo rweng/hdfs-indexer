@@ -478,7 +478,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 		} catch (IOException e) {
 			LOG.error("Could not load properties, operating on old instance.", e);
 		}
-
+		
 		// filter trees not in split range
 		Collection<MFIProperties.MFIProperty> filted =
 				Collections2.filter(properties.asList(), new Predicate<MFIProperties.MFIProperty>() {
