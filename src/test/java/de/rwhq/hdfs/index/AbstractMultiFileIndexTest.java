@@ -16,7 +16,6 @@ import java.util.Iterator;
 import java.util.SortedSet;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public abstract class AbstractMultiFileIndexTest {

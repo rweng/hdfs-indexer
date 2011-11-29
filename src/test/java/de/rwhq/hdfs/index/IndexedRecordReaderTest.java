@@ -19,7 +19,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.mapreduce.lib.reduce.IntSumReducer;
-import org.hsqldb.lib.FileUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -27,7 +26,6 @@ import org.junit.Test;
 
 import java.io.*;
 
-import static junit.framework.Assert.assertEquals;
 import static org.fest.assertions.Assertions.assertThat;
 
 public class IndexedRecordReaderTest {
