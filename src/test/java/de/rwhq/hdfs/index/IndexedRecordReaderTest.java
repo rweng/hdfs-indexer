@@ -28,15 +28,15 @@ import java.io.*;
 
 import static org.fest.assertions.Assertions.assertThat;
 
-public class IndexedRecordReaderTest {
+public abstract class IndexedRecordReaderTest {
 	private static       final Path TEST_ROOT_DIR =
 			new Path("/tmp/IndexedRecordReaderTest");
 	private static final Log  LOG           = LogFactory.getLog(IndexedRecordReaderTest.class);
 
 	private static FileSystem localFs;
-	private static final Path OUTPUT = new Path(TEST_ROOT_DIR, "out");
-	private static final Path INPUT = new Path(TEST_ROOT_DIR, "in");
-	private static final File INDEX = new File(TEST_ROOT_DIR.toString() + "/index");
+	public static final Path OUTPUT = new Path(TEST_ROOT_DIR, "out");
+	public static final Path INPUT = new Path(TEST_ROOT_DIR, "in");
+	public static final File INDEX = new File(TEST_ROOT_DIR.toString() + "/index");
 
 
 	@BeforeClass
@@ -149,24 +149,9 @@ public class IndexedRecordReaderTest {
 		}
 	}
 
-	public static class CustomBuilder extends AbstractIndexBuilder {
-		@Override
-		public BTreeIndexBuilder configure(BTreeIndexBuilder bTreeIndexBuilder) {
-			return bTreeIndexBuilder
-					.indexFolder(INDEX)
-					.addDefaultRange(new Range(1, 4))
-					.cacheSize(10)
-					.primaryIndex()
-					.keySerializer(IntegerSerializer.INSTANCE)
-					.keyExtractor(new IntegerCSVExtractor(0, ","))
-					.comparator(IntegerComparator.INSTANCE);
-		}
-	}
-
 	private Job createJob() throws IOException {
 		Configuration conf = new Configuration();
-		conf.setClass("indexBuilder", CustomBuilder.class, IndexBuilder.class);
-
+		conf.setClass("indexBuilder", getBuilderClass(), IndexBuilder.class);
 
 		Job job = new Job(conf, "IndexedRecordReaderTest");
 
@@ -189,6 +174,8 @@ public class IndexedRecordReaderTest {
 
 		return job;
 	}
+
+	protected abstract Class<? extends AbstractIndexBuilder> getBuilderClass();
 
 
 	private void createTextInputFile() throws IOException {
