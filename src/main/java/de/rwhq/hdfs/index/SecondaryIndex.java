@@ -1,11 +1,15 @@
 package de.rwhq.hdfs.index;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterators;
+import de.rwhq.btree.Range;
 import de.rwhq.serializer.LongSerializer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.io.Text;
 
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -20,10 +24,10 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 
 	@VisibleForTesting
 	FSDataInputStream inputStream;
-	
-	private Configuration     jobConf;
-	private int maxLineLength;
-	private Text text;
+
+	private Configuration   jobConf;
+	private int             maxLineLength;
+	private Text            text;
 	private DataInputStream dataStream;
 
 	@VisibleForTesting
@@ -44,55 +48,41 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 		return new AbstractMap.SimpleEntry<K, Long>(keyExtractor.extract(line), pos);
 	}
 
-	@Override
-	public Iterator<String> getIterator() {
+	private void ensureIteratorRequirements() {
 		checkNotNull(inputStream, "inputStream must not be null for iterating over a secondary index");
 		checkNotNull(jobConf, "job configuration must not be null for iterating over a secondary index");
+
 
 		inReader = new InputStreamReader(inputStream);
 
 		maxLineLength = jobConf.getInt("mapred.linerecordreader.maxlength",
 				Integer.MAX_VALUE);
-		
-		return new SecondaryIndexIterator(getIterator(true));
 	}
 
-	class SecondaryIndexIterator implements Iterator<String> {
+	@Override
+	public Iterator<String> getIterator() {
+		ensureIteratorRequirements();
+		return super.getIterator();
+	}
 
-		private Iterator<Long> iterator;
+	@Override
+	public Iterator<String> getIterator(Range<Long> range) throws IOException {
+		ensureIteratorRequirements();
 
-		public SecondaryIndexIterator(Iterator<Long> iterator) {
-			this.iterator = iterator;
-		}
+		return Iterators.transform(getTreeIterator(range), new Function<Long, String>() {
+			@Override
+			public String apply(@Nullable Long input) {
 
-		@Override
-		public boolean hasNext() {
-			return iterator.hasNext();
-		}
-
-		@Override
-		public String next() {
-			Long nextLong = iterator.next();
-
-			if (nextLong == null)
-				return null;
-
-
-			try {
-				long oldPos = inputStream.getPos();
-				inputStream.seek(nextLong);
-				text.set(new BufferedReader(inReader).readLine());
-				inputStream.seek(oldPos);
-			} catch (IOException e) {
-				throw new RuntimeException("error when reading from inputStream", e);
+				try {
+					long oldPos = inputStream.getPos();
+					inputStream.seek(input);
+					String result = new BufferedReader(inReader).readLine();
+					inputStream.seek(oldPos);
+					return result;
+				} catch (IOException e) {
+					throw new RuntimeException("error when reading from inputStream", e);
+				}
 			}
-
-			return text.toString();
-		}
-
-		@Override
-		public void remove() {
-			iterator.remove();
-		}
+		});
 	}
 }

@@ -139,7 +139,7 @@ public abstract class AbstractMultiFileIndexTest {
 			assertThat(iterator.next()).isNotNull();
 		}
 
-		assertThat(iterator.next()).isNull();
+		assertThat(iterator.hasNext()).isFalse();
 	}
 
 	@Test
@@ -157,7 +157,6 @@ public abstract class AbstractMultiFileIndexTest {
 		}
 
 		assertThat(iterator.hasNext()).isFalse();
-		assertThat(iterator.next()).isNull();
 	}
 
 	@Test
@@ -181,7 +180,7 @@ public abstract class AbstractMultiFileIndexTest {
 		assertThat(iterator.next()).matches(matchString);
 		assertThat(iterator.next()).matches(matchString);
 
-		assertThat(iterator.next()).isEqualTo(null);
+		assertThat(iterator.hasNext()).isFalse();
 	}
 
 	@Test
@@ -209,7 +208,7 @@ public abstract class AbstractMultiFileIndexTest {
 		assertThat(iterator.next()).matches(matchString);
 		assertThat(iterator.next()).matches(matchString);
 
-		assertThat(iterator.next()).isEqualTo(null);
+		assertThat(iterator.hasNext()).isFalse();
 	}
 
 	private void afterSyncTests() throws IOException {

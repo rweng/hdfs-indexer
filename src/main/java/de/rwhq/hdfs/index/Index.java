@@ -88,13 +88,24 @@ public interface Index<K,V> {
 	long getMaxPos();
 
 	/**
+	 *  Assuming the given pos is covered by the index, this function returns the end if the partials coverage.
 	 *
 	 * @param pos
 	 * @return -1 if pos is not covered by the index, otherwise the end pos of this partial index
 	 */
 	public long partialEndForPos(long pos);
 
+	/**
+	 * @return the ranges that are covered by the index.
+	 */
 	public SortedSet<Range<Long>> toRanges();
 
-	Iterator<V> getIterator(Range<Long> range) throws IOException;
+	/**
+	 *
+	 * @param range
+	 * @return iterator over a index partial range. The range can contain null (open end).
+	 * The defaultSearchRange is applied.
+	 * @throws IOException
+	 */
+	Iterator<String> getIterator(Range<Long> range) throws IOException;
 }
