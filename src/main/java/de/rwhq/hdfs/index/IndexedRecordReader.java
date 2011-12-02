@@ -3,13 +3,16 @@ package de.rwhq.hdfs.index;
 import de.rwhq.btree.Range;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.hsqldb.index.RowIterator;
+import org.apache.hadoop.util.LineReader;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -18,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /** Special kind of LineRecordReader. It tries to create an index over the hdfs-file. Therefore, */
 public class IndexedRecordReader extends LineRecordReader {
 	private static final Log                   LOG            = LogFactory.getLog(IndexedRecordReader.class);
+	private Configuration conf;
 
 	private static FileSplit inputToFileSplit(InputSplit inputSplit) {
 		FileSplit split;
@@ -32,8 +36,9 @@ public class IndexedRecordReader extends LineRecordReader {
 	
 	private              Iterator<Range<Long>> rangesIterator;
 	private Range<Long>      currentRange;
-	private Iterator<String> currentIterator;
+	private Iterator<String> currentRangeIterator;
 	private Index            index;
+	private FileSplit split;
 	
 
 	/** {@inheritDoc} */
@@ -41,11 +46,13 @@ public class IndexedRecordReader extends LineRecordReader {
 	public void initialize(InputSplit genericSplit, TaskAttemptContext context)
 			throws IOException {
 		super.initialize(genericSplit, context);
+		this.split = inputToFileSplit(genericSplit);
+		this.conf = context.getConfiguration();
 
 		int mb = 1024 * 1024;
 		LOG.info("Max memory: " + (Runtime.getRuntime().maxMemory() / mb));
 		LOG.info("Total Memory:" + (Runtime.getRuntime().totalMemory() / mb));
-
+		
 		try {
 			LOG.info("genericSplit.getLocations(): " + Arrays.toString(genericSplit.getLocations()));
 			LOG.info("generic Split length: " + genericSplit.getLength());
@@ -63,7 +70,7 @@ public class IndexedRecordReader extends LineRecordReader {
 		try {
 			IndexBuilder builder = (IndexBuilder) builderClass.getConstructor().newInstance();
 			index = builder
-					.hdfsFilePath(inputToFileSplit(genericSplit).getPath().toString())
+					.hdfsFilePath(split.getPath().toString())
 					.jobConfiguration(context.getConfiguration())
 					.inputStream(fileIn)
 					.fileSplit(inputToFileSplit(genericSplit))
@@ -78,11 +85,14 @@ public class IndexedRecordReader extends LineRecordReader {
 				index.open();
 
 			// initialize ranges and iterator
+			if(LOG.isDebugEnabled())
+				LOG.debug("index ranges: " + index.toRanges());
+			
 			rangesIterator = index.toRanges().iterator();
 			if(rangesIterator.hasNext())
 				currentRange = rangesIterator.next();
 			if(currentRange != null)
-				currentIterator = index.getIterator(currentRange);
+				currentRangeIterator = index.getIterator(currentRange);
 		}
 		// create a text object for efficiency
 		value = new Text();
@@ -126,21 +136,41 @@ public class IndexedRecordReader extends LineRecordReader {
 		if(currentRange == null)
 			return null;
 
+		if(LOG.isDebugEnabled())
+			LOG.debug("nextFromIndex(): currentRange: " + currentRange + " - pos: " + pos);
+
 		// if the currentRange did not yet start
 		if(pos < currentRange.getFrom())
 			return null;
 
 		// if the current iterator does not have any more values, set to next range
-		if(!currentIterator.hasNext()){
-			// reset pos
+		if(!currentRangeIterator.hasNext()){
+			// set pos so that it can be compared when we call nextFromIndex() later
+			// only if this returns null, we are going to adjust the LineReader
 			pos = currentRange.getTo() + 1;
 
 			currentRange = rangesIterator.hasNext() ? rangesIterator.next() : null;
-			currentIterator = currentRange == null ? null : index.getIterator(currentRange);
-			return nextFromIndex();
+			currentRangeIterator = currentRange == null ? null : index.getIterator(currentRange);
+
+			String next = nextFromIndex();
+
+			// if the next index does not directly continue, reset pos etc
+			if(next == null){
+				// reset pos
+				fileIn.seek(pos);
+
+				CompressionCodec codec = compressionCodecs.getCodec(split.getPath());
+				if(codec == null)
+					in = new LineReader(fileIn, conf);
+				else
+					in = new LineReader(codec.createInputStream(fileIn), conf);
+			}
+
+
+			return next;
 		}
 
 		// if the currentIterator has more values
-		return currentIterator.next();
+		return currentRangeIterator.next();
 	}
 }

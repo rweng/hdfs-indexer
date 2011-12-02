@@ -37,15 +37,8 @@ public class PrimaryIndexTest {
 		public void empty(){}
 
 		@Override
-		public BTreeIndexBuilder configure(BTreeIndexBuilder bTreeIndexBuilder) {
-			return bTreeIndexBuilder
-					.indexFolder(IndexedRecordReaderTest.INDEX)
-					.addDefaultRange(new Range(1, 4))
-					.cacheSize(10)
-					.primaryIndex()
-					.keySerializer(IntegerSerializer.INSTANCE)
-					.keyExtractor(new IntegerCSVExtractor(0, ","))
-					.comparator(IntegerComparator.INSTANCE);
+		protected BTreeIndexBuilder configure2(BTreeIndexBuilder b) {
+			return b.primaryIndex();
 		}
 	}
 

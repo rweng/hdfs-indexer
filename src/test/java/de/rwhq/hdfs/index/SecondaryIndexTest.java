@@ -29,7 +29,6 @@ public class SecondaryIndexTest {
 		private Configuration conf    = new Configuration();
 		private Path          tmpFile = new Path("/tmp/SecondaryIndexTestTmpFile");
 		private FSDataInputStream input;
-		private boolean before = false;
 		private LocalFileSystem fs;
 
 		@After
@@ -86,15 +85,8 @@ public class SecondaryIndexTest {
 		public void empty(){}
 
 		@Override
-		public BTreeIndexBuilder configure(BTreeIndexBuilder bTreeIndexBuilder) {
-			return bTreeIndexBuilder
-					.indexFolder(IndexedRecordReaderTest.INDEX)
-					.addDefaultRange(new Range(1, 4))
-					.cacheSize(10)
-					.secondaryIndex()
-					.keySerializer(IntegerSerializer.INSTANCE)
-					.keyExtractor(new IntegerCSVExtractor(0, ","))
-					.comparator(IntegerComparator.INSTANCE);
+		protected BTreeIndexBuilder configure2(BTreeIndexBuilder b) {
+			return b.secondaryIndex();
 		}
 	}
 }

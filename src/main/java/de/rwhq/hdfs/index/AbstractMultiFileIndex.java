@@ -51,12 +51,13 @@ import static com.google.common.base.Preconditions.checkState;
  * - the hdfs file name and path - the identifier to be indexed (column, xml-path, ...) - the starting position in the
  * hdfs file for the index - the end position in the hdfs file for the index
  * <p/>
- * The file name and path are stored in the structure in the index directory. The identifier and starting position could
+ * The file name and path are stored in the structure in the index directory. The identifier and starting position
+ * could
  * be stored directly in the file name. However, as it is unsure where the indexing will end at the time the index file
  * is created, it is not possible to store the end position in the file name (assuming we dont want to rename). Thus, a
  * properties file is required.
  */
-public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
+public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	private static Log LOG = LogFactory.getLog(AbstractMultiFileIndex.class);
 
 	protected String hdfsFile;
@@ -69,8 +70,6 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 	protected FixLengthSerializer<K, byte[]>  keySerializer;
 	protected KeyExtractor<K>                 keyExtractor;
 
-	/* if an exception occured during key extraction */
-	private boolean extractorException = false;
 	protected TreeSet<Range<K>>              defaultSearchRanges;
 	private   FixLengthSerializer<V, byte[]> valueSerializer;
 	private   MFIProperties                  properties;
@@ -86,6 +85,10 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 
 		ensureOpen();
 
+		if (line.equals("")) {
+			handleEmptyLine(line, startPos, endPos);
+			return false;
+		}
 
 		if (!ourLock && isLocked()) {
 			return lineMatchesSearchRange(line);
@@ -108,7 +111,6 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 			saveWriteTree();
 		}
 
-		// LOG.info("adding tree to cache");
 		if (writingTreePropertyEntry.startPos == null)
 			writingTreePropertyEntry.startPos = startPos;
 
@@ -121,6 +123,52 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 		} catch (ExtractionException e) {
 			LOG.error("exception when extracting '" + line + "' at position " + startPos, e);
 			return true;
+		}
+	}
+
+	/**
+	 * an empty line could have multiple resons: it could be just an empty line, or it could be that the hdfs
+	 * file got appended and now has a new line (where it wasn't terminated with one before)
+	 * <p/>
+	 * Independent, we ommit the line. There are three cases we got to consider:
+	 * <ol>
+	 * <li>we are currently creating an index ourselves and got the lock. Then we just extend this indexes coverage</li>
+	 * <li>we are not an index but we can add it to a previous or next indexes coverage</li>
+	 * <li>neither of both, in which case we just ommit the line. It will extend an coverage later anyway.</li>
+	 * </ol>
+	 */
+	private void handleEmptyLine(String line, long startPos, long endPos) {
+
+		// first check case 1.
+		if (ourLock) {
+			if (writingTreePropertyEntry.startPos == null)
+				writingTreePropertyEntry.startPos = startPos;
+
+			writingTreePropertyEntry.endPos = endPos;
+		}
+
+		// case 2, previous index
+		MFIProperties.MFIProperty p = properties.propertyForPos(startPos - 1);
+		if (p != null) {
+			p.endPos = endPos;
+			try {
+				properties.write();
+				return;
+			} catch (IOException e) {
+				LOG.error("could not extend index: ", e);
+			}
+		}
+
+		// case 2, next index
+		p = properties.propertyForPos(endPos + 1);
+		if (p != null) {
+			p.startPos = startPos;
+			try {
+				properties.write();
+				return;
+			} catch (IOException e) {
+				LOG.error("could not extend index: ", e);
+			}
 		}
 	}
 
@@ -152,7 +200,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 		if (properties.exists())
 			properties.read();
 
-		if(LOG.isDebugEnabled())
+		if (LOG.isDebugEnabled())
 			LOG.debug("Index opened. Properties: " + properties);
 
 		isOpen = true;
@@ -194,11 +242,10 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 	}
 
 
-
 	@Override
 	public Iterator<String> getIterator() {
 		ensureOpen();
-		
+
 		Iterator<Iterator<String>> iterator =
 				Iterators.transform(toRanges().iterator(), new Function<Range<Long>, Iterator<String>>() {
 
@@ -398,7 +445,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 		} catch (IOException e) {
 			LOG.error("Could not load properties, operating on old instance.", e);
 		}
-		
+
 		// filter trees not in split range
 		Collection<MFIProperties.MFIProperty> filted =
 				Collections2.filter(properties.asList(), new Predicate<MFIProperties.MFIProperty>() {

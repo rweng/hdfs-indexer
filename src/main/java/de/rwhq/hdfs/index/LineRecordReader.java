@@ -45,11 +45,11 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
 	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);
 
 	@SuppressWarnings({"FieldCanBeLocal"})
-	private CompressionCodecFactory compressionCodecs = null;
+	protected CompressionCodecFactory compressionCodecs = null;
 	private long start;
 	long pos; // made package visible for getting and setting in IndexedRecordReader and ..!!!
 	private long       end;
-	private LineReader in;
+	protected LineReader in; // made protected
 	private int        maxLineLength;
 	protected LongWritable key   = null;
 	protected Text         value = null; // made protected for setting in IndexedRecordReader!!!

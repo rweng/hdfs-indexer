@@ -54,6 +54,10 @@ public class MFIProperties implements Serializable {
 		return new File(path).exists();
 	}
 
+	/**
+	 * @param pos
+	 * @return MFIProperty or null, if pos is not contained
+	 */
 	public MFIProperty propertyForPos(long pos) {
 		for(MFIProperty p : properties) {
 			if (p.startPos <= pos && p.endPos >= pos) {
@@ -99,13 +103,7 @@ public class MFIProperties implements Serializable {
 	}
 
 	public boolean contains(long startPos) {
-		for(MFIProperty p : properties){
-			if(p.startPos<=startPos && p.endPos >=startPos){
-				return true;
-			}
-		}
-		
-		return false;
+		return propertyForPos(startPos) != null;
 	}
 
 
