@@ -25,18 +25,19 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.*;
+import java.util.Arrays;
 
 import static org.fest.assertions.Assertions.assertThat;
 
 public abstract class IndexedRecordReaderTest {
-	private static       final Path TEST_ROOT_DIR =
-			new Path("/tmp/IndexedRecordReaderTest");
+	private static       final String TEST_ROOT_DIR = "/tmp/IndexedRecordReaderTest";
 	private static final Log  LOG           = LogFactory.getLog(IndexedRecordReaderTest.class);
 
 	private static FileSystem localFs;
 	public static final Path OUTPUT = new Path(TEST_ROOT_DIR, "out");
 	public static final Path INPUT = new Path(TEST_ROOT_DIR, "in");
 	public static final File INDEX = new File(TEST_ROOT_DIR.toString() + "/index");
+	public static final String INPUT_FILE_PATH = INPUT + "/testfile.csv";
 
 
 	@BeforeClass
@@ -49,8 +50,8 @@ public abstract class IndexedRecordReaderTest {
 
 		// make sure the log folder exists,
 		// otherwise the test fill fail
-		new File("test-logs").mkdirs();
-		System.setProperty("hadoop.log.dir", "test-logs");
+		new File(TEST_ROOT_DIR.toString() + "/test-logs").mkdirs();
+		System.setProperty("hadoop.log.dir", TEST_ROOT_DIR.toString() + "/test-logs");
 
 	}
 
@@ -108,6 +109,9 @@ public abstract class IndexedRecordReaderTest {
 
 		LOG.info(out);
 		assertThat(out).isEqualTo("1\t5\n2\t5\n3\t7\n4\t5\n");
+		assertThat(new File(INDEX.getAbsolutePath() + INPUT_FILE_PATH)).isDirectory();
+		assertThat(new File(INDEX.getAbsolutePath() + INPUT_FILE_PATH + "/properties")).isFile();
+		assertThat(new File(INDEX.getAbsolutePath() + INPUT_FILE_PATH).list().length).isGreaterThan(1);
 	}
 
 	@Test
@@ -179,7 +183,7 @@ public abstract class IndexedRecordReaderTest {
 
 
 	private void createTextInputFile() throws IOException {
-		OutputStream os = localFs.create(new Path(INPUT, "testfile.csv"));
+		OutputStream os = localFs.create(new Path(INPUT_FILE_PATH));
 		Writer wr = new OutputStreamWriter(os);
 
 		write(wr, "0,A,25\n", 5);
