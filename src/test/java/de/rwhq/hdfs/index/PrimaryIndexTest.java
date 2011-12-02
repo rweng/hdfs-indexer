@@ -21,13 +21,6 @@ public class PrimaryIndexTest {
 			return b.primaryIndex();
 		}
 
-		public static class PrimaryIndexRecordReader extends IndexedRecordReaderTest {
-
-			@Override
-			protected Class<? extends SpyBuilder> getBuilderClass() {
-				return null;
-			}
-		}
 	}
 
 	public static class PrimaryIndexedRecordReader extends IndexedRecordReaderTest {

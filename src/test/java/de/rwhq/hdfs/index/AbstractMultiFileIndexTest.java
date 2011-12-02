@@ -29,6 +29,7 @@ public abstract class AbstractMultiFileIndexTest {
 	public void setUp() throws IOException {
 		MockitoAnnotations.initMocks(this);
 		when(fileSplit.getStart()).thenReturn(0L);
+		when(fileSplit.getLength()).thenReturn(1000000L);
 
 		FileUtils.deleteDirectory(indexRootFolder);
 		indexRootFolder.mkdir();
@@ -181,6 +182,20 @@ public abstract class AbstractMultiFileIndexTest {
 		assertThat(iterator.next()).matches(matchString);
 
 		assertThat(iterator.hasNext()).isFalse();
+	}
+
+	@Test
+	public void continuousFill() throws IOException {
+		fillIndex(0, 50);
+		index.close();
+
+		index = (AbstractMultiFileIndex) setupBuilder().build();
+		index.open();
+		fillIndex(50, 10);
+
+		index.sync();
+
+		assertThat(index.toRanges()).hasSize(2).contains(new Range(0L, 499L), new Range(500L, 599L));
 	}
 
 	@Test

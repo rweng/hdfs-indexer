@@ -98,6 +98,16 @@ public class MFIProperties implements Serializable {
 		return null;
 	}
 
+	public boolean contains(long startPos) {
+		for(MFIProperty p : properties){
+			if(p.startPos<=startPos && p.endPos >=startPos){
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
 
 	public static class MFIProperty implements Serializable {
 		private static final long serialVersionUID = 1L;

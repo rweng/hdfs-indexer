@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -92,6 +93,11 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 			lock();
 		}
 
+		// ensure not already covered by index
+		//TODO: remove in production
+		checkArgument(!properties.contains(startPos), "startPos already covered by index: \n" + startPos);
+
+
 		if (writingTreePropertyEntry.endPos != null && writingTreePropertyEntry.endPos >= startPos) {
 			throw new IllegalArgumentException(
 					"expected the current position to be the largest. last pos: " +
@@ -146,6 +152,9 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 		if (properties.exists())
 			properties.read();
 
+		if(LOG.isDebugEnabled())
+			LOG.debug("Index opened. Properties: " + properties);
+
 		isOpen = true;
 	}
 
@@ -182,6 +191,29 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 	@Override
 	public SortedSet<Range<Long>> toRanges() {
 		return properties.toRanges(fileSplit.getStart(), fileSplit.getStart() + fileSplit.getLength() - 1);
+	}
+
+
+
+	@Override
+	public Iterator<String> getIterator() {
+		ensureOpen();
+		
+		Iterator<Iterator<String>> iterator =
+				Iterators.transform(toRanges().iterator(), new Function<Range<Long>, Iterator<String>>() {
+
+					@Override
+					public Iterator<String> apply(@Nullable Range<Long> input) {
+						try {
+							return getIterator(input);
+						} catch (IOException e) {
+							throw new RuntimeException("error when transforming ranges to iterators over the ranges",
+									e);
+						}
+					}
+				});
+
+		return Iterators.concat(iterator);
 	}
 
 	/**
@@ -271,27 +303,6 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K,V> {
 		});
 
 		return !resultCollection.isEmpty();
-	}
-
-
-
-	@Override
-	public Iterator<String> getIterator() {
-		Iterator<Iterator<String>> iterator =
-				Iterators.transform(toRanges().iterator(), new Function<Range<Long>, Iterator<String>>() {
-
-					@Override
-					public Iterator<String> apply(@Nullable Range<Long> input) {
-						try {
-							return getIterator(input);
-						} catch (IOException e) {
-							throw new RuntimeException("error when transforming ranges to iterators over the ranges",
-									e);
-						}
-					}
-				});
-
-		return Iterators.concat(iterator);
 	}
 
 
