@@ -42,6 +42,9 @@ public class IndexedRecordReader extends LineRecordReader {
 			throws IOException {
 		super.initialize(genericSplit, context);
 
+		int mb = 1024 * 1024;
+		LOG.info("max memory: " + (Runtime.getRuntime().maxMemory() / mb));
+
 		try {
 			LOG.info("genericSplit.getLocations(): " + Arrays.toString(genericSplit.getLocations()));
 			LOG.info("generic Split length: " + genericSplit.getLength());
