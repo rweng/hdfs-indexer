@@ -1,8 +1,5 @@
 package de.rwhq.hdfs.index;
 
-import de.rwhq.btree.Range;
-import de.rwhq.comparator.IntegerComparator;
-import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,9 +22,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.*;
-import java.util.Arrays;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.*;
 
 public abstract class IndexedRecordReaderTest {
 	private static       final String TEST_ROOT_DIR = "/tmp/IndexedRecordReaderTest";
@@ -112,6 +112,7 @@ public abstract class IndexedRecordReaderTest {
 		assertThat(new File(INDEX.getAbsolutePath() + INPUT_FILE_PATH)).isDirectory();
 		assertThat(new File(INDEX.getAbsolutePath() + INPUT_FILE_PATH + "/properties")).isFile();
 		assertThat(new File(INDEX.getAbsolutePath() + INPUT_FILE_PATH).list().length).isGreaterThan(1);
+		verify(SpyBuilder.instance, atLeastOnce()).addLine(anyString(), anyLong(), anyLong());
 	}
 
 	@Test
@@ -125,8 +126,9 @@ public abstract class IndexedRecordReaderTest {
 		String out = readFile(OUTPUT + "/part-r-00000");
 
 		LOG.info(out);
-				
+
 		assertThat(out).isEqualTo("1\t5\n2\t5\n3\t7\n4\t5\n");
+		verify(SpyBuilder.instance, never()).addLine(anyString(), anyLong(), anyLong());
 	}
 
 	public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
@@ -179,7 +181,17 @@ public abstract class IndexedRecordReaderTest {
 		return job;
 	}
 
-	protected abstract Class<? extends AbstractIndexBuilder> getBuilderClass();
+	public static abstract class SpyBuilder extends AbstractIndexBuilder{
+		private static Index instance;
+
+		@Override
+		public Index build(){
+			instance = spy(super.build());
+			return instance;
+		}
+	}
+
+	protected abstract Class<? extends SpyBuilder> getBuilderClass();
 
 
 	private void createTextInputFile() throws IOException {

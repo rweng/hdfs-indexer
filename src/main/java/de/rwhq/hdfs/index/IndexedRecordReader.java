@@ -97,7 +97,7 @@ public class IndexedRecordReader extends LineRecordReader {
 
 		// if we cant read from the index
 		String next = nextFromIndex();
-
+		
 		if(next == null){ // read from hdfs
 			do {
 				long startPos = pos;

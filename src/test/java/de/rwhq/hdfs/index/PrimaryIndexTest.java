@@ -24,7 +24,7 @@ public class PrimaryIndexTest {
 		public static class PrimaryIndexRecordReader extends IndexedRecordReaderTest {
 
 			@Override
-			protected Class<? extends AbstractIndexBuilder> getBuilderClass() {
+			protected Class<? extends SpyBuilder> getBuilderClass() {
 				return null;
 			}
 		}
@@ -33,12 +33,12 @@ public class PrimaryIndexTest {
 	public static class PrimaryIndexedRecordReader extends IndexedRecordReaderTest {
 
 		@Override
-		protected Class<? extends AbstractIndexBuilder> getBuilderClass() {
+		protected Class<? extends SpyBuilder> getBuilderClass() {
 			return CustomBuilder.class;
 		}
 	}
 
-	public static class CustomBuilder extends AbstractIndexBuilder {
+	public static class CustomBuilder extends IndexedRecordReaderTest.SpyBuilder {
 
 		@Test
 		public void empty(){}

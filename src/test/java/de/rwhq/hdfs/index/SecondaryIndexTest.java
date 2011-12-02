@@ -74,13 +74,13 @@ public class SecondaryIndexTest {
 	public static class SecondarIndexedRecordReader extends IndexedRecordReaderTest {
 
 		@Override
-		protected Class<? extends AbstractIndexBuilder> getBuilderClass() {
+		protected Class<? extends SpyBuilder> getBuilderClass() {
 			return CustomBuilder.class;
 		}
 	}
 
 
-	public static class CustomBuilder extends AbstractIndexBuilder {
+	public static class CustomBuilder extends IndexedRecordReaderTest.SpyBuilder {
 
 		@Test
 		public void empty(){}
