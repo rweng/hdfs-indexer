@@ -1,5 +1,7 @@
 package de.rwhq.hdfs.index;
 
+import de.rwhq.hdfs.index.extractor.ExtractionException;
+import de.rwhq.hdfs.index.extractor.IntegerCSVExtractor;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -2,6 +2,7 @@ package de.rwhq.hdfs.index;
 
 import com.google.common.collect.Lists;
 import de.rwhq.btree.Range;
+import de.rwhq.hdfs.index.extractor.KeyExtractor;
 import de.rwhq.serializer.FixLengthSerializer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;

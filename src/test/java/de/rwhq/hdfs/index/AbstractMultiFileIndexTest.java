@@ -2,6 +2,8 @@ package de.rwhq.hdfs.index;
 
 import de.rwhq.btree.Range;
 import de.rwhq.comparator.IntegerComparator;
+import de.rwhq.hdfs.index.extractor.IntegerCSVExtractor;
+import de.rwhq.hdfs.index.extractor.KeyExtractor;
 import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;

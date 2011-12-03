@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import de.rwhq.btree.Range;
 import de.rwhq.comparator.IntegerComparator;
+import de.rwhq.hdfs.index.extractor.IntegerCSVExtractor;
 import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;

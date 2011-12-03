@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import de.rwhq.btree.Range;
+import de.rwhq.hdfs.index.extractor.ExtractionException;
 import de.rwhq.serializer.LongSerializer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;

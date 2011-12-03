@@ -1,4 +1,4 @@
-package de.rwhq.hdfs.index;
+package de.rwhq.hdfs.index.extractor;
 
 /**
  * Exception thrown by {@code KeyExtractor}

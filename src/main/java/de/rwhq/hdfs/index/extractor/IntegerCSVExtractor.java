@@ -1,4 +1,4 @@
-package de.rwhq.hdfs.index;
+package de.rwhq.hdfs.index.extractor;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

@@ -10,6 +10,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
 import de.rwhq.btree.BTree;
 import de.rwhq.btree.Range;
+import de.rwhq.hdfs.index.extractor.ExtractionException;
+import de.rwhq.hdfs.index.extractor.KeyExtractor;
 import de.rwhq.io.rm.ResourceManager;
 import de.rwhq.io.rm.ResourceManagerBuilder;
 import de.rwhq.serializer.FixLengthSerializer;
@@ -66,7 +68,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	protected int                             cachePointer;
 	protected Comparator<K>                   comparator;
 	protected FixLengthSerializer<K, byte[]>  keySerializer;
-	protected KeyExtractor<K>                 keyExtractor;
+	protected KeyExtractor<K> keyExtractor;
 
 	protected TreeSet<Range<K>>              defaultSearchRanges;
 	private   FixLengthSerializer<V, byte[]> valueSerializer;
