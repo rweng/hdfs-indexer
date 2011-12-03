@@ -73,7 +73,7 @@ public class IndexedRecordReader extends LineRecordReader {
 					.hdfsFilePath(split.getPath().toString())
 					.jobConfiguration(context.getConfiguration())
 					.inputStream(fileIn)
-					.fileSplit(inputToFileSplit(genericSplit))
+					.fileSplit(split)
 					.build();
 		} catch (Exception e) {
 			LOG.error("could not create index", e);
@@ -107,6 +107,8 @@ public class IndexedRecordReader extends LineRecordReader {
 
 		// if we cant read from the index
 		String next = nextFromIndex();
+		if(LOG.isDebugEnabled())
+			LOG.debug("result from nextFromIndex: " + next == null ? "null" : next);
 		
 		if(next == null){ // read from hdfs
 			do {

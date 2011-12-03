@@ -79,8 +79,16 @@ public class MFIProperties implements Serializable {
 				Collections2.transform(properties, new Function<MFIProperty, Range<Long>>() {
 					@Override
 					public Range<Long> apply(MFIProperty input) {
+
 						if (min == null || input.startPos >= min) {
-							if (max == null || input.endPos <= max)
+
+							// TODO: we cannot really detect altering filesplit sizes
+							// but since input.enPos is alway a little bit over, we just have to return it here
+							//if (max == null || input.endPos <= max)
+							//	return input.toRange();
+
+							// as a replacement (for now), we need to check at least that input.startPos < max;
+							if(max == null || input.startPos < max)
 								return input.toRange();
 						}
 

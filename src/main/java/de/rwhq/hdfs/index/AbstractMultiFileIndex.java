@@ -238,7 +238,18 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	/** {@inheritDoc} */
 	@Override
 	public SortedSet<Range<Long>> toRanges() {
-		return properties.toRanges(fileSplit.getStart(), fileSplit.getStart() + fileSplit.getLength() - 1);
+		SortedSet<Range<Long>> ranges =
+				properties.toRanges(fileSplit.getStart(), fileSplit.getStart() + fileSplit.getLength() - 1);
+
+		if(LOG.isDebugEnabled()){
+			LOG.debug("Ranges for fileSplit:" + fileSplit.getStart() + " - " + (fileSplit.getStart() + fileSplit.getLength() - 1));
+			LOG.debug(ranges);
+			LOG.debug("-----");
+			LOG.debug("all ranges: ");
+			LOG.debug(properties.toRanges());
+		}
+		
+		return ranges;
 	}
 
 
