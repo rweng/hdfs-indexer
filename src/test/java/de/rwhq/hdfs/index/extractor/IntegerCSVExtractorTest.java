@@ -1,4 +1,4 @@
-package de.rwhq.hdfs.index;
+package de.rwhq.hdfs.index.extractor;
 
 import de.rwhq.hdfs.index.extractor.ExtractionException;
 import de.rwhq.hdfs.index.extractor.IntegerCSVExtractor;
