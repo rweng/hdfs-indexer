@@ -67,6 +67,10 @@ task publishJar(dependsOn: jar) << {
     run("cp -f " + jar.archivePath + " /Users/robin/Dropbox/public/hdfs-indexer-0.0.2.jar")
 }
 
+task clearCache() << {
+	run("rm -rf " + System.getenv()["HOME"] + "/.gradle/cache/jb-tree");
+}
+
 //************* HELPER METHODS ********************
 
 // run a command with direct process output
