@@ -64,7 +64,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	protected File   indexRootFolder;
 	protected boolean isOpen  = false;
 	protected boolean ourLock = false;
-	protected AbstractMap.SimpleEntry<K, V>[] cache;
+	protected AbstractMap.SimpleEntry<K, V>[] cache = null;
 	protected int                             cachePointer;
 	protected Comparator<K>                   comparator;
 	protected FixLengthSerializer<K, byte[]>  keySerializer;
@@ -75,6 +75,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	private   MFIProperties                  properties;
 	private   MFIProperties.MFIProperty      writingTreePropertyEntry;
 	private   FileSplit                      fileSplit;
+	private int cacheSize;
 
 	/** {@inheritDoc} */
 	@Override
@@ -94,6 +95,10 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			return lineMatchesSearchRange(line);
 		} else {
 			lock();
+
+			// lazy initializing the cache
+			if(cache == null)
+				this.cache = ObjectArrays.newArray(AbstractMap.SimpleEntry.class, cacheSize);
 		}
 
 		// ensure not already covered by index
@@ -305,12 +310,11 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		this.properties = new MFIProperties(getIndexFolder() + "/properties");
 		this.keyExtractor = b.getKeyExtractor();
 		this.fileSplit = b.getFileSplit();
+		this.cacheSize = b.getCacheSize();
 
 		if (b.getDefaultSearchRanges() != null) {
 			this.defaultSearchRanges = Range.merge(b.getDefaultSearchRanges(), comparator);
 		}
-
-		this.cache = ObjectArrays.newArray(AbstractMap.SimpleEntry.class, b.getCacheSize());
 	}
 
 	/** {@inheritDoc} */
@@ -320,7 +324,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 				.add("isOpen", isOpen())
 				.add("locked", isLocked())
 				.add("ourLock", ourLock)
-				.add("cacheSize", cache.length)
+				.add("cacheSize", cacheSize)
 				.add("defaultSearchRanges", defaultSearchRanges)
 				.toString();
 	}

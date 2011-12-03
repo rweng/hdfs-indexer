@@ -20,7 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /** Special kind of LineRecordReader. It tries to create an index over the hdfs-file. Therefore, */
 public class IndexedRecordReader extends LineRecordReader {
-	private static final Log                   LOG            = LogFactory.getLog(IndexedRecordReader.class);
+	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 	private Configuration conf;
 
 	private static FileSplit inputToFileSplit(InputSplit inputSplit) {
@@ -33,13 +33,13 @@ public class IndexedRecordReader extends LineRecordReader {
 		}
 		return split;
 	}
-	
-	private              Iterator<Range<Long>> rangesIterator;
-	private Range<Long>      currentRange;
-	private Iterator<String> currentRangeIterator;
-	private Index            index;
-	private FileSplit split;
-	
+
+	private Iterator<Range<Long>> rangesIterator;
+	private Range<Long>           currentRange;
+	private Iterator<String>      currentRangeIterator;
+	private Index                 index;
+	private FileSplit             split;
+
 
 	/** {@inheritDoc} */
 	@Override
@@ -52,7 +52,7 @@ public class IndexedRecordReader extends LineRecordReader {
 		int mb = 1024 * 1024;
 		LOG.info("Max memory: " + (Runtime.getRuntime().maxMemory() / mb));
 		LOG.info("Total Memory:" + (Runtime.getRuntime().totalMemory() / mb));
-		
+
 		try {
 			LOG.info("genericSplit.getLocations(): " + Arrays.toString(genericSplit.getLocations()));
 			LOG.info("generic Split length: " + genericSplit.getLength());
@@ -85,13 +85,13 @@ public class IndexedRecordReader extends LineRecordReader {
 				index.open();
 
 			// initialize ranges and iterator
-			if(LOG.isDebugEnabled())
+			if (LOG.isDebugEnabled())
 				LOG.debug("index ranges: " + index.toRanges());
-			
+
 			rangesIterator = index.toRanges().iterator();
-			if(rangesIterator.hasNext())
+			if (rangesIterator.hasNext())
 				currentRange = rangesIterator.next();
-			if(currentRange != null)
+			if (currentRange != null)
 				currentRangeIterator = index.getIterator(currentRange);
 		}
 		// create a text object for efficiency
@@ -105,13 +105,11 @@ public class IndexedRecordReader extends LineRecordReader {
 			return super.nextKeyValue();
 		}
 
-		// if we cant read from the index
-		String next = nextFromIndex();
-		if(LOG.isDebugEnabled())
-			LOG.debug("result from nextFromIndex: " + next == null ? "null" : next);
-		
-		if(next == null){ // read from hdfs
-			do {
+		do {
+			// if we cant read from the index
+			String next = nextFromIndex();
+			
+			if (next == null) { // read from hdfs
 				long startPos = pos;
 				boolean result = super.nextKeyValue();
 
@@ -119,36 +117,40 @@ public class IndexedRecordReader extends LineRecordReader {
 					if (index.addLine(getCurrentValue().toString(), startPos, pos - 1)) {
 						return result;
 					} else {
-						// next iteration
+						// ignore these
 					}
 				} else {
 					index.close();
 					return result;
 				}
-			} while (true);
-		}
+			} else {
+				value.set(next);
+				return true;
+			}
+		} while (true);
 
-		// next is set
-		value.set(next);
-		return true;
+
 	}
 
 	private String nextFromIndex() throws IOException {
 		// if we can no longer read from index, currentRange gets null
-		if(currentRange == null)
+		if (currentRange == null)
 			return null;
 
-		if(LOG.isDebugEnabled())
+		if (LOG.isDebugEnabled())
 			LOG.debug("nextFromIndex(): currentRange: " + currentRange + " - pos: " + pos);
 
 		// if the currentRange did not yet start
-		if(pos < currentRange.getFrom())
+		if (pos < currentRange.getFrom())
 			return null;
 
 		// if the current iterator does not have any more values, set to next range
-		if(!currentRangeIterator.hasNext()){
+		if (!currentRangeIterator.hasNext()) {
 			// set pos so that it can be compared when we call nextFromIndex() later
 			// only if this returns null, we are going to adjust the LineReader
+			if (LOG.isDebugEnabled())
+				LOG.debug("resetting pos from " + pos + " to " + (currentRange.getTo() + 1));
+
 			pos = currentRange.getTo() + 1;
 
 			currentRange = rangesIterator.hasNext() ? rangesIterator.next() : null;
@@ -157,12 +159,12 @@ public class IndexedRecordReader extends LineRecordReader {
 			String next = nextFromIndex();
 
 			// if the next index does not directly continue, reset pos etc
-			if(next == null){
+			if (next == null) {
 				// reset pos
 				fileIn.seek(pos);
 
 				CompressionCodec codec = compressionCodecs.getCodec(split.getPath());
-				if(codec == null)
+				if (codec == null)
 					in = new LineReader(fileIn, conf);
 				else
 					in = new LineReader(codec.createInputStream(fileIn), conf);
