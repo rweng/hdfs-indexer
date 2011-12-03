@@ -76,6 +76,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	private   MFIProperties.MFIProperty      writingTreePropertyEntry;
 	private   FileSplit                      fileSplit;
 	private int cacheSize;
+	private int treePageSize;
 
 	/** {@inheritDoc} */
 	@Override
@@ -288,29 +289,23 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	 */
 	public AbstractMultiFileIndex(BTreeIndexBuilder b, FixLengthSerializer<V, byte[]> valueSerializer) {
 
-		checkNotNull(b.getHdfsPath(), "hdfsPath is null");
-		checkNotNull(b.getKeyExtractor(), "keyExtractor is null");
-		checkNotNull(b.getKeySerializer(), "keySerializer is null");
-		checkNotNull(b.getComparator(), "comparator is null");
-		checkNotNull(valueSerializer, "valueSerializer must not be null");
-		checkNotNull(b.getIndexRootFolder(), "index root folder must not be null");
-		checkNotNull(b.getKeyExtractor(), "keyExtractor must not be null");
-		checkNotNull(b.getFileSplit(), "FileSplit must not be null");
+		hdfsFile = checkNotNull(b.getHdfsPath(), "hdfsPath is null");
+		keyExtractor = checkNotNull(b.getKeyExtractor(), "keyExtractor is null");
+		keySerializer = checkNotNull(b.getKeySerializer(), "keySerializer is null");
+		comparator = checkNotNull(b.getComparator(), "comparator is null");
+		this.valueSerializer = checkNotNull(valueSerializer, "valueSerializer must not be null");
+		indexRootFolder = checkNotNull(b.getIndexRootFolder(), "index root folder must not be null");
+		keyExtractor = checkNotNull(b.getKeyExtractor(), "keyExtractor must not be null");
+		fileSplit = checkNotNull(b.getFileSplit(), "fileSplit must not be null");
 
 		checkState(b.getHdfsPath().startsWith("/"), "hdfsPath must start with /. Is: %s", b.getHdfsPath());
 		checkState(b.getCacheSize() >= 10, "cacheSize must be >= 10");
+		checkState(b.getTreePageSize() >= 4 * 1024, "treePageSize must be at least 4kb");
 		checkState(b.getIndexRootFolder().exists(), "index folder must exist");
 
-		this.hdfsFile = b.getHdfsPath();
-		this.keyExtractor = b.getKeyExtractor();
-		this.keySerializer = b.getKeySerializer();
-		this.comparator = b.getComparator();
-		this.valueSerializer = valueSerializer;
-		this.indexRootFolder = b.getIndexRootFolder();
-		this.properties = new MFIProperties(getIndexFolder() + "/properties");
-		this.keyExtractor = b.getKeyExtractor();
-		this.fileSplit = b.getFileSplit();
 		this.cacheSize = b.getCacheSize();
+		treePageSize = b.getTreePageSize();
+		this.properties = new MFIProperties(getIndexFolder() + "/properties");
 
 		if (b.getDefaultSearchRanges() != null) {
 			this.defaultSearchRanges = Range.merge(b.getDefaultSearchRanges(), comparator);
@@ -444,7 +439,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			LOG.debug("trying to build btree: " + file);
 
 		ResourceManager manager =
-				new ResourceManagerBuilder().file(file).build();
+				new ResourceManagerBuilder().file(file).pageSize(treePageSize).build();
 		BTree<K, V> tree = BTree.create(manager, keySerializer, valueSerializer,
 				comparator);
 
@@ -515,7 +510,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	private BTree<K, V> getTree(String filePath, boolean lock) throws IOException {
 
 		ResourceManager rm =
-				new ResourceManagerBuilder().file(filePath).open().useLock(lock).build();
+				new ResourceManagerBuilder().file(filePath).open().useLock(lock).pageSize(treePageSize).build();
 
 		BTree<K, V> tree = BTree.create(rm, keySerializer, valueSerializer, comparator);
 		tree.load();

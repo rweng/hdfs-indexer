@@ -267,6 +267,7 @@ public abstract class IndexedRecordReaderTest {
 					.cacheSize(10)
 					.keySerializer(IntegerSerializer.INSTANCE)
 					.keyExtractor(new IntegerCSVExtractor(0, ","))
+					.treePageSize(4 * 1024)
 					.comparator(IntegerComparator.INSTANCE));
 		}
 

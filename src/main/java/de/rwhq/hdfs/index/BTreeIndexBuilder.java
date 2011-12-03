@@ -29,9 +29,15 @@ public class BTreeIndexBuilder<K,V> {
 
 	private boolean primaryIndex = false;
 	private int secondaryIndexReadBufferSize = 500;
+	private int treePageSize = 128 * 1024 * 1024; // default: 128 kb
 
 	public FileSplit getFileSplit() {
 		return fileSplit;
+	}
+
+	public BTreeIndexBuilder<K, V> treePageSize(int treePageSize){
+		this.treePageSize = treePageSize;
+		return this;
 	}
 
 	public Configuration getJobConfiguration() {
@@ -177,5 +183,9 @@ public class BTreeIndexBuilder<K,V> {
 	public BTreeIndexBuilder indexFolder(File indexDir) {
 		indexRootFolder = indexDir;
 		return this;
+	}
+
+	public int getTreePageSize() {
+		return treePageSize;
 	}
 }
