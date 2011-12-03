@@ -146,11 +146,11 @@ public class MFIProperties implements Serializable {
 
 		@Override
 		public String toString() {
-			return Objects.toStringHelper(this)
+			return "\n" + Objects.toStringHelper(this)
 					.add("filePath", filePath)
 					.add("startPos", startPos)
 					.add("endPos", endPos)
-					.toString();
+					.toString().replace(", ", "\t\t");
 		}
 
 		@Override
