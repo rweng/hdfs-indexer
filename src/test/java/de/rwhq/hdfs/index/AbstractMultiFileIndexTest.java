@@ -4,6 +4,7 @@ import de.rwhq.btree.Range;
 import de.rwhq.comparator.IntegerComparator;
 import de.rwhq.serializer.IntegerSerializer;
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,6 +31,7 @@ public abstract class AbstractMultiFileIndexTest {
 		MockitoAnnotations.initMocks(this);
 		when(fileSplit.getStart()).thenReturn(0L);
 		when(fileSplit.getLength()).thenReturn(1000000L);
+		when(fileSplit.getPath()).thenReturn(new Path(hdfsFilePath));
 
 		FileUtils.deleteDirectory(indexRootFolder);
 		indexRootFolder.mkdir();
@@ -269,7 +271,6 @@ public abstract class AbstractMultiFileIndexTest {
 	private MFIBuilder setupBuilder() {
 		return configureBuilder(new MFIBuilder()
 				.indexRootFolder(indexRootFolder)
-				.hdfsFilePath(hdfsFilePath)
 				.comparator(IntegerComparator.INSTANCE)
 				.fileSplit(fileSplit)
 				.keyExtractor(extractor)

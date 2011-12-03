@@ -23,7 +23,6 @@ public class MFIBuilder<K,V> {
 	private List<Range<K>> defaultSearchRanges;
 	private FSDataInputStream inputStream;
 	private KeyExtractor keyExtractor;
-	private String       hdfsPath;
 	private Configuration jobConfiguration;
 	private FileSplit fileSplit;
 
@@ -109,16 +108,6 @@ public class MFIBuilder<K,V> {
 		return indexRootFolder(new File(path));
 	}
 
-	public MFIBuilder hdfsFilePath(String path) {
-		checkNotNull(path);
-
-		// if hdfsFile doesn't start with /, the server name is before the path
-		this.hdfsPath = path.replaceAll("^(hdfs://|file:)[^/]*", "");
-
-
-		return this;
-	}
-
 
 	public Index build() {
 		if(primaryIndex)
@@ -183,10 +172,6 @@ public class MFIBuilder<K,V> {
 
 	int getCacheSize() {
 		return cacheSize;
-	}
-
-	String getHdfsPath() {
-		return hdfsPath;
 	}
 
 	File getIndexRootFolder() {

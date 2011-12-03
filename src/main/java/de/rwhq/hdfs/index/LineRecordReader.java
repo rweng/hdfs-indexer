@@ -37,9 +37,11 @@ import org.apache.hadoop.util.LineReader;
 import java.io.IOException;
 
 /**
+ * Minor modified version of the original {@code LineRecordReader}.
+ * Some fields had to be made protected for enabling the IndexedRecordReader to alter them.
+ *
+ *
  * Treats keys as offset in file and value as line.
- * <p/>
- * Minor modificated Version of the original, just with some protected instead of private fields
  */
 public class LineRecordReader extends RecordReader<LongWritable, Text> {
 	private static final Log LOG = LogFactory.getLog(LineRecordReader.class);

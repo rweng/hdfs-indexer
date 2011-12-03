@@ -17,7 +17,9 @@ import java.util.Iterator;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/** Special kind of LineRecordReader. It tries to create an index over the hdfs-file. Therefore, */
+/**
+ * Special kind of LineRecordReader. It tries to create an index over the hdfs-file. Therefore,
+ */
 public class IndexedRecordReader extends LineRecordReader {
 	private static final Log LOG = LogFactory.getLog(IndexedRecordReader.class);
 	private Configuration conf;
@@ -34,32 +36,40 @@ public class IndexedRecordReader extends LineRecordReader {
 	}
 
 	private Iterator<Range<Long>> rangesIterator;
-	private Range<Long>           currentRange;
-	private Iterator<String>      currentRangeIterator;
-	private Index                 index;
-	private FileSplit             split;
+	private Range<Long> currentRange;
+	private Iterator<String> currentRangeIterator;
+	private Index index;
+	private FileSplit split;
 
 
-	/** {@inheritDoc} */
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void initialize(InputSplit genericSplit, TaskAttemptContext context)
 			throws IOException {
+
 		super.initialize(genericSplit, context);
+
+		// we need to remember the split and configuration for later recreating the LineReader
 		this.split = inputToFileSplit(genericSplit);
 		this.conf = context.getConfiguration();
 
-		int mb = 1024 * 1024;
-		LOG.info("Max memory: " + (Runtime.getRuntime().maxMemory() / mb));
-		LOG.info("Total Memory:" + (Runtime.getRuntime().totalMemory() / mb));
+		// some general debugging information
+		if (LOG.isDebugEnabled()) {
+			try {
+				LOG.debug("genericSplit.getLocations(): " + Arrays.toString(genericSplit.getLocations()));
+				LOG.debug("generic Split length: " + genericSplit.getLength());
+			} catch (InterruptedException e) {
+				LOG.error("error when fetching genericSplit", e);
+			}
 
-		try {
-			LOG.info("genericSplit.getLocations(): " + Arrays.toString(genericSplit.getLocations()));
-			LOG.info("generic Split length: " + genericSplit.getLength());
-		} catch (InterruptedException e) {
-			LOG.warn("error when fetching genericSplit", e);
+			int mb = 1024 * 1024;
+			LOG.debug("Max memory: " + (Runtime.getRuntime().maxMemory() / mb));
+			LOG.debug("Total Memory:" + (Runtime.getRuntime().totalMemory() / mb));
 		}
 
-		// get conf
+		// get the index Builder class
 		Class<?> builderClass = context.getConfiguration().getClass("indexBuilder", null);
 		checkNotNull(builderClass,
 				"in your job configuration, you must set 'indexBuilder' to the class which should be used to build the Index");
@@ -69,8 +79,7 @@ public class IndexedRecordReader extends LineRecordReader {
 		try {
 			IndexBuilder builder = (IndexBuilder) builderClass.getConstructor().newInstance();
 			index = builder
-					.hdfsFilePath(split.getPath().toString())
-					.jobConfiguration(context.getConfiguration())
+					.jobConfiguration(conf)
 					.inputStream(fileIn)
 					.fileSplit(split)
 					.build();
@@ -107,7 +116,7 @@ public class IndexedRecordReader extends LineRecordReader {
 		do {
 			// if we cant read from the index
 			String next = nextFromIndex();
-			
+
 			if (next == null) { // read from hdfs
 				long startPos = pos;
 				boolean result = super.nextKeyValue();

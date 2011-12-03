@@ -286,7 +286,6 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	 */
 	public AbstractMultiFileIndex(MFIBuilder b) {
 
-		hdfsFile = checkNotNull(b.getHdfsPath(), "hdfsPath is null");
 		keyExtractor = checkNotNull(b.getKeyExtractor(), "keyExtractor is null");
 		keySerializer = checkNotNull(b.getKeySerializer(), "keySerializer is null");
 		comparator = checkNotNull(b.getComparator(), "comparator is null");
@@ -295,10 +294,15 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		keyExtractor = checkNotNull(b.getKeyExtractor(), "keyExtractor must not be null");
 		fileSplit = checkNotNull(b.getFileSplit(), "fileSplit must not be null");
 
-		checkState(b.getHdfsPath().startsWith("/"), "hdfsPath must start with /. Is: %s", b.getHdfsPath());
 		checkState(b.getCacheSize() >= 10, "cacheSize must be >= 10");
 		checkState(b.getTreePageSize() >= 4 * 1024, "treePageSize must be at least 4kb");
 		checkState(b.getIndexRootFolder().exists(), "index folder must exist");
+
+
+		// if hdfsFile doesn't start with /, the server name is before the path
+		// with this, we ensure that the hdfsFile starts with /
+		hdfsFile = fileSplit.getPath().toString().replaceAll("^(hdfs://|file:)[^/]*", "");
+		checkState(hdfsFile.startsWith("/"), "hdfsPath must start with /. Is: %s", hdfsFile);
 
 		this.cacheSize = b.getCacheSize();
 		treePageSize = b.getTreePageSize();

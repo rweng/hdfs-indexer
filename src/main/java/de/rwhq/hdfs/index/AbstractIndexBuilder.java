@@ -24,7 +24,6 @@ public abstract class AbstractIndexBuilder implements IndexBuilder {
 	@Override
 	public Index build() {
 		return configure(new MFIBuilder())
-				.hdfsFilePath(hdfsFilePath)
 				.jobConfiguration(conf)
 				.inputStream(inputStream)
 				.fileSplit(fileSplit)
