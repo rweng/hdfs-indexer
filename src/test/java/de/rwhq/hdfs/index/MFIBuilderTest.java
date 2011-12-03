@@ -14,7 +14,7 @@ import java.io.IOException;
 
 import static org.fest.assertions.Assertions.assertThat;
 
-public class BTreeIndexBuilderTest {
+public class MFIBuilderTest {
 	private static final File indexFolder = new File("/tmp/index");
 	@Mock private FileSplit fileSplit;
 
@@ -27,12 +27,12 @@ public class BTreeIndexBuilderTest {
 
 	@Test(expected = NullPointerException.class)
 	public void exceptionIfNoHdfsPath() {
-		new BTreeIndexBuilder().build();
+		new MFIBuilder().build();
 	}
 
 
-	private BTreeIndexBuilder setUpBuilder() {
-		return new BTreeIndexBuilder()
+	private MFIBuilder setUpBuilder() {
+		return new MFIBuilder()
 				.indexFolder("/tmp/index")
 				.hdfsFilePath("hdfs://localhost/test/bla")
 				.keyExtractor(new IntegerCSVExtractor(0, "( |\\t)+"))

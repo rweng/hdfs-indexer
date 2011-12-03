@@ -1,8 +1,6 @@
 package de.rwhq.hdfs.index;
 
-import de.rwhq.btree.Range;
-import de.rwhq.comparator.IntegerComparator;
-import de.rwhq.serializer.IntegerSerializer;
+import de.rwhq.serializer.StringCutSerializer;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -17,8 +15,8 @@ public class PrimaryIndexTest {
 		}
 
 		@Override
-		protected BTreeIndexBuilder configureBuilder(BTreeIndexBuilder b) {
-			return b.primaryIndex();
+		protected MFIBuilder configureBuilder(MFIBuilder b) {
+			return b.primaryIndex().valueSerializer(StringCutSerializer.get(500));
 		}
 
 	}
@@ -37,8 +35,8 @@ public class PrimaryIndexTest {
 		public void empty(){}
 
 		@Override
-		protected BTreeIndexBuilder configure2(BTreeIndexBuilder b) {
-			return b.primaryIndex();
+		protected MFIBuilder configure2(MFIBuilder b) {
+			return b.primaryIndex().valueSerializer(StringCutSerializer.get(500));
 		}
 	}
 

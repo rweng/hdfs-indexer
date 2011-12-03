@@ -1,6 +1,5 @@
 package de.rwhq.hdfs.index;
 
-import com.sun.istack.internal.Builder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;

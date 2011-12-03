@@ -23,7 +23,7 @@ public abstract class AbstractIndexBuilder implements IndexBuilder {
 
 	@Override
 	public Index build() {
-		return configure(new BTreeIndexBuilder())
+		return configure(new MFIBuilder())
 				.hdfsFilePath(hdfsFilePath)
 				.jobConfiguration(conf)
 				.inputStream(inputStream)
@@ -46,5 +46,5 @@ public abstract class AbstractIndexBuilder implements IndexBuilder {
 		return this;
 	}
 
-	public abstract BTreeIndexBuilder configure(BTreeIndexBuilder builder);
+	public abstract MFIBuilder configure(MFIBuilder builder);
 }

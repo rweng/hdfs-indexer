@@ -1,7 +1,6 @@
 package de.rwhq.hdfs.index;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import de.rwhq.btree.Range;
 import de.rwhq.comparator.IntegerComparator;
@@ -22,7 +21,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.mapreduce.lib.reduce.IntSumReducer;
-import org.apache.hadoop.util.LineReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -30,11 +28,9 @@ import org.junit.Test;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
@@ -259,7 +255,7 @@ public abstract class IndexedRecordReaderTest {
 
 
 		@Override
-		public BTreeIndexBuilder configure(BTreeIndexBuilder bTreeIndexBuilder) {
+		public MFIBuilder configure(MFIBuilder bTreeIndexBuilder) {
 			return configure2(bTreeIndexBuilder
 					.indexFolder(IndexedRecordReaderTest.INDEX)
 					.addDefaultRange(new Range(1, 4))
@@ -271,7 +267,7 @@ public abstract class IndexedRecordReaderTest {
 					.comparator(IntegerComparator.INSTANCE));
 		}
 
-		protected abstract BTreeIndexBuilder configure2(BTreeIndexBuilder b);
+		protected abstract MFIBuilder configure2(MFIBuilder b);
 	}
 
 	protected abstract Class<? extends SpyBuilder> getBuilderClass();

@@ -1,7 +1,6 @@
 package de.rwhq.hdfs.index;
 
 import de.rwhq.btree.Range;
-import de.rwhq.serializer.StringCutSerializer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -13,8 +12,8 @@ public class PrimaryIndex<K> extends AbstractMultiFileIndex<K, String> {
 
 	private static Log LOG = LogFactory.getLog(PrimaryIndex.class);
 
-	protected PrimaryIndex(BTreeIndexBuilder b) {
-		super(b, StringCutSerializer.get(1000));
+	protected PrimaryIndex(MFIBuilder b) {
+		super(b);
 	}
 
 	@Override

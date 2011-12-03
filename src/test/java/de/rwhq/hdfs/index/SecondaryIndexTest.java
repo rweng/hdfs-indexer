@@ -1,14 +1,10 @@
 package de.rwhq.hdfs.index;
 
-import de.rwhq.btree.Range;
-import de.rwhq.comparator.IntegerComparator;
-import de.rwhq.serializer.IntegerSerializer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.util.LineReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,7 +57,7 @@ public class SecondaryIndexTest {
 		}
 
 		@Override
-		protected BTreeIndexBuilder configureBuilder(BTreeIndexBuilder b) {
+		protected MFIBuilder configureBuilder(MFIBuilder b) {
 			if (input == null)
 				input = mock(FSDataInputStream.class);
 
@@ -85,7 +81,7 @@ public class SecondaryIndexTest {
 		public void empty(){}
 
 		@Override
-		protected BTreeIndexBuilder configure2(BTreeIndexBuilder b) {
+		protected MFIBuilder configure2(MFIBuilder b) {
 			return b.secondaryIndex();
 		}
 	}

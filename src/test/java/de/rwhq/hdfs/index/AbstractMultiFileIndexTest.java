@@ -266,8 +266,8 @@ public abstract class AbstractMultiFileIndexTest {
 
 	protected abstract void addToIndexInputStream(AbstractMultiFileIndex index, String line, long pos);
 
-	private BTreeIndexBuilder setupBuilder() {
-		return configureBuilder(new BTreeIndexBuilder()
+	private MFIBuilder setupBuilder() {
+		return configureBuilder(new MFIBuilder()
 				.indexRootFolder(indexRootFolder)
 				.hdfsFilePath(hdfsFilePath)
 				.comparator(IntegerComparator.INSTANCE)
@@ -277,5 +277,5 @@ public abstract class AbstractMultiFileIndexTest {
 				.keySerializer(IntegerSerializer.INSTANCE));
 	}
 
-	protected abstract BTreeIndexBuilder configureBuilder(BTreeIndexBuilder b);
+	protected abstract MFIBuilder configureBuilder(MFIBuilder b);
 }

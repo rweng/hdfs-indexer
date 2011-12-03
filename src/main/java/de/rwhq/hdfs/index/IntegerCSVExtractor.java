@@ -1,11 +1,7 @@
 package de.rwhq.hdfs.index;
 
-import com.google.common.base.Objects;
-import com.google.common.collect.ObjectArrays;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import java.util.Arrays;
 
 public class IntegerCSVExtractor implements KeyExtractor<Integer> {
 

@@ -23,9 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Preconditions.*;
 
 /**
  * This is the base class for all Indexes using the multimap bTreeWriting.
@@ -285,15 +283,14 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	 *
 	 * @param b
 	 * 		BTreeIndexBuilder
-	 * @param valueSerializer
 	 */
-	public AbstractMultiFileIndex(BTreeIndexBuilder b, FixLengthSerializer<V, byte[]> valueSerializer) {
+	public AbstractMultiFileIndex(MFIBuilder b) {
 
 		hdfsFile = checkNotNull(b.getHdfsPath(), "hdfsPath is null");
 		keyExtractor = checkNotNull(b.getKeyExtractor(), "keyExtractor is null");
 		keySerializer = checkNotNull(b.getKeySerializer(), "keySerializer is null");
 		comparator = checkNotNull(b.getComparator(), "comparator is null");
-		this.valueSerializer = checkNotNull(valueSerializer, "valueSerializer must not be null");
+		valueSerializer = checkNotNull(b.getValueSerializer(), "valueSerializer must not be null");
 		indexRootFolder = checkNotNull(b.getIndexRootFolder(), "index root folder must not be null");
 		keyExtractor = checkNotNull(b.getKeyExtractor(), "keyExtractor must not be null");
 		fileSplit = checkNotNull(b.getFileSplit(), "fileSplit must not be null");
