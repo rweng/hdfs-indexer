@@ -22,10 +22,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.mapreduce.lib.reduce.IntSumReducer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -132,7 +129,7 @@ public abstract class IndexedRecordReaderTest {
 	}
 
 
-	@Test
+	@Test @Ignore
 	public void createIndex() throws IOException, ClassNotFoundException, InterruptedException {
 
 		// prepare for test
@@ -152,7 +149,7 @@ public abstract class IndexedRecordReaderTest {
 		verify(SpyBuilder.instances.get(0), atLeastOnce()).addLine(anyString(), anyLong(), anyLong());
 	}
 
-	@Test
+	@Test @Ignore
 	public void useIndex() throws ClassNotFoundException, IOException, InterruptedException {
 		createIndex();
 		SpyBuilder.instances.clear();
@@ -171,7 +168,7 @@ public abstract class IndexedRecordReaderTest {
 	}
 
 
-	@Test
+	@Test @Ignore
 	public void partialIndex() throws ClassNotFoundException, IOException, InterruptedException {
 		createIndex();
 

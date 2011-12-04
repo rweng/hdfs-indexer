@@ -21,7 +21,7 @@ public class PrimaryIndexTest {
 
 	}
 
-	public static class PrimaryIndexedRecordReader extends IndexedRecordReaderTest {
+	public static class IndexedRecordReader extends IndexedRecordReaderTest {
 
 		@Override
 		protected Class<? extends SpyBuilder> getBuilderClass() {

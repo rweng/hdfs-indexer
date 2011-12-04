@@ -62,21 +62,24 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 	protected String hdfsFile;
 	protected File   indexRootFolder;
-	protected boolean isOpen  = false;
-	protected boolean ourLock = false;
-	protected AbstractMap.SimpleEntry<K, V>[] cache = null;
-	protected int                             cachePointer;
-	protected Comparator<K>                   comparator;
-	protected FixLengthSerializer<K, byte[]>  keySerializer;
-	protected KeyExtractor<K> keyExtractor;
+	protected boolean                         isOpen  = false;
+	protected boolean                         ourLock = false;
+	protected AbstractMap.SimpleEntry<K, V>[] cache   = null;
+	protected int                            cachePointer;
+	protected Comparator<K>                  comparator;
+	protected FixLengthSerializer<K, byte[]> keySerializer;
+	protected KeyExtractor<K>                keyExtractor;
 
 	protected TreeSet<Range<K>>              defaultSearchRanges;
 	private   FixLengthSerializer<V, byte[]> valueSerializer;
 	private   MFIProperties                  properties;
 	private   MFIProperties.MFIProperty      writingTreePropertyEntry;
 	private   FileSplit                      fileSplit;
-	private int cacheSize;
-	private int treePageSize;
+	private   int                            cacheSize;
+	private   int                            treePageSize;
+
+	/** this attribute should usually be null and is only used when a writing tree is available */
+	private String currentWriteTreePath;
 
 	/** {@inheritDoc} */
 	@Override
@@ -98,7 +101,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 			lock();
 
 			// lazy initializing the cache
-			if(cache == null)
+			if (cache == null)
 				this.cache = ObjectArrays.newArray(AbstractMap.SimpleEntry.class, cacheSize);
 		}
 
@@ -247,14 +250,15 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		SortedSet<Range<Long>> ranges =
 				properties.toRanges(fileSplit.getStart(), fileSplit.getStart() + fileSplit.getLength() - 1);
 
-		if(LOG.isDebugEnabled()){
-			LOG.debug("Ranges for fileSplit:" + fileSplit.getStart() + " - " + (fileSplit.getStart() + fileSplit.getLength() - 1));
+		if (LOG.isDebugEnabled()) {
+			LOG.debug(
+					"Ranges for fileSplit:" + fileSplit.getStart() + " - " + (fileSplit.getStart() + fileSplit.getLength() - 1));
 			LOG.debug(ranges);
 			LOG.debug("-----");
 			LOG.debug("all ranges: ");
 			LOG.debug(properties.toRanges());
 		}
-		
+
 		return ranges;
 	}
 
@@ -374,22 +378,17 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 	protected abstract AbstractMap.SimpleEntry<K, V> extractEntry(String line, long pos) throws ExtractionException;
 
 	protected void saveWriteTree() {
-
-		if (cachePointer == 0)
-			return;
-
-		LOG.info("saving index: from " + writingTreePropertyEntry.startPos + " to " + writingTreePropertyEntry.endPos);
-
-		BTree<K, V> tree;
-
 		try {
-			tree = createWritingTree();
-			tree.bulkInitialize(cache, 0, cachePointer - 1, false);
+			if (cachePointer == 0)
+				return;
 
-			writingTreePropertyEntry.filePath = tree.getPath();
+			LOG.info(
+					"saving index: from " + writingTreePropertyEntry.startPos + " to " + writingTreePropertyEntry.endPos);
 
-			if (LOG.isDebugEnabled())
-				LOG.debug("new trees path: " + tree.getPath());
+			createWritingTree();
+			currentWriteTree.bulkInitialize(cache, 0, cachePointer - 1, false);
+
+			writingTreePropertyEntry.filePath = currentWriteTreePath;
 
 			if (properties.exists())
 				properties.read();
@@ -398,16 +397,21 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 			writingTreePropertyEntry = new MFIProperties.MFIProperty();
 
-			tree.close();
+			currentWriteTree.close();
+			
 		} catch (IOException e) {
 			LOG.error("error when saving index");
 			LOG.error(e.getStackTrace());
 			// reset cache and properties next, maybe we can save this index partial next time
+
+		} finally {
+			currentWriteTree = null;
+			currentWriteTreePath = null;
+			unlock();
+			cachePointer = 0;
+			writingTreePropertyEntry.startPos = writingTreePropertyEntry.endPos = null;
 		}
 
-		unlock();
-		cachePointer = 0;
-		writingTreePropertyEntry.startPos = writingTreePropertyEntry.endPos = null;
 	}
 
 	protected boolean isLocked() {
@@ -435,21 +439,23 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		}
 	}
 
-	private BTree<K, V> createWritingTree() throws IOException {
-		String file = getIndexFolder() + "/" + keyExtractor.getId() + "_" + System.currentTimeMillis();
+	/*
+	this attribute should usually be null and is only for passing around the writing tree.
+	 */
+	private BTree<K, V> currentWriteTree = null;
+
+	private void createWritingTree() throws IOException {
+		currentWriteTreePath = getIndexFolder() + "/" + keyExtractor.getId() + "_" + System.currentTimeMillis();
 
 		if (LOG.isDebugEnabled())
-			LOG.debug("trying to build btree: " + file);
+			LOG.debug("trying to build btree: " + currentWriteTreePath);
 
-		ResourceManager manager =
-				new ResourceManagerBuilder().file(file).pageSize(treePageSize).build();
-		BTree<K, V> tree = BTree.create(manager, keySerializer, valueSerializer,
+		currentWriteTree = BTree.create(createResourceManager(true), keySerializer, valueSerializer,
 				comparator);
+	}
 
-		if (LOG.isDebugEnabled())
-			LOG.debug("creeated btree for writing: " + tree.getPath());
-
-		return tree;
+	private ResourceManager createResourceManager(boolean lock) {
+		return new ResourceManagerBuilder().file(currentWriteTreePath).pageSize(treePageSize).useLock(lock).build();
 	}
 
 	private List<BTree<K, V>> getTreeList() {
