@@ -29,7 +29,7 @@ public class MFIBuilder<K,V> {
 
 	private boolean primaryIndex = false;
 	private int secondaryIndexReadBufferSize = 500;
-	private int treePageSize = 128 * 1024 * 1024; // default: 128 kb
+	private int treePageSize = 128 * 1024; // default: 128 kb
 	private FixLengthSerializer<V, byte[]> valueSerializer;
 
 	public FileSplit getFileSplit() {
