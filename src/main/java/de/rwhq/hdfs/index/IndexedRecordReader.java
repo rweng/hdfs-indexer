@@ -64,10 +64,12 @@ public class IndexedRecordReader extends LineRecordReader {
 				LOG.error("error when fetching genericSplit", e);
 			}
 
-			int mb = 1024 * 1024;
-			LOG.debug("Max memory: " + (Runtime.getRuntime().maxMemory() / mb));
-			LOG.debug("Total Memory:" + (Runtime.getRuntime().totalMemory() / mb));
 		}
+		int mb = 1024 * 1024;
+
+		LOG.info("Max memory: " + (Runtime.getRuntime().maxMemory() / mb));
+		LOG.info("Total Memory:" + (Runtime.getRuntime().totalMemory() / mb));
+
 
 		// get the index Builder class
 		Class<?> builderClass = context.getConfiguration().getClass("indexBuilder", null);
@@ -116,6 +118,11 @@ public class IndexedRecordReader extends LineRecordReader {
 		do {
 			// if we cant read from the index
 			String next = nextFromIndex();
+
+			if(LOG.isDebugEnabled())
+				LOG.debug("nextFromIndex() returned: " + next);
+
+						
 
 			if (next == null) { // read from hdfs
 				long startPos = pos;

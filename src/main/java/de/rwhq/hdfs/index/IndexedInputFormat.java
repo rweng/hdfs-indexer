@@ -39,6 +39,9 @@ public class IndexedInputFormat extends
 	public List<InputSplit> getSplits(JobContext job) throws IOException {
 
 		long minSize = Math.max(getFormatMinSplitSize(), getMinSplitSize(job));
+		LOG.info("getFormatMinSplitSize(): " + getFormatMinSplitSize());
+		LOG.info("getMinSplitSize(job): " + getMinSplitSize(job));
+
 		long maxSize = getMaxSplitSize(job);
 
 		// generate splits

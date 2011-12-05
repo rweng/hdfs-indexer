@@ -1,5 +1,6 @@
 package de.rwhq.hdfs.index;
 
+import de.rwhq.btree.Range;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -82,7 +83,9 @@ public class SecondaryIndexTest {
 
 		@Override
 		protected MFIBuilder configure2(MFIBuilder b) {
-			return b.secondaryIndex();
+			return b.secondaryIndex()
+					.addDefaultRange(new Range(1, 4))
+					.addDefaultRange(new Range(10, 10));
 		}
 	}
 }

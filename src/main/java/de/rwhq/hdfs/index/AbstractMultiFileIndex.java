@@ -317,6 +317,11 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 		if (b.getDefaultSearchRanges() != null) {
 			this.defaultSearchRanges = Range.merge(b.getDefaultSearchRanges(), comparator);
 		}
+
+		if(LOG.isDebugEnabled())
+		{
+			LOG.debug("constructed: " + toString());
+		}
 	}
 
 	/** {@inheritDoc} */

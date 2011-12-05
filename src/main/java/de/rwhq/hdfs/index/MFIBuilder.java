@@ -17,6 +17,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MFIBuilder<K,V> {
 
+	private static enum IndexType {PRIMARY, SECONDARY, NOINDEX}
+
 	private int cacheSize = 1000;
 	private File indexRootFolder;
 	private FixLengthSerializer<K,byte[]> keySerializer;
@@ -26,8 +28,9 @@ public class MFIBuilder<K,V> {
 	private KeyExtractor keyExtractor;
 	private Configuration jobConfiguration;
 	private FileSplit fileSplit;
+	
+	private IndexType indexType = IndexType.NOINDEX;
 
-	private boolean primaryIndex = false;
 	private int secondaryIndexReadBufferSize = 500;
 	private int treePageSize = 128 * 1024; // default: 128 kb
 	private FixLengthSerializer<V, byte[]> valueSerializer;
@@ -111,10 +114,12 @@ public class MFIBuilder<K,V> {
 
 
 	public Index build() {
-		if(primaryIndex)
-			return new PrimaryIndex(this);
-		else
-			return new SecondaryIndex(this);
+		switch (indexType){
+			case NOINDEX: return new NoIndex(this);
+			case PRIMARY: return new PrimaryIndex(this);
+			case SECONDARY: return new SecondaryIndex(this);
+			default: throw new IllegalStateException("indexType unknown");
+		}
 	}
 
 	public MFIBuilder keySerializer(FixLengthSerializer ks) {
@@ -151,17 +156,14 @@ public class MFIBuilder<K,V> {
 		return secondaryIndexReadBufferSize;
 	}
 
-	public boolean isPrimaryIndex() {
-		return primaryIndex;
-	}
 
 	public MFIBuilder<K, V> primaryIndex() {
-		this.primaryIndex = true;
+		this.indexType = IndexType.PRIMARY;
 		return this;
 	}
 
 	public MFIBuilder<K, V> secondaryIndex() {
-		this.primaryIndex = false;
+		this.indexType = IndexType.SECONDARY;
 		return this;
 	}
 
@@ -190,5 +192,10 @@ public class MFIBuilder<K,V> {
 
 	public FixLengthSerializer<V, byte[]> getValueSerializer() {
 		return valueSerializer;
+	}
+
+	public MFIBuilder noIndex() {
+		indexType = IndexType.NOINDEX;
+		return this;
 	}
 }
