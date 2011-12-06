@@ -9,42 +9,22 @@ import java.util.SortedSet;
 
 /**
  *
- * This interface is the most abstract description of an index.
- * It usually contains one ore more storage structures to which data is written.
+ * This interface is the most abstract description of an index used in the {@code IndexedRecordReader}.
  *
- * The index is usually in a key-value format. There are two ways the index can be used:
- * First as primary index. In this case, the hdfs entry is completly stored in the index.
- * This would look like this:
- *
- * 25 => 2,Robin,25
- * 55 => 1,Franz,55
- * ...
- *
- * In the alternative case, a secondary index, only the position in the hdfs is stored:
- *
- * 22 => 4253564
- * 55 => 3452563
- *
- * Also, the implementation of indexes can differ.
- * Some indexes are adding values inline to the index storage, others
- * add seperate indexes and merge them together later.
- * Thus, this interface as to be as generic as possible.
- *
- * Note: It is important that opened indexes are closed. close() is the only method that
- * actually ensures that the data is persisted.
- *
+ * Note: It is important that opened indexes are closed.
+ * 
  */
 public interface Index {
 
     /**
-     *  Open or build the index. This could be the files or directory for example.
+     *  Open or build the index. This method should be called before using the index.
      *
      * @throws java.io.IOException
      */
     public void open() throws IOException;
 
 	/**
-	 * forces anything cached to storage (basically like calling {@code close()} and then {@code open()}
+	 * forces anything cached to storage
 	 */
 	public void sync();
 
@@ -56,18 +36,17 @@ public interface Index {
 
 
 	/**
-	 * @return iterator over all lines matching the default search range
+	 * @return iterator over all lines matching the search range
 	 */
 	public Iterator<String> getIterator();
 
 	/**
-	 * closes the index after we are done writing to it
-     * This is the only method that actually ensures that the data is saved permanently.
-	 */
+	 * closes the index after we are done using to it.
+     */
 	public void close();
 
     /**
-     * adds a line from a line-based record-reader to the index.
+     * adds a line from to the index.
      *
      * For an index based on a cvs file and a b-tree index, this method could
      * split the line by a delimiter (e.g ,) and then add the column-to-be-indexed as key
@@ -78,17 +57,9 @@ public interface Index {
      * @param line extracted from the hdfs file
      * @param startPos in the hdfs file
      * @param endPos in the hdfs file
-     * @return whether the line matches the default search range
+     * @return whether the line matches the search range
      */
     boolean addLine(String line, long startPos, long endPos);
-
-	/**
-	 *  Assuming the given pos is covered by the index, this function returns the end if the partials coverage.
-	 *
-	 * @param pos
-	 * @return -1 if pos is not covered by the index, otherwise the end pos of this partial index
-	 */
-	public long partialEndForPos(long pos);
 
 	/**
 	 * @return the ranges that are covered by the index.
@@ -99,7 +70,7 @@ public interface Index {
 	 *
 	 * @param range
 	 * @return iterator over a index partial range. The range can contain null (open end).
-	 * The defaultSearchRange is applied.
+	 * The indexes search range is applied.
 	 * @throws IOException
 	 */
 	Iterator<String> getIterator(Range<Long> range) throws IOException;

@@ -81,11 +81,6 @@ public class NoIndex<K> implements Index {
 	}
 
 	@Override
-	public long partialEndForPos(long pos) {
-		return 0;
-	}
-
-	@Override
 	public SortedSet<Range<Long>> toRanges() {
 		return ranges;
 	}
