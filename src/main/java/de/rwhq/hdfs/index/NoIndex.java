@@ -81,11 +81,6 @@ public class NoIndex<K> implements Index<K, Integer> {
 	}
 
 	@Override
-	public long getMaxPos() {
-		return 0;
-	}
-
-	@Override
 	public long partialEndForPos(long pos) {
 		return 0;
 	}

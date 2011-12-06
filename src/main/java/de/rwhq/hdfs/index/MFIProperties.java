@@ -21,17 +21,6 @@ public class MFIProperties implements Serializable {
 	private String            path;
 	private List<MFIProperty> properties;
 
-	public long getMaxPos() {
-		long pos = -1;
-
-		for (MFIProperty p : properties) {
-			if (p.endPos > pos)
-				pos = p.endPos;
-		}
-
-		return pos;
-	}
-
 	public int removeByPath(String path) {
 		checkNotNull(path);
 

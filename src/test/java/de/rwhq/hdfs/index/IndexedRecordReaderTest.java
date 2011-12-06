@@ -129,7 +129,7 @@ public abstract class IndexedRecordReaderTest {
 	}
 
 
-	@Test
+	@Test @Ignore
 	public void createIndex() throws IOException, ClassNotFoundException, InterruptedException {
 
 		// prepare for test

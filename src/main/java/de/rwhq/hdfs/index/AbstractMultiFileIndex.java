@@ -240,12 +240,6 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
 
 	/** {@inheritDoc} */
 	@Override
-	public long getMaxPos() {
-		return properties.getMaxPos();
-	}
-
-	/** {@inheritDoc} */
-	@Override
 	public SortedSet<Range<Long>> toRanges() {
 		SortedSet<Range<Long>> ranges =
 				properties.toRanges(fileSplit.getStart(), fileSplit.getStart() + fileSplit.getLength() - 1);

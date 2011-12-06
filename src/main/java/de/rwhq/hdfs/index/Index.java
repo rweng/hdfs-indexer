@@ -83,11 +83,6 @@ public interface Index<K,V> {
     boolean addLine(String line, long startPos, long endPos);
 
 	/**
-	 * @return max position of the index
-	 */
-	long getMaxPos();
-
-	/**
 	 *  Assuming the given pos is covered by the index, this function returns the end if the partials coverage.
 	 *
 	 * @param pos

@@ -68,14 +68,6 @@ public abstract class AbstractMultiFileIndexTest {
 	}
 
 	@Test
-	public void maxPos() {
-		fillIndex(0, 10);
-		index.sync();
-
-		assertThat(index.getMaxPos()).isEqualTo(99);
-	}
-
-	@Test
 	public void toRanges() throws IOException {
 		fillIndex(70, 40);
 		index.sync();
