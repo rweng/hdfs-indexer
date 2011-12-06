@@ -274,7 +274,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 	 * @param b
 	 * 		BTreeIndexBuilder
 	 */
-	public AbstractMultiFileIndex(MFIBuilder b) {
+	public AbstractMultiFileIndex(IndexBuilder b) {
 
 		keyExtractor = checkNotNull(b.getKeyExtractor(), "keyExtractor is null");
 		keySerializer = checkNotNull(b.getKeySerializer(), "keySerializer is null");

@@ -15,7 +15,7 @@ public class PrimaryIndexTest {
 		}
 
 		@Override
-		protected MFIBuilder configureBuilder(MFIBuilder b) {
+		protected IndexBuilder configureBuilder(IndexBuilder b) {
 			return b.primaryIndex().valueSerializer(StringCutSerializer.get(500));
 		}
 
@@ -35,7 +35,7 @@ public class PrimaryIndexTest {
 		public void empty(){}
 
 		@Override
-		protected MFIBuilder configure2(MFIBuilder b) {
+		protected IndexBuilder configure2(IndexBuilder b) {
 			return b.primaryIndex().valueSerializer(StringCutSerializer.get(500));
 		}
 	}

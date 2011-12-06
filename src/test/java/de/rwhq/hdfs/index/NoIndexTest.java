@@ -195,7 +195,7 @@ public class NoIndexTest {
 	public static class Builder extends AbstractIndexBuilder{
 
 		@Override
-		public MFIBuilder configure(MFIBuilder builder) {
+		public IndexBuilder configure(IndexBuilder builder) {
 			return builder
 					.noIndex()
 					.keyExtractor(new IntegerCSVExtractor(0, ","))

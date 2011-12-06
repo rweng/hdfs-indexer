@@ -274,8 +274,8 @@ public abstract class AbstractMultiFileIndexTest {
 
 	protected abstract void addToIndexInputStream(AbstractMultiFileIndex index, String line, long pos);
 
-	private MFIBuilder setupBuilder() {
-		return configureBuilder(new MFIBuilder()
+	private IndexBuilder setupBuilder() {
+		return configureBuilder(new IndexBuilder()
 				.indexRootFolder(indexRootFolder)
 				.comparator(IntegerComparator.INSTANCE)
 				.fileSplit(fileSplit)
@@ -284,5 +284,5 @@ public abstract class AbstractMultiFileIndexTest {
 				.keySerializer(IntegerSerializer.INSTANCE));
 	}
 
-	protected abstract MFIBuilder configureBuilder(MFIBuilder b);
+	protected abstract IndexBuilder configureBuilder(IndexBuilder b);
 }

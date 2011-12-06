@@ -58,7 +58,7 @@ public class SecondaryIndexTest {
 		}
 
 		@Override
-		protected MFIBuilder configureBuilder(MFIBuilder b) {
+		protected IndexBuilder configureBuilder(IndexBuilder b) {
 			if (input == null)
 				input = mock(FSDataInputStream.class);
 
@@ -82,7 +82,7 @@ public class SecondaryIndexTest {
 		public void empty(){}
 
 		@Override
-		protected MFIBuilder configure2(MFIBuilder b) {
+		protected IndexBuilder configure2(IndexBuilder b) {
 			return b.secondaryIndex()
 					.addDefaultRange(new Range(1, 4))
 					.addDefaultRange(new Range(10, 10));

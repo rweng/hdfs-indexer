@@ -21,7 +21,7 @@ public class NoIndex<K> implements Index {
 	private TreeSet<Range<K>> defaultSearchRanges;
 	private Comparator<K> comparator;
 
-	public NoIndex(MFIBuilder b) {
+	public NoIndex(IndexBuilder b) {
 		keyExtractor = checkNotNull(b.getKeyExtractor(), "keyExtractor is null");
 		comparator = checkNotNull(b.getComparator(), "comparator is null");
 

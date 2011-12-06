@@ -13,7 +13,7 @@ public class PrimaryIndex<K> extends AbstractMultiFileIndex<K, String> {
 
 	private static Log LOG = LogFactory.getLog(PrimaryIndex.class);
 
-	protected PrimaryIndex(MFIBuilder b) {
+	protected PrimaryIndex(IndexBuilder b) {
 		super(b);
 	}
 

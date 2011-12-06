@@ -253,7 +253,7 @@ public abstract class IndexedRecordReaderTest {
 
 
 		@Override
-		public MFIBuilder configure(MFIBuilder bTreeIndexBuilder) {
+		public IndexBuilder configure(IndexBuilder bTreeIndexBuilder) {
 			return configure2(bTreeIndexBuilder
 					.indexFolder(IndexedRecordReaderTest.INDEX)
 					.addDefaultRange(new Range(1, 4))
@@ -265,7 +265,7 @@ public abstract class IndexedRecordReaderTest {
 					.comparator(IntegerComparator.INSTANCE));
 		}
 
-		protected abstract MFIBuilder configure2(MFIBuilder b);
+		protected abstract IndexBuilder configure2(IndexBuilder b);
 	}
 
 	protected abstract Class<? extends SpyBuilder> getBuilderClass();

@@ -34,7 +34,7 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 	@VisibleForTesting
 	InputStreamReader inReader;
 
-	public SecondaryIndex(MFIBuilder b) {
+	public SecondaryIndex(IndexBuilder b) {
 		super(b.valueSerializer(LongSerializer.INSTANCE));
 
 		checkArgument(b.getSecondaryIndexReadBufferSize() > 0, "secondary index read buffer size must be > 0");
