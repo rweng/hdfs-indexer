@@ -34,7 +34,7 @@ import java.util.SortedSet;
  * actually ensures that the data is persisted.
  *
  */
-public interface Index<K,V> {
+public interface Index {
 
     /**
      *  Open or build the index. This could be the files or directory for example.

@@ -57,7 +57,7 @@ import static com.google.common.base.Preconditions.*;
  * is created, it is not possible to store the end position in the file name (assuming we dont want to rename). Thus, a
  * properties file is required.
  */
-public abstract class AbstractMultiFileIndex<K, V> implements Index<K, V> {
+public abstract class AbstractMultiFileIndex<K, V> implements Index {
 	private static Log LOG = LogFactory.getLog(AbstractMultiFileIndex.class);
 
 	protected String hdfsFile;

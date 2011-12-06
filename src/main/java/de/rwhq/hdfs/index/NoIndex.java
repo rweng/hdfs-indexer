@@ -14,7 +14,7 @@ import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class NoIndex<K> implements Index<K, Integer> {
+public class NoIndex<K> implements Index {
 	private final TreeSet ranges = Sets.newTreeSet();
 	private KeyExtractor<K> keyExtractor;
 	private static Log LOG = LogFactory.getLog(NoIndex.class);
