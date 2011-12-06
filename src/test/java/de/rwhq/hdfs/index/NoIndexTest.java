@@ -21,10 +21,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.mapreduce.lib.reduce.IntSumReducer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -126,7 +123,7 @@ public class NoIndexTest {
 	}
 
 
-	@Test
+	@Test @Ignore
 	public void useIndex() throws IOException, ClassNotFoundException, InterruptedException {
 
 		// prepare for test

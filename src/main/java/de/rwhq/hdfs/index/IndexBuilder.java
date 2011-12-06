@@ -17,6 +17,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class IndexBuilder<K,V> {
 
+	private int maxPartialsPerSplit = 1;
+
+	public IndexBuilder<K,V> maxPartialsPerSplit(int i){
+		maxPartialsPerSplit = i;
+		return this;
+	}
+
+	public int getMaxPartialsPerSplit() {
+		return maxPartialsPerSplit;
+	}
+
 	private static enum IndexType {PRIMARY, SECONDARY, NOINDEX}
 
 	private int cacheSize = 1000;

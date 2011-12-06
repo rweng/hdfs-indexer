@@ -281,6 +281,7 @@ public abstract class AbstractMultiFileIndexTest {
 				.fileSplit(fileSplit)
 				.keyExtractor(extractor)
 				.treePageSize(4 * 1024)
+				.maxPartialsPerSplit(100)
 				.keySerializer(IntegerSerializer.INSTANCE));
 	}
 

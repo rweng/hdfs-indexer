@@ -80,14 +80,11 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 
 	/** this attribute should usually be null and is only used when a writing tree is available */
 	private String currentWriteTreePath;
+	private int remainingPartials;
 
 	/** {@inheritDoc} */
 	@Override
 	public boolean addLine(String line, long startPos, long endPos) {
-		if (LOG.isDebugEnabled()) {
-			// LOG.debug("addLine: " + line + " (pos: " + pos + ")");
-		}
-
 		ensureOpen();
 
 		if (line.equals("")) {
@@ -95,7 +92,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 			return false;
 		}
 
-		if (!ourLock && isLocked()) {
+		if ( (!ourLock && isLocked()) || remainingPartials == 0) {
 			return lineMatchesSearchRange(line);
 		} else {
 			lock();
@@ -284,28 +281,29 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 		keyExtractor = checkNotNull(b.getKeyExtractor(), "keyExtractor must not be null");
 		fileSplit = checkNotNull(b.getFileSplit(), "fileSplit must not be null");
 
-		checkState(b.getCacheSize() >= 10, "cacheSize must be >= 10");
-		checkState(b.getTreePageSize() >= 4 * 1024, "treePageSize must be at least 4kb");
-		checkState(b.getIndexRootFolder().exists(), "index folder must exist");
-
-
+		remainingPartials = b.getMaxPartialsPerSplit();
+		cacheSize = b.getCacheSize();
+		treePageSize = b.getTreePageSize();
+		hdfsFile = fileSplit.getPath().toString().replaceAll("^(hdfs://|file:)[^/]*", "");
+		
 		// if hdfsFile doesn't start with /, the server name is before the path
 		// with this, we ensure that the hdfsFile starts with /
-		hdfsFile = fileSplit.getPath().toString().replaceAll("^(hdfs://|file:)[^/]*", "");
-		checkState(hdfsFile.startsWith("/"), "hdfsPath must start with /. Is: %s", hdfsFile);
+		checkArgument(hdfsFile.startsWith("/"), "hdfsPath must start with /. Is: %s", hdfsFile);
+		checkArgument(cacheSize >= 10, "cacheSize must be >= 10");
+		checkArgument(treePageSize >= 4 * 1024, "treePageSize must be at least 4kb");
+		checkArgument(b.getIndexRootFolder().exists(), "index folder must exist");
+		checkArgument(remainingPartials >= 0, "remainingPartials must be positive");
 
-		this.cacheSize = b.getCacheSize();
-		treePageSize = b.getTreePageSize();
-		this.properties = new MFIProperties(getIndexFolder() + "/properties");
+		// must be set after hdfs file is checked
+		properties = new MFIProperties(getIndexFolder() + "/properties");
 
 		if (b.getDefaultSearchRanges() != null) {
-			this.defaultSearchRanges = Range.merge(b.getDefaultSearchRanges(), comparator);
+			defaultSearchRanges = Range.merge(b.getDefaultSearchRanges(), comparator);
 		}
 
 		if(LOG.isDebugEnabled())
-		{
 			LOG.debug("constructed: " + toString());
-		}
+		
 	}
 
 	/** {@inheritDoc} */
@@ -392,11 +390,11 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 			LOG.error("error when saving index");
 			LOG.error(e.getStackTrace());
 			// reset cache and properties next, maybe we can save this index partial next time
-
 		} finally {
 			currentWriteTree = null;
 			currentWriteTreePath = null;
 			unlock();
+			remainingPartials--;
 			cachePointer = 0;
 			writingTreePropertyEntry.startPos = writingTreePropertyEntry.endPos = null;
 		}

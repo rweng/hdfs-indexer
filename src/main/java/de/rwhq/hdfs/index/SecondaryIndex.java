@@ -27,9 +27,6 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 	FSDataInputStream inputStream;
 
 	private Configuration   jobConf;
-	private int             maxLineLength;
-	private Text            text;
-	private DataInputStream dataStream;
 
 	@VisibleForTesting
 	InputStreamReader inReader;
@@ -41,7 +38,7 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 
 		this.inputStream = b.getInputStream();
 		this.jobConf = b.getJobConfiguration();
-		this.text = new Text();
+		
 	}
 
 	@Override
@@ -53,11 +50,7 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 		checkNotNull(inputStream, "inputStream must not be null for iterating over a secondary index");
 		checkNotNull(jobConf, "job configuration must not be null for iterating over a secondary index");
 
-
 		inReader = new InputStreamReader(inputStream);
-
-		maxLineLength = jobConf.getInt("mapred.linerecordreader.maxlength",
-				Integer.MAX_VALUE);
 	}
 
 	@Override
