@@ -88,7 +88,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 		ensureOpen();
 
 		if (line.equals("")) {
-			handleEmptyLine(line, startPos, endPos);
+			handleEmptyLine(startPos, endPos);
 			return false;
 		}
 
@@ -143,7 +143,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 	 * <li>neither of both, in which case we just ommit the line. It will extend an coverage later anyway.</li>
 	 * </ol>
 	 */
-	private void handleEmptyLine(String line, long startPos, long endPos) {
+	private void handleEmptyLine(long startPos, long endPos) {
 
 		// first check case 1.
 		if (ourLock) {
@@ -153,8 +153,14 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 			writingTreePropertyEntry.endPos = endPos;
 		}
 
+		MFIProperties.MFIProperty p;
+
+
 		// case 2, previous index
-		MFIProperties.MFIProperty p = properties.propertyForPos(startPos - 1);
+		/*
+		we ignore this case because increasing the end position causes java.io.EOFException
+		in the RecordReader when the position is reset
+		p =  = properties.propertyForPos(startPos - 1);
 		if (p != null) {
 			p.endPos = endPos;
 			try {
@@ -164,6 +170,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 				LOG.error("could not extend index: ", e);
 			}
 		}
+		*/
 
 		// case 2, next index
 		p = properties.propertyForPos(endPos + 1);
