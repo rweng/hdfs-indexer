@@ -214,7 +214,7 @@ public class MFIProperties implements Serializable {
 		try {
 			RandomAccessFile raf = new RandomAccessFile(path, "rw");
 			FileChannel channel = raf.getChannel();
-			lock = channel.lock();
+			lock = channel.lock(0, raf.length(), true);
 
 			oStream = new ObjectInputStream(Channels.newInputStream(channel));
 
