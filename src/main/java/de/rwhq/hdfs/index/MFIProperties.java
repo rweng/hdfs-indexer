@@ -10,6 +10,9 @@ import de.rwhq.btree.Range;
 import de.rwhq.comparator.LongComparator;
 
 import java.io.*;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -47,7 +50,7 @@ public class MFIProperties implements Serializable {
 	 * @return MFIProperty or null, if pos is not contained
 	 */
 	public MFIProperty propertyForPos(long pos) {
-		for(MFIProperty p : properties) {
+		for (MFIProperty p : properties) {
 			if (p.startPos <= pos && p.endPos >= pos) {
 				return p;
 			}
@@ -76,7 +79,7 @@ public class MFIProperties implements Serializable {
 							//	return input.toRange();
 
 							// as a replacement (for now), we need to check at least that input.startPos < max;
-							if(max == null || input.startPos < max)
+							if (max == null || input.startPos < max)
 								return input.toRange();
 						}
 
@@ -84,14 +87,14 @@ public class MFIProperties implements Serializable {
 					}
 				});
 
-		
+
 		result.addAll(Collections2.filter(transformed, Predicates.notNull()));
 		return result;
 	}
 
 	public MFIProperty getPropertyForRange(Range<Long> range) {
-		for(MFIProperty p : properties){
-			if(p.toRange().equals(range))
+		for (MFIProperty p : properties) {
+			if (p.toRange().equals(range))
 				return p;
 		}
 
@@ -177,12 +180,24 @@ public class MFIProperties implements Serializable {
 					toString());
 		}
 
-		FileOutputStream stream = new FileOutputStream(path);
-		ObjectOutputStream oStream = new ObjectOutputStream(stream);
+		ObjectOutputStream oStream = null;
+		FileLock lock = null;
 
-		oStream.writeObject(this);
+		try {
+			RandomAccessFile raf = new RandomAccessFile(path, "rw");
+			FileChannel channel = raf.getChannel();
+			lock = channel.lock();
 
-		oStream.close();
+			oStream = new ObjectOutputStream(Channels.newOutputStream(channel));
+
+			oStream.writeObject(this);
+		} finally {
+			if (oStream != null)
+				oStream.close();
+
+			if (lock != null && lock.isValid())
+				lock.release();
+		}
 	}
 
 	@Override
@@ -194,19 +209,27 @@ public class MFIProperties implements Serializable {
 	}
 
 	public void read() throws IOException {
-		FileInputStream file = new FileInputStream(path);
-		ObjectInputStream oStream = new ObjectInputStream(file);
-
-
-		MFIProperties loaded;
-
+		FileLock lock = null;
+		ObjectInputStream oStream = null;
 		try {
-			loaded = (MFIProperties) oStream.readObject();
+			RandomAccessFile raf = new RandomAccessFile(path, "rw");
+			FileChannel channel = raf.getChannel();
+			lock = channel.lock();
+
+			oStream = new ObjectInputStream(Channels.newInputStream(channel));
+
+			MFIProperties loaded = (MFIProperties) oStream.readObject();
+
+			properties = loaded.asList();
 		} catch (ClassNotFoundException e) {
 			throw new IOException("error when reading object", e);
-		}
+		} finally {
+			if (oStream != null)
+				oStream.close();
 
-		properties = loaded.asList();
+			if (lock != null  && lock.isValid())
+				lock.release();
+		}
 	}
 
 	public static MFIProperties read(String path) throws IOException {
