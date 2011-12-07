@@ -43,7 +43,7 @@ public class IndexBuilder<K,V> {
 	private IndexType indexType = IndexType.NOINDEX;
 
 	private int secondaryIndexReadBufferSize = 500;
-	private int treePageSize = 128 * 1024; // default: 128 kb
+	private int treePageSize = 64 * 1024; // default: 64 kb
 	private FixLengthSerializer<V, byte[]> valueSerializer;
 
 	public FileSplit getFileSplit() {
