@@ -80,7 +80,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 
 	/** this attribute should usually be null and is only used when a writing tree is available */
 	private String currentWriteTreePath;
-	private int remainingPartials;
+	private int    remainingPartials;
 
 	/** {@inheritDoc} */
 	@Override
@@ -92,7 +92,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 			return false;
 		}
 
-		if ( (!ourLock && isLocked()) || remainingPartials == 0) {
+		if ((!ourLock && isLocked()) || remainingPartials == 0) {
 			return lineMatchesSearchRange(line);
 		} else {
 			lock();
@@ -167,7 +167,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 				LOG.error("could not extend index: ", e);
 			}
 		}
-		
+
 		// case 2, next index
 		p = properties.propertyForPos(endPos + 1);
 		if (p != null) {
@@ -217,15 +217,14 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 	public void close() {
 		LOG.info("closing index");
 		LOG.info(this);
-		if (!isOpen())
-			return;
 
-		sync();
-
-		if (ourLock)
-			unlock();
-
-		isOpen = false;
+		try {
+			sync();
+		} finally {
+			if (ourLock)
+				unlock();
+			isOpen = false;
+		}
 	}
 
 	/** {@inheritDoc} */
@@ -288,7 +287,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 		cacheSize = b.getCacheSize();
 		treePageSize = b.getTreePageSize();
 		hdfsFile = fileSplit.getPath().toString().replaceAll("^(hdfs://|file:)[^/]*", "");
-		
+
 		// if hdfsFile doesn't start with /, the server name is before the path
 		// with this, we ensure that the hdfsFile starts with /
 		checkArgument(hdfsFile.startsWith("/"), "hdfsPath must start with /. Is: %s", hdfsFile);
@@ -304,9 +303,9 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 			defaultSearchRanges = Range.merge(b.getDefaultSearchRanges(), comparator);
 		}
 
-		if(LOG.isDebugEnabled())
+		if (LOG.isDebugEnabled())
 			LOG.debug("constructed: " + toString());
-		
+
 	}
 
 	/** {@inheritDoc} */
@@ -388,7 +387,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 			writingTreePropertyEntry = new MFIProperties.MFIProperty();
 
 			currentWriteTree.close();
-			
+
 		} catch (IOException e) {
 			LOG.error("error when saving index");
 			LOG.error(e.getStackTrace());
