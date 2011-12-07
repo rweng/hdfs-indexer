@@ -157,10 +157,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 
 
 		// case 2, previous index
-		/*
-		we ignore this case because increasing the end position causes java.io.EOFException
-		in the RecordReader when the position is reset
-		p =  = properties.propertyForPos(startPos - 1);
+		p = properties.propertyForPos(startPos - 1);
 		if (p != null) {
 			p.endPos = endPos;
 			try {
@@ -170,8 +167,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 				LOG.error("could not extend index: ", e);
 			}
 		}
-		*/
-
+		
 		// case 2, next index
 		p = properties.propertyForPos(endPos + 1);
 		if (p != null) {
