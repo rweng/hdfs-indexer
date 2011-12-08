@@ -42,8 +42,8 @@ public class SecondaryIndex<K> extends AbstractMultiFileIndex<K, Long> {
 	}
 
 	@Override
-	protected AbstractMap.SimpleEntry<K, Long> extractEntry(String line, long pos) throws ExtractionException {
-		return new AbstractMap.SimpleEntry<K, Long>(keyExtractor.extract(line), pos);
+	protected AbstractMap.SimpleEntry<K, ?> extractEntry(String line, long pos) throws ExtractionException {
+		return new AbstractMap.SimpleEntry<K, byte[]>(keyExtractor.extract(line), valueSerializer.serialize(pos));
 	}
 
 	private void ensureIteratorRequirements() {

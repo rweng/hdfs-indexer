@@ -18,8 +18,8 @@ public class PrimaryIndex<K> extends AbstractMultiFileIndex<K, String> {
 	}
 
 	@Override
-	protected AbstractMap.SimpleEntry<K, String> extractEntry(String line, long pos) throws ExtractionException {
-		return new AbstractMap.SimpleEntry<K, String>(keyExtractor.extract(line), line);
+	protected AbstractMap.SimpleEntry<K, ?> extractEntry(String line, long pos) throws ExtractionException {
+		return new AbstractMap.SimpleEntry<K, byte[]>(keyExtractor.extract(line), valueSerializer.serialize(line));
 	}
 
 	@Override

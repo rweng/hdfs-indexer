@@ -64,14 +64,14 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 	protected File   indexRootFolder;
 	protected boolean                         isOpen  = false;
 	protected boolean                         ourLock = false;
-	protected AbstractMap.SimpleEntry<K, V>[] cache   = null;
+	protected AbstractMap.SimpleEntry<K, ?>[] cache   = null;
 	protected int                            cachePointer;
 	protected Comparator<K>                  comparator;
 	protected FixLengthSerializer<K, byte[]> keySerializer;
 	protected KeyExtractor<K>                keyExtractor;
 
 	protected TreeSet<Range<K>>              defaultSearchRanges;
-	private   FixLengthSerializer<V, byte[]> valueSerializer;
+	protected   FixLengthSerializer<V, byte[]> valueSerializer;
 	private   MFIProperties                  properties;
 	private   MFIProperties.MFIProperty      writingTreePropertyEntry;
 	private   FileSplit                      fileSplit;
@@ -104,7 +104,10 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 
 		// ensure not already covered by index
 		//TODO: remove in production
-		checkArgument(!properties.contains(startPos), "startPos already covered by index: \n" + startPos);
+		if(properties.contains(startPos)){
+			LOG.warn("startPos already covered by index: \n" + startPos);
+			return false;
+		}
 
 
 		if (writingTreePropertyEntry.endPos != null && writingTreePropertyEntry.endPos >= startPos) {
@@ -364,7 +367,7 @@ public abstract class AbstractMultiFileIndex<K, V> implements Index {
 			throw new IllegalStateException("index must be opened before it is used");
 	}
 
-	protected abstract AbstractMap.SimpleEntry<K, V> extractEntry(String line, long pos) throws ExtractionException;
+	protected abstract AbstractMap.SimpleEntry<K, ?> extractEntry(String line, long pos) throws ExtractionException;
 
 	protected void saveWriteTree() {
 		try {

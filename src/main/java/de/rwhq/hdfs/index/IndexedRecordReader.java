@@ -177,7 +177,7 @@ public class IndexedRecordReader extends LineRecordReader {
 			if (next == null) {
 				// reset pos
 				fileIn.seek(pos);
-
+				
 				CompressionCodec codec = compressionCodecs.getCodec(split.getPath());
 				if (codec == null)
 					in = new LineReader(fileIn, conf);
